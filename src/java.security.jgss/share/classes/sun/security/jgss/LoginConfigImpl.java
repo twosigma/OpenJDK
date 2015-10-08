@@ -185,6 +185,9 @@ public class LoginConfigImpl extends Configuration {
                 options.put("doNotPrompt", "false");
             }
             return new AppConfigurationEntry[] {
+                // FIXME Also -or alternatively when we're using the native
+                // providers- add GssLoginModule, since we might not be able to
+                // acquire Kerberos credentials directly, or even at all .
                 new AppConfigurationEntry(
                         "com.sun.security.auth.module.Krb5LoginModule",
                         AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
