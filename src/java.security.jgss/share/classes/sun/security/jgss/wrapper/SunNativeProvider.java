@@ -95,7 +95,12 @@ public final class SunNativeProvider extends Provider {
                                 gssLibs = new String[]{
                                     "libgssapi_krb5.dylib",
                                     "/usr/lib/sasl2/libgssapiv2.2.so",
-                               };
+                                };
+                            } else if (osname.startsWith("Windows")) {
+                                gssLibs = new String[]{
+                                    "gssapi64.dll",     /* MIT 64-bit */
+                                    "gx64all.dll",      /* SAP 64-bit */
+                                };
                             }
                         } else {
                             gssLibs = new String[]{ defaultLib };
