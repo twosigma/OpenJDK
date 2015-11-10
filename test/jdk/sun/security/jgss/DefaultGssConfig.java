@@ -58,6 +58,10 @@ public class DefaultGssConfig {
         Configuration.getConfiguration();
 
         // 3. Make sure there're default entries for GSS krb5 client/server
+        //
+        // FIXME Why be so Kerberos-specific?  This is wrong.  Instead we could
+        // use a command-line argument to deal with a specific (or all)
+        // mechanisms.
         LoginConfigImpl lc = new LoginConfigImpl(GSSCaller.CALLER_INITIATE, GSSUtil.GSS_KRB5_MECH_OID);
         if (lc.getAppConfigurationEntry("").length == 0) {
             throw new Exception("No default config for GSS krb5 client");

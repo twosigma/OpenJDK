@@ -47,6 +47,7 @@ public class Krb5AcceptCredential
 
     private final Krb5NameElement name;
     private final ServiceCreds screds;
+    private boolean isDefCred = false;
 
     private Krb5AcceptCredential(Krb5NameElement name, ServiceCreds creds) {
         /*
@@ -57,6 +58,8 @@ public class Krb5AcceptCredential
 
         this.name = name;
         this.screds = creds;
+        if (name == null)
+            isDefCred = true;
     }
 
     @SuppressWarnings("removal")
@@ -147,6 +150,15 @@ public class Krb5AcceptCredential
      */
     public final Oid getMechanism() {
         return Krb5MechFactory.GSS_KRB5_MECH_OID;
+    }
+
+    /**
+     * Returns true if the credential is a default credential.
+     *
+     * @return true if the credential is a default credential, else false.
+     */
+    public boolean isDefaultCredential() {
+        return isDefCred;
     }
 
     public final java.security.Provider getProvider() {

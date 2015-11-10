@@ -162,23 +162,22 @@ Java_sun_security_jgss_wrapper_GSSLibStub_getMechPtr(JNIEnv *env,
  * Utility routine which releases the specified gss_channel_bindings_t
  * structure.
  */
-void deleteGSSCB(gss_channel_bindings_t cb) {
-
+static void deleteGSSCB(JNIEnv *env, gss_channel_bindings_t cb) {
   if (cb == GSS_C_NO_CHANNEL_BINDINGS) return;
 
   /* release initiator address */
   if (cb->initiator_addrtype != GSS_C_AF_NULLADDR &&
       cb->initiator_addrtype != GSS_C_AF_UNSPEC) {
-    resetGSSBuffer(&(cb->initiator_address));
+    resetGSSBuffer(env, NULL, &cb->initiator_address);
   }
   /* release acceptor address */
   if (cb->acceptor_addrtype != GSS_C_AF_NULLADDR &&
       cb->acceptor_addrtype != GSS_C_AF_UNSPEC) {
-    resetGSSBuffer(&(cb->acceptor_address));
+    resetGSSBuffer(env, NULL, &cb->acceptor_address);
   }
   /* release application data */
-  if (cb->application_data.length != 0) {
-    resetGSSBuffer(&(cb->application_data));
+  if (cb->application_data.value != NULL) {
+    resetGSSBuffer(env, NULL, &(cb->application_data));
   }
   free(cb);
 }
@@ -233,11 +232,11 @@ gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
     if ((*env)->ExceptionCheck(env)) {
       goto cleanup;
     }
-    cb->initiator_addrtype = GSS_C_AF_INET;
-    initGSSBuffer(env, value, &(cb->initiator_address));
+    initGSSBuffer(env, value, &(cb->initiator_address), JNI_TRUE);
     if ((*env)->ExceptionCheck(env)) {
       goto cleanup;
     }
+    cb->initiator_addrtype = GSS_C_AF_INET;
   }
   /* set up acceptor address */
   jinetAddr = (*env)->CallObjectMethod(env, jcb,
@@ -251,11 +250,11 @@ gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
     if ((*env)->ExceptionCheck(env)) {
       goto cleanup;
     }
-    cb->acceptor_addrtype = GSS_C_AF_INET;
-    initGSSBuffer(env, value, &(cb->acceptor_address));
+    initGSSBuffer(env, value, &(cb->acceptor_address), JNI_TRUE);
     if ((*env)->ExceptionCheck(env)) {
       goto cleanup;
     }
+    cb->acceptor_addrtype = GSS_C_AF_INET;
   }
   /* set up application data */
   value = (*env)->CallObjectMethod(env, jcb,
@@ -263,13 +262,13 @@ gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
   if ((*env)->ExceptionCheck(env)) {
     goto cleanup;
   }
-  initGSSBuffer(env, value, &(cb->application_data));
+  initGSSBuffer(env, value, &(cb->application_data), JNI_TRUE);
   if ((*env)->ExceptionCheck(env)) {
     goto cleanup;
   }
   return cb;
 cleanup:
-  deleteGSSCB(cb);
+  deleteGSSCB(env, cb);
   return NULL;
 }
 
@@ -320,7 +319,7 @@ JNIEXPORT jobjectArray JNICALL
 Java_sun_security_jgss_wrapper_GSSLibStub_inquireNamesForMech(JNIEnv *env,
                                                               jobject jobj)
 {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   gss_OID mech;
   gss_OID_set nameTypes;
   jobjectArray result;
@@ -334,7 +333,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_inquireNamesForMech(JNIEnv *env,
 
     /* release intermediate buffers before checking status */
     result = getJavaOIDArray(env, nameTypes);
-    deleteGSSOIDSet(nameTypes);
+    (*ftab->releaseOidSet)(&dummy, &nameTypes);
     if ((*env)->ExceptionCheck(env)) {
       return NULL;
     }
@@ -391,14 +390,14 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importName(JNIEnv *env,
 
   TRACE0("[GSSLibStub_importName]");
 
-  initGSSBuffer(env, jnameVal, &nameVal);
+  initGSSBuffer(env, jnameVal, &nameVal, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
       return jlong_zero;
   }
 
   nameType = newGSSOID(env, jnameType);
   if ((*env)->ExceptionCheck(env)) {
-    resetGSSBuffer(&nameVal);
+    resetGSSBuffer(env, jnameVal, &nameVal);
     return jlong_zero;
   }
 
@@ -410,7 +409,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importName(JNIEnv *env,
 
   /* release intermediate buffers */
   deleteGSSOID(nameType);
-  resetGSSBuffer(&nameVal);
+  resetGSSBuffer(env, jnameVal, &nameVal);
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_importName]");
   if ((*env)->ExceptionCheck(env)) {
@@ -497,10 +496,9 @@ JNIEXPORT jbyteArray JNICALL
 Java_sun_security_jgss_wrapper_GSSLibStub_exportName(JNIEnv *env,
                                                      jobject jobj,
                                                      jlong pName) {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   gss_name_t nameHdl, mNameHdl;
-  gss_buffer_desc outBuf;
-  jbyteArray jresult;
+  gss_buffer_desc outBuf = GSS_C_EMPTY_BUFFER;
 
   nameHdl = (gss_name_t) jlong_to_ptr(pName);
 
@@ -525,26 +523,79 @@ Java_sun_security_jgss_wrapper_GSSLibStub_exportName(JNIEnv *env,
     }
 
     major = (*ftab->exportName)(&minor, mNameHdl, &outBuf);
-    Java_sun_security_jgss_wrapper_GSSLibStub_releaseName
-                                        (env, jobj, ptr_to_jlong(mNameHdl));
-    if ((*env)->ExceptionCheck(env)) {
-      /* release intermediate buffers */
-      (*ftab->releaseBuffer)(&minor, &outBuf);
-      return NULL;
-    }
-  }
-
-  /* release intermediate buffers before checking status */
-  jresult = getJavaBuffer(env, &outBuf);
-  if ((*env)->ExceptionCheck(env)) {
-    return NULL;
+    (void) (*ftab->releaseName)(&dummy, &mNameHdl);
   }
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_exportName]");
   if ((*env)->ExceptionCheck(env)) {
+    (void) (*ftab->releaseBuffer)(&dummy, &outBuf);
     return NULL;
   }
-  return jresult;
+  /* Map outBuf to byteArray result and release */
+  return getJavaBuffer(env, &outBuf, JNI_TRUE);
+}
+
+/*
+ * Class:     sun_security_jgss_wrapper_GSSLibStub
+ * Method:    localName
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_sun_security_jgss_wrapper_GSSLibStub_localName(JNIEnv *env,
+                                                    jobject jobj,
+                                                    jlong pName,
+                                                    jobject jOid)
+{
+  OM_uint32 minor, major, dummy;
+  gss_name_t nameHdl, mnNameHdl;
+  gss_buffer_desc outBuf = GSS_C_EMPTY_BUFFER;
+  gss_OID mech;
+
+  nameHdl = (gss_name_t) jlong_to_ptr(pName);
+
+  if (ftab->localName == NULL) {
+    TRACE0("GSSLibStub_localName not supported by GSS provider");
+    checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0,
+                "[GSSLibStub_localName]");
+    return NULL;
+  }
+  mech = newGSSOID(env, jOid);
+
+  /* gss_localname(...) => GSS_S_NAME_NOT_MN, GSS_S_BAD_NAMETYPE,
+     GSS_S_BAD_NAME */
+  major = (*ftab->localName)(&minor, nameHdl, mech, &outBuf);
+  if (major == GSS_S_COMPLETE) {
+    deleteGSSOID(mech);
+    return getJavaString(env, &outBuf);
+  }
+  (*ftab->releaseBuffer)(&minor, &outBuf);
+
+  if (major != GSS_S_NAME_NOT_MN) {
+    checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
+    goto err;
+  }
+
+  /* canonicalize the internal name to MN and retry */
+  TRACE0("[GSSLibStub_localName] canonicalize and re-try");
+
+  major = (*ftab->canonicalizeName)(&minor, nameHdl, mech, &mnNameHdl);
+  checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
+  if ((*env)->ExceptionCheck(env))
+    goto err;
+
+  major = (*ftab->localName)(&minor, mnNameHdl, mech, &outBuf);
+  (void) (*ftab->releaseName)(&dummy, &mnNameHdl);
+
+  checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
+  if ((*env)->ExceptionCheck(env) == JNI_FALSE && major == GSS_S_COMPLETE) {
+    deleteGSSOID(mech);
+    return getJavaString(env, &outBuf);
+  }
+  (*ftab->releaseBuffer)(&minor, &outBuf);
+
+err:
+  deleteGSSOID(mech);
+  return NULL;
 }
 
 /*
@@ -558,7 +609,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_displayName(JNIEnv *env,
                                                       jlong pName) {
   OM_uint32 minor, major;
   gss_name_t nameHdl;
-  gss_buffer_desc outNameBuf;
+  gss_buffer_desc outNameBuf = GSS_C_EMPTY_BUFFER;
   gss_OID outNameType;
   jstring jname;
   jobject jtype;
@@ -613,17 +664,20 @@ Java_sun_security_jgss_wrapper_GSSLibStub_displayName(JNIEnv *env,
 /*
  * Class:     sun_security_jgss_wrapper_GSSLibStub
  * Method:    acquireCred
- * Signature: (JII)J
+ * Signature: (JLjava/lang/String;[II)J
  */
 JNIEXPORT jlong JNICALL
 Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
                                                       jobject jobj,
                                                       jlong pName,
+                                                      jstring jPassword,
+                                                      jarray jCredStore,
                                                       jint reqTime,
                                                       jint usage)
 {
   OM_uint32 minor, major;
   gss_OID mech;
+  gss_OID_set_desc singleton;
   gss_OID_set mechs;
   gss_cred_usage_t credUsage;
   gss_name_t nameHdl;
@@ -633,7 +687,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
   TRACE0("[GSSLibStub_acquireCred]");
 
   mech = (gss_OID) jlong_to_ptr((*env)->GetLongField(env, jobj, FID_GSSLibStub_pMech));
-  mechs = newGSSOIDSet(mech);
+  mechs = makeGSSOIDSet(&singleton, mech);
   credUsage = (gss_cred_usage_t) usage;
   nameHdl = (gss_name_t) jlong_to_ptr(pName);
 
@@ -641,15 +695,114 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
 
   /* gss_acquire_cred(...) => GSS_S_BAD_MECH, GSS_S_BAD_NAMETYPE,
      GSS_S_BAD_NAME, GSS_S_CREDENTIALS_EXPIRED, GSS_S_NO_CRED */
-  major =
-    (*ftab->acquireCred)(&minor, nameHdl, reqTime, mechs,
-                     credUsage, &credHdl, NULL, NULL);
-  /* release intermediate buffers */
-  deleteGSSOIDSet(mechs);
+  if (jPassword == NULL && jCredStore == NULL) {
+    major = (*ftab->acquireCred)(&minor, nameHdl, reqTime, mechs, credUsage,
+                                 &credHdl, NULL, NULL);
+  } else if (jPassword != NULL) {
+    gss_buffer_desc password;
+
+    if (ftab->acquireCredWithPassword == NULL) {
+      const char *msg = "GSSLibStub_acquireCred with password not supported "
+          "by GSS provider";
+
+      TRACE0(msg);
+      checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0, msg);
+      return ptr_to_jlong(NULL);
+    }
+
+    initGSSBufferString(env, jPassword, &password);
+    if ((*env)->ExceptionCheck(env)) {
+      return jlong_zero;
+    }
+    major = (*ftab->acquireCredWithPassword)(&minor, nameHdl, &password,
+                                             reqTime, mechs, credUsage,
+                                             &credHdl, NULL, NULL);
+    resetGSSBufferString(env, jPassword, &password);
+  } else {
+    gss_key_value_set_desc credStore = {0, 0};
+
+    if (ftab->acquireCredFrom == NULL) {
+      const char *msg = "GSSLibStub_acquireCred from credential store not "
+          "supported by GSS provider";
+
+      TRACE0("[GSSLibStub_acquireCred] acquiring from a specific credential "
+             "store not supported by GSS provider");
+      checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0,
+                  "[GSSLibStub_acquireCred]");
+      return ptr_to_jlong(NULL);
+    }
+
+    initGSSCredStore(env, jCredStore, &credStore);
+    if ((*env)->ExceptionCheck(env)) {
+      return jlong_zero;
+    }
+    major = (*ftab->acquireCredFrom)(&minor, nameHdl, reqTime, mechs,
+                                     credUsage, &credStore, &credHdl,
+                                     NULL, NULL);
+    resetGSSCredStore(env, jCredStore, &credStore);
+  }
 
   TRACE1("[GSSLibStub_acquireCred] pCred=%" PRIuPTR "", (uintptr_t) credHdl);
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_acquireCred]");
+  if ((*env)->ExceptionCheck(env)) {
+    return jlong_zero;
+  }
+  return ptr_to_jlong(credHdl);
+}
+
+/*
+ * Class:     sun_security_jgss_wrapper_GSSLibStub
+ * Method:    storeCred
+ * Signature: (JILorg/ietf/jgss/Oid;ZZ[)J
+ */
+JNIEXPORT jlong JNICALL
+Java_sun_security_jgss_wrapper_GSSLibStub_storeCred(JNIEnv *env,
+                                                    jobject jobj,
+                                                    jlong pCred,
+                                                    jint usage,
+                                                    jobject jmech,
+                                                    jboolean overwrite,
+                                                    jboolean defaultCred,
+                                                    jarray jCredStore)
+{
+  OM_uint32 minor, major;
+  gss_key_value_set_desc credStore;
+  gss_cred_usage_t credUsage;
+  gss_cred_id_t credHdl;
+  gss_OID mech;
+
+  TRACE0("[GSSLibStub_storeCred]");
+
+  credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
+  credUsage = (gss_cred_usage_t) usage;
+
+  mech = newGSSOID(env, jmech);
+  if ((*env)->ExceptionCheck(env)) {
+    return jlong_zero;
+  }
+
+  TRACE2("[GSSLibStub_storeCred] pCred=%ld, usage=%d", (long)pCred, usage);
+
+  if (ftab->storeCredInto == NULL) {
+    TRACE0("[GSSLibStub_storeCred] GSSLibStub_storeCred not supported by "
+           "GSS provider");
+    checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0, "[GSSLibStub_storeCred]");
+    return ptr_to_jlong(NULL);
+  }
+
+  initGSSCredStore(env, jCredStore, &credStore);
+  if ((*env)->ExceptionCheck(env)) {
+    return jlong_zero;
+  }
+  major = (*ftab->storeCredInto)(&minor, credHdl, credUsage, mech,
+                                 overwrite, defaultCred, &credStore,
+                                 NULL, NULL);
+  resetGSSCredStore(env, jCredStore, &credStore);
+
+  TRACE1("[GSSLibStub_storeCred] pCred=%" PRIuPTR "", (uintptr_t) credHdl);
+
+  checkStatus(env, jobj, major, minor, "[GSSLibStub_storeCred]");
   if ((*env)->ExceptionCheck(env)) {
     return jlong_zero;
   }
@@ -817,7 +970,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importContext(JNIEnv *env,
   TRACE0("[GSSLibStub_importContext]");
 
   contextHdl = GSS_C_NO_CONTEXT;
-  initGSSBuffer(env, jctxtToken, &ctxtToken);
+  initGSSBuffer(env, jctxtToken, &ctxtToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
@@ -829,7 +982,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importContext(JNIEnv *env,
   TRACE1("[GSSLibStub_importContext] pContext=%" PRIuPTR "", (uintptr_t) contextHdl);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&ctxtToken);
+  resetGSSBuffer(env, jctxtToken, &ctxtToken);
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_importContext]");
   /* return immediately if an exception has occurred */
@@ -859,7 +1012,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importContext(JNIEnv *env,
   } else {
     /* mech mismatch - clean up then return null */
     major = (*ftab->deleteSecContext)(&minor, &contextHdl, GSS_C_NO_BUFFER);
-    checkStatus(env, jobj, major, minor,
+    checkStatus(env, jobj, GSS_S_FAILURE, minor,
         "[GSSLibStub_importContext] cleanup");
     return NULL;
   }
@@ -879,7 +1032,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
                                                       jbyteArray jinToken,
                                                       jobject jcontextSpi)
 {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   gss_cred_id_t credHdl ;
   gss_ctx_id_t contextHdl, contextHdlSave;
   gss_name_t targetName;
@@ -888,12 +1041,9 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
   OM_uint32 time, aTime;
   gss_channel_bindings_t cb;
   gss_buffer_desc inToken;
-  gss_buffer_desc outToken;
-  jbyteArray jresult;
-/* UNCOMMENT after SEAM bug#6287358 is backported to S10
+  gss_buffer_desc outToken = GSS_C_EMPTY_BUFFER;
   gss_OID aMech;
   jobject jMech;
-*/
 
   TRACE0("[GSSLibStub_initContext]");
 
@@ -911,9 +1061,9 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
     return NULL;
   }
 
-  initGSSBuffer(env, jinToken, &inToken);
+  initGSSBuffer(env, jinToken, &inToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
-    deleteGSSCB(cb);
+    deleteGSSCB(env, cb);
     return NULL;
   }
 
@@ -927,7 +1077,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
      GSS_S_BAD_NAMETYPE, GSS_S_BAD_NAME(!), GSS_S_BAD_MECH */
   major = (*ftab->initSecContext)(&minor, credHdl,
                                  &contextHdl, targetName, mech,
-                                 flags, time, cb, &inToken, NULL /*aMech*/,
+                                 flags, time, cb, &inToken, &aMech,
                                  &outToken, &aFlags, &aTime);
 
   TRACE2("[GSSLibStub_initContext] after: pContext=%" PRIuPTR ", outToken len=%ld",
@@ -956,30 +1106,28 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
                               FID_NativeGSSContext_isEstablished,
                               JNI_TRUE);
 
-/* UNCOMMENT after SEAM bug#6287358 is backported to S10
-      jMech = getJavaOID(env, aMech);
-      (*env)->SetObjectField(env, jcontextSpi,
-                             FID_NativeGSSContext_actualMech, jMech);
-*/
+      jMech = (aMech == GSS_C_NO_OID) ? NULL : getJavaOID(env, aMech);
+      if (!(*env)->ExceptionCheck(env)) {
+        (*env)->SetObjectField(env, jcontextSpi,
+                               FID_NativeGSSContext_actualMech, jMech);
+      }
     } else if (major & GSS_S_CONTINUE_NEEDED) {
       TRACE0("[GSSLibStub_initContext] context not established");
-      major -= GSS_S_CONTINUE_NEEDED;
+      major &= ~GSS_S_CONTINUE_NEEDED;
     }
   }
 
   /* release intermediate buffers before checking status */
-  deleteGSSCB(cb);
-  resetGSSBuffer(&inToken);
-  jresult = getJavaBuffer(env, &outToken);
-  if ((*env)->ExceptionCheck(env)) {
-    return NULL;
-  }
+  deleteGSSCB(env, cb);
+  resetGSSBuffer(env, jinToken, &inToken);
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_initContext]");
   if ((*env)->ExceptionCheck(env)) {
+    (void) (*ftab->releaseBuffer)(&dummy, &outToken);
     return NULL;
   }
-  return jresult;
+  /* Map outToken to byteArray result and release */
+  return getJavaBuffer(env, &outToken, JNI_TRUE);
 }
 
 /*
@@ -995,23 +1143,23 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
                                                         jbyteArray jinToken,
                                                         jobject jcontextSpi)
 {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   OM_uint32 minor2, major2;
   gss_ctx_id_t contextHdl, contextHdlSave;
   gss_cred_id_t credHdl;
   gss_buffer_desc inToken;
   gss_channel_bindings_t cb;
-  gss_name_t srcName;
-  gss_buffer_desc outToken;
+  gss_name_t srcName = GSS_C_NO_NAME;
+  gss_buffer_desc outToken = GSS_C_EMPTY_BUFFER;
   gss_OID aMech;
   OM_uint32 aFlags;
   OM_uint32 aTime;
-  gss_cred_id_t delCred;
+  gss_cred_id_t delCred = GSS_C_NO_CREDENTIAL;
   jobject jsrcName = NULL;
   jobject jdelCred;
-  jobject jMech;
+  jobject jMech = NULL;
   jboolean setTarget;
-  gss_name_t targetName;
+  gss_name_t targetName = GSS_C_NO_NAME;
   jobject jtargetName;
 
   TRACE0("[GSSLibStub_acceptContext]");
@@ -1019,17 +1167,15 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
   contextHdl = contextHdlSave = (gss_ctx_id_t)jlong_to_ptr(
     (*env)->GetLongField(env, jcontextSpi, FID_NativeGSSContext_pContext));
   credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
-  initGSSBuffer(env, jinToken, &inToken);
+  initGSSBuffer(env, jinToken, &inToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
   cb = newGSSCB(env, jcb);
   if ((*env)->ExceptionCheck(env)) {
-    resetGSSBuffer(&inToken);
+    resetGSSBuffer(env, jinToken, &inToken);
     return NULL;
   }
-  srcName = targetName = GSS_C_NO_NAME;
-  delCred = GSS_C_NO_CREDENTIAL;
   setTarget = (credHdl == GSS_C_NO_CREDENTIAL);
   aFlags = 0;
 
@@ -1047,8 +1193,8 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
                            &aFlags, &aTime, &delCred);
   /* release intermediate buffers before checking status */
 
-  deleteGSSCB(cb);
-  resetGSSBuffer(&inToken);
+  deleteGSSCB(env, cb);
+  resetGSSBuffer(env, jinToken, &inToken);
 
   TRACE3("[GSSLibStub_acceptContext] after: pCred=%" PRIuPTR ", pContext=%" PRIuPTR ", pDelegCred=%" PRIuPTR "",
         (uintptr_t)credHdl, (uintptr_t)contextHdl, (uintptr_t) delCred);
@@ -1064,9 +1210,19 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
 
   if (GSS_ERROR(major) == GSS_S_COMPLETE) {
     /* update member values if needed */
-    // WORKAROUND for a Heimdal bug
+
+    jMech = (aMech == GSS_C_NO_OID) ? NULL : getJavaOID(env, aMech);
+    if (!(*env)->ExceptionCheck(env)) {
+      (*env)->SetObjectField(env, jcontextSpi,
+                             FID_NativeGSSContext_actualMech, jMech);
+    }
+    if ((*env)->ExceptionCheck(env)) {
+      goto error;
+    }
+
+    /* WORKAROUND for an old Heimdal bug */
     if (delCred == GSS_C_NO_CREDENTIAL) {
-        aFlags &= 0xfffffffe;
+        aFlags &= ~GSS_C_DELEG_FLAG;
     }
     (*env)->SetIntField(env, jcontextSpi, FID_NativeGSSContext_flags, aFlags);
     TRACE1("[GSSLibStub_acceptContext] set flags=0x%x", aFlags);
@@ -1083,13 +1239,14 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
 
       jtargetName = (*env)->NewObject(env, CLS_GSSNameElement,
                                 MID_GSSNameElement_ctor,
-                                ptr_to_jlong(targetName), jobj);
+                                ptr_to_jlong(targetName), jMech, jobj);
       if ((*env)->ExceptionCheck(env)) {
         goto error;
       }
 
       TRACE1("[GSSLibStub_acceptContext] set targetName=%" PRIuPTR "",
               (uintptr_t)targetName);
+      targetName = GSS_C_NO_NAME;
 
       (*env)->SetObjectField(env, jcontextSpi, FID_NativeGSSContext_targetName,
                              jtargetName);
@@ -1100,12 +1257,13 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
     if (srcName != GSS_C_NO_NAME) {
       jsrcName = (*env)->NewObject(env, CLS_GSSNameElement,
                                    MID_GSSNameElement_ctor,
-                                   ptr_to_jlong(srcName), jobj);
+                                   ptr_to_jlong(srcName), jMech, jobj);
       if ((*env)->ExceptionCheck(env)) {
         goto error;
       }
 
       TRACE1("[GSSLibStub_acceptContext] set srcName=%" PRIuPTR "", (uintptr_t)srcName);
+      srcName = GSS_C_NO_NAME;
 
       (*env)->SetObjectField(env, jcontextSpi, FID_NativeGSSContext_srcName,
                              jsrcName);
@@ -1121,12 +1279,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
       (*env)->SetBooleanField(env, jcontextSpi,
                               FID_NativeGSSContext_isEstablished,
                               JNI_TRUE);
-      jMech = getJavaOID(env, aMech);
-      if ((*env)->ExceptionCheck(env)) {
-        goto error;
-      }
-      (*env)->SetObjectField(env, jcontextSpi,
-                             FID_NativeGSSContext_actualMech, jMech);
       if ((*env)->ExceptionCheck(env)) {
         goto error;
       }
@@ -1137,11 +1289,12 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
         if ((*env)->ExceptionCheck(env)) {
           goto error;
         }
+        TRACE1("[GSSLibStub_acceptContext] set delegatedCred=%" PRIuPTR "",
+                (uintptr_t) delCred);
+        delCred = GSS_C_NO_CREDENTIAL;
         (*env)->SetObjectField(env, jcontextSpi,
                                FID_NativeGSSContext_delegatedCred,
                                jdelCred);
-        TRACE1("[GSSLibStub_acceptContext] set delegatedCred=%" PRIuPTR "",
-                (uintptr_t) delCred);
 
         if ((*env)->ExceptionCheck(env)) {
           goto error;
@@ -1154,10 +1307,18 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
         (*env)->SetIntField(env, jcontextSpi, FID_NativeGSSContext_lifetime,
                             getJavaTime(aTime));
       }
-      major -= GSS_S_CONTINUE_NEEDED;
+      major &= ~GSS_S_CONTINUE_NEEDED;
     }
   }
-  return getJavaBuffer(env, &outToken);
+
+  checkStatus(env, jobj, major, minor, "[GSSLibStub_acceptContext]");
+  if ((*env)->ExceptionCheck(env)) {
+    (void) (*ftab->releaseBuffer)(&dummy, &outToken);
+    return NULL;
+  }
+
+  /* Map outToken to byteArray result and release */
+  return getJavaBuffer(env, &outToken, JNI_TRUE);
 
 error:
   (*ftab->releaseBuffer)(&minor, &outToken);
@@ -1183,12 +1344,14 @@ Java_sun_security_jgss_wrapper_GSSLibStub_inquireContext(JNIEnv *env,
                                                          jobject jobj,
                                                          jlong pContext)
 {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   gss_ctx_id_t contextHdl;
-  gss_name_t srcName, targetName;
-  OM_uint32 time;
-  OM_uint32 flags;
-  int isInitiator, isEstablished;
+  gss_name_t srcName = GSS_C_NO_NAME;
+  gss_name_t targetName = GSS_C_NO_NAME;
+  OM_uint32 time = 0;
+  OM_uint32 flags = 0;
+  int isInitiator = 0;
+  int isEstablished = 0;
 #if defined (_WIN32) && defined (_MSC_VER)
   __declspec(align(8))
 #endif
@@ -1198,10 +1361,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_inquireContext(JNIEnv *env,
   contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
 
   TRACE1("[GSSLibStub_inquireContext] %" PRIuPTR "", (uintptr_t)contextHdl);
-
-  srcName = targetName = GSS_C_NO_NAME;
-  time = 0;
-  flags = isInitiator = isEstablished = 0;
 
   /* gss_inquire_context(...) => GSS_S_NO_CONTEXT(!) */
   major = (*ftab->inquireContext)(&minor, contextHdl, &srcName,
@@ -1213,6 +1372,8 @@ Java_sun_security_jgss_wrapper_GSSLibStub_inquireContext(JNIEnv *env,
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_inquireContext]");
   if ((*env)->ExceptionCheck(env)) {
+    (void) (*ftab->releaseName)(&dummy, &srcName);
+    (void) (*ftab->releaseName)(&dummy, &targetName);
     return NULL;
   }
   result[0] = ptr_to_jlong(srcName);
@@ -1223,11 +1384,12 @@ Java_sun_security_jgss_wrapper_GSSLibStub_inquireContext(JNIEnv *env,
   result[5] = (jlong) getJavaTime(time);
 
   jresult = (*env)->NewLongArray(env, 6);
-  if (jresult == NULL) {
-    return NULL;
+  if (jresult != NULL) {
+    (*env)->SetLongArrayRegion(env, jresult, 0, 6, result);
   }
-  (*env)->SetLongArrayRegion(env, jresult, 0, 6, result);
   if ((*env)->ExceptionCheck(env)) {
+    (void) (*ftab->releaseName)(&dummy, &srcName);
+    (void) (*ftab->releaseName)(&dummy, &targetName);
     return NULL;
   }
   return jresult;
@@ -1273,7 +1435,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_getContextName(JNIEnv *env,
   jobject jobj, jlong pContext, jboolean isSrc)
 {
   OM_uint32 minor, major;
-  gss_name_t nameHdl;
+  gss_name_t nameHdl = GSS_C_NO_NAME;
   gss_ctx_id_t contextHdl;
 
   contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
@@ -1281,7 +1443,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_getContextName(JNIEnv *env,
   TRACE2("[GSSLibStub_getContextName] %" PRIuPTR ", isSrc=%d",
           (uintptr_t)contextHdl, isSrc);
 
-  nameHdl = GSS_C_NO_NAME;
   if (isSrc == JNI_TRUE) {
     major = (*ftab->inquireContext)(&minor, contextHdl, &nameHdl, NULL,
                                 NULL, NULL, NULL,  NULL, NULL);
@@ -1379,6 +1540,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_wrapSizeLimit(JNIEnv *env,
   gss_ctx_id_t contextHdl;
   OM_uint32 outSize, maxInSize;
   gss_qop_t qop;
+  jint result;
 
   contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
 
@@ -1402,7 +1564,14 @@ Java_sun_security_jgss_wrapper_GSSLibStub_wrapSizeLimit(JNIEnv *env,
   if ((*env)->ExceptionCheck(env)) {
     return 0;
   }
-  return (jint) maxInSize;
+
+  /* Right-shift maxInSize until it fits into jint */
+  result = (jint)maxInSize;
+  while (result < 0 || maxInSize != (OM_uint32)result) {
+    result = (jint)(maxInSize >>= 1);
+  }
+
+  return result;
 }
 
 /*
@@ -1415,10 +1584,9 @@ Java_sun_security_jgss_wrapper_GSSLibStub_exportContext(JNIEnv *env,
                                                         jobject jobj,
                                                         jlong pContext)
 {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   gss_ctx_id_t contextHdl;
-  gss_buffer_desc interProcToken;
-  jbyteArray jresult;
+  gss_buffer_desc interProcToken = GSS_C_EMPTY_BUFFER;
 
   contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
 
@@ -1434,17 +1602,14 @@ Java_sun_security_jgss_wrapper_GSSLibStub_exportContext(JNIEnv *env,
   major =
     (*ftab->exportSecContext)(&minor, &contextHdl, &interProcToken);
 
-  /* release intermediate buffers */
-  jresult = getJavaBuffer(env, &interProcToken);
-  if ((*env)->ExceptionCheck(env)) {
-    return NULL;
-  }
   checkStatus(env, jobj, major, minor, "[GSSLibStub_exportContext]");
   if ((*env)->ExceptionCheck(env)) {
+    (void) (*ftab->releaseBuffer)(&dummy, &interProcToken);
     return NULL;
   }
 
-  return jresult;
+  /* Map interProcToken to byteArray result and release */
+  return getJavaBuffer(env, &interProcToken, JNI_TRUE);
 }
 
 /*
@@ -1457,12 +1622,11 @@ Java_sun_security_jgss_wrapper_GSSLibStub_getMic(JNIEnv *env, jobject jobj,
                                                  jlong pContext, jint jqop,
                                                  jbyteArray jmsg)
 {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   gss_ctx_id_t contextHdl;
   gss_qop_t qop;
   gss_buffer_desc msg;
-  gss_buffer_desc msgToken;
-  jbyteArray jresult;
+  gss_buffer_desc msgToken = GSS_C_EMPTY_BUFFER;
 
   contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
 
@@ -1474,28 +1638,25 @@ Java_sun_security_jgss_wrapper_GSSLibStub_getMic(JNIEnv *env, jobject jobj,
     return NULL;
   }
   qop = (gss_qop_t) jqop;
-  initGSSBuffer(env, jmsg, &msg);
+  initGSSBuffer(env, jmsg, &msg, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
 
   /* gss_get_mic(...) => GSS_S_CONTEXT_EXPIRED, GSS_S_NO_CONTEXT(!),
      GSS_S_BAD_QOP */
-  major =
-    (*ftab->getMic)(&minor, contextHdl, qop, &msg, &msgToken);
+  major = (*ftab->getMic)(&minor, contextHdl, qop, &msg, &msgToken);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&msg);
-  jresult = getJavaBuffer(env, &msgToken);
-  if ((*env)->ExceptionCheck(env)) {
-    return NULL;
-  }
+  resetGSSBuffer(env, jmsg, &msg);
   checkStatus(env, jobj, major, minor, "[GSSLibStub_getMic]");
   if ((*env)->ExceptionCheck(env)) {
+    (void) (*ftab->releaseBuffer)(&dummy, &msgToken);
     return NULL;
   }
 
-  return jresult;
+  /* Map msgToken to byteArray result and release */
+  return getJavaBuffer(env, &msgToken, JNI_TRUE);
 }
 
 /*
@@ -1531,12 +1692,12 @@ Java_sun_security_jgss_wrapper_GSSLibStub_verifyMic(JNIEnv *env,
   qop = (gss_qop_t) (*env)->CallIntMethod(env, jprop, MID_MessageProp_getQOP);
   if ((*env)->ExceptionCheck(env)) { return; }
 
-  initGSSBuffer(env, jmsg, &msg);
+  initGSSBuffer(env, jmsg, &msg, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) { return; }
 
-  initGSSBuffer(env, jmsgToken, &msgToken);
+  initGSSBuffer(env, jmsgToken, &msgToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
-    resetGSSBuffer(&msg);
+    resetGSSBuffer(env, jmsg, &msg);
     return;
   }
 
@@ -1547,9 +1708,14 @@ Java_sun_security_jgss_wrapper_GSSLibStub_verifyMic(JNIEnv *env,
     (*ftab->verifyMic)(&minor, contextHdl, &msg, &msgToken, &qop);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&msg);
-  resetGSSBuffer(&msgToken);
+  resetGSSBuffer(env, jmsg, &msg);
+  resetGSSBuffer(env, jmsgToken, &msgToken);
 
+  /*
+   * We don't throw on supplementary status codes here, instead we pass only
+   * GSS_ERROR(major) to checkStatus() and set the supplementary status in the
+   * message properties.
+   */
   checkStatus(env, jobj, GSS_ERROR(major), minor, "[GSSLibStub_verifyMic]");
   if ((*env)->ExceptionCheck(env)) {
     return;
@@ -1562,9 +1728,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_verifyMic(JNIEnv *env,
 
   setSupplementaryInfo(env, jobj, jprop, GSS_SUPPLEMENTARY_INFO(major),
                        minor);
-  if ((*env)->ExceptionCheck(env)) {
-    return;
-  }
 }
 
 /*
@@ -1579,11 +1742,11 @@ Java_sun_security_jgss_wrapper_GSSLibStub_wrap(JNIEnv *env,
                                                jbyteArray jmsg,
                                                jobject jprop)
 {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   jboolean confFlag;
   gss_qop_t qop;
   gss_buffer_desc msg;
-  gss_buffer_desc msgToken;
+  gss_buffer_desc msgToken = GSS_C_EMPTY_BUFFER;
   int confState;
   gss_ctx_id_t contextHdl;
   jbyteArray jresult;
@@ -1610,7 +1773,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_wrap(JNIEnv *env,
     return NULL;
   }
 
-  initGSSBuffer(env, jmsg, &msg);
+  initGSSBuffer(env, jmsg, &msg, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
@@ -1621,13 +1784,16 @@ Java_sun_security_jgss_wrapper_GSSLibStub_wrap(JNIEnv *env,
                    &msgToken);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&msg);
-  jresult = getJavaBuffer(env, &msgToken);
+  resetGSSBuffer(env, jmsg, &msg);
+  checkStatus(env, jobj, major, minor, "[GSSLibStub_wrap]");
+
   if ((*env)->ExceptionCheck(env)) {
+    (void) (*ftab->releaseBuffer)(&dummy, &msgToken);
     return NULL;
   }
 
-  checkStatus(env, jobj, major, minor, "[GSSLibStub_wrap]");
+  /* Map msgToken to byteArray result and release */
+  jresult = getJavaBuffer(env, &msgToken, JNI_TRUE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
@@ -1635,7 +1801,8 @@ Java_sun_security_jgss_wrapper_GSSLibStub_wrap(JNIEnv *env,
   (*env)->CallVoidMethod(env, jprop, MID_MessageProp_setPrivacy,
                          (confState? JNI_TRUE:JNI_FALSE));
   if ((*env)->ExceptionCheck(env)) {
-    return NULL;
+    (*env)->DeleteLocalRef(env, jresult);
+    jresult = NULL;
   }
   return jresult;
 }
@@ -1652,10 +1819,10 @@ Java_sun_security_jgss_wrapper_GSSLibStub_unwrap(JNIEnv *env,
                                                  jbyteArray jmsgToken,
                                                  jobject jprop)
 {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   gss_ctx_id_t contextHdl;
   gss_buffer_desc msgToken;
-  gss_buffer_desc msg;
+  gss_buffer_desc msg = GSS_C_EMPTY_BUFFER;
   int confState;
   gss_qop_t qop;
   jbyteArray jresult;
@@ -1670,7 +1837,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_unwrap(JNIEnv *env,
     return NULL;
   }
 
-  initGSSBuffer(env, jmsgToken, &msgToken);
+  initGSSBuffer(env, jmsgToken, &msgToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
@@ -1684,13 +1851,24 @@ Java_sun_security_jgss_wrapper_GSSLibStub_unwrap(JNIEnv *env,
     (*ftab->unwrap)(&minor, contextHdl, &msgToken, &msg, &confState, &qop);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&msgToken);
-  jresult = getJavaBuffer(env, &msg);
+  resetGSSBuffer(env, jmsgToken, &msgToken);
+
+  /*
+   * We don't throw on supplementary status codes here, instead we pass only
+   * GSS_ERROR(major) to checkStatus() and set the supplementary status in the
+   * message properties.
+   */
+  checkStatus(env, jobj, GSS_ERROR(major), minor, "[GSSLibStub_unwrap]");
   if ((*env)->ExceptionCheck(env)) {
+    (void) (*ftab->releaseBuffer)(&dummy, &msg);
     return NULL;
   }
 
-  checkStatus(env, jobj, GSS_ERROR(major), minor, "[GSSLibStub_unwrap]");
+  /*
+   * Map msg to byteArray result and release, zero length msg maps to empty
+   * byte array, not null.
+   */
+  jresult = getJavaBuffer(env, &msg, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
@@ -1699,15 +1877,18 @@ Java_sun_security_jgss_wrapper_GSSLibStub_unwrap(JNIEnv *env,
   (*env)->CallVoidMethod(env, jprop, MID_MessageProp_setPrivacy,
                          (confState != 0));
   if ((*env)->ExceptionCheck(env)) {
+    (*env)->DeleteLocalRef(env, jresult);
     return NULL;
   }
   (*env)->CallVoidMethod(env, jprop, MID_MessageProp_setQOP, qop);
   if ((*env)->ExceptionCheck(env)) {
+    (*env)->DeleteLocalRef(env, jresult);
     return NULL;
   }
   setSupplementaryInfo(env, jobj, jprop, GSS_SUPPLEMENTARY_INFO(major),
                          minor);
   if ((*env)->ExceptionCheck(env)) {
+    (*env)->DeleteLocalRef(env, jresult);
     return NULL;
   }
 
