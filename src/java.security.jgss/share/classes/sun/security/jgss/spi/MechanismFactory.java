@@ -27,6 +27,7 @@ package sun.security.jgss.spi;
 
 import org.ietf.jgss.*;
 import java.security.Provider;
+import java.util.Map;
 
 /**
  * This interface is implemented by the factory class for every
@@ -117,6 +118,135 @@ public interface MechanismFactory {
      */
     GSSCredentialSpi getCredentialElement(GSSNameSpi name,
         int initLifetime, int acceptLifetime, int usage) throws GSSException;
+
+    /**
+     * Creates a credential element using a password for this mechanism to be
+     * included as part of a GSSCredential implementation. A GSSCredential is
+     * conceptually a container class of several credential elements from
+     * different mechanisms. A GSS-API credential can be used either for
+     * initiating GSS security contexts or for accepting them. This method
+     * also accepts parameters that indicate what usage is expected and how
+     * long the life of the credential should be. It is not necessary that
+     * the mechanism honor the request for lifetime. An application will
+     * always query an acquired GSSCredential to determine what lifetime it
+     * got back.<p>
+     *
+     * <b>Not all mechanisms support the concept of one credential element
+     * that can be used for both initiating and accepting a context. In the
+     * event that an application requests usage INITIATE_AND_ACCEPT for a
+     * credential from such a mechanism, the GSS framework will need to
+     * obtain two different credential elements from the mechanism, one
+     * that will have usage INITIATE_ONLY and another that will have usage
+     * ACCEPT_ONLY. The mechanism will help the GSS-API realize this by
+     * returning a credential element with usage INITIATE_ONLY or
+     * ACCEPT_ONLY prompting it to make another call to
+     * getCredentialElement, this time with the other usage mode. The
+     * mechanism indicates the missing mode by returning a 0 lifetime for
+     * it.</b>
+     *
+     * @param name the mechanism level name element for the entity whose
+     * credential is desired. A null value indicates that a mechanism
+     * dependent default choice is to be made.
+     * @param password is the password for the entity whose credential
+     * is desired.
+     * @param initLifetime indicates the lifetime (in seconds) that is
+     * requested for this credential to be used at the context initiator's
+     * end. This value should be ignored if the usage is
+     * ACCEPT_ONLY. Predefined contants are available in the
+     * org.ietf.jgss.GSSCredential interface.
+     * @param acceptLifetime indicates the lifetime (in seconds) that is
+     * requested for this credential to be used at the context acceptor's
+     * end. This value should be ignored if the usage is
+     * INITIATE_ONLY. Predefined contants are available in the
+     * org.ietf.jgss.GSSCredential interface.
+     * @param usage One of the values GSSCredential.INIATE_ONLY,
+     * GSSCredential.ACCEPT_ONLY, and GSSCredential.INITIATE_AND_ACCEPT.
+     * @see org.ietf.jgss.GSSCredential
+     * @throws GSSException if one of the error situations described in RFC
+     * 2743 with the GSS_Acquire_Cred or GSS_Add_Cred calls occurs.
+     */
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+      String password, int initLifetime, int acceptLifetime, int usage)
+        throws GSSException;
+
+    /**
+     * Creates a credential element using a "credential store" for this
+     * mechanism to be included as part of a GSSCredential
+     * implementation. A GSSCredential is conceptually a container class
+     * of several credential elements from different mechanisms. A
+     * GSS-API credential can be used either for initiating GSS security
+     * contexts or for accepting them. This method also accepts
+     * parameters that indicate what usage is expected and how long the
+     * life of the credential should be. It is not necessary that the
+     * mechanism honor the request for lifetime. An application will
+     * always query an acquired GSSCredential to determine what lifetime
+     * it got back.<p>
+     *
+     * <b>Not all mechanisms support the concept of one credential element
+     * that can be used for both initiating and accepting a context. In the
+     * event that an application requests usage INITIATE_AND_ACCEPT for a
+     * credential from such a mechanism, the GSS framework will need to
+     * obtain two different credential elements from the mechanism, one
+     * that will have usage INITIATE_ONLY and another that will have usage
+     * ACCEPT_ONLY. The mechanism will help the GSS-API realize this by
+     * returning a credential element with usage INITIATE_ONLY or
+     * ACCEPT_ONLY prompting it to make another call to
+     * getCredentialElement, this time with the other usage mode. The
+     * mechanism indicates the missing mode by returning a 0 lifetime for
+     * it.</b>
+     *
+     * @param name the mechanism level name element for the entity whose
+     * credential is desired. A null value indicates that a mechanism
+     * dependent default choice is to be made.
+     * @param store is an array of even length whose elements at even
+     * indices are keys, and whose elements at any odd index are the
+     * values for the preceding keys. Keys supported by mechanisms
+     * vary. This is mostly intended for use with the platform's native
+     * GSS-API providers. Common keys include "keytab", "client_keytab",
+     * "ccache", and "rcache". Consult the documentation for the
+     * platform's native GSS-API providers.
+     * @param initLifetime indicates the lifetime (in seconds) that is
+     * requested for this credential to be used at the context initiator's
+     * end. This value should be ignored if the usage is
+     * ACCEPT_ONLY. Predefined contants are available in the
+     * org.ietf.jgss.GSSCredential interface.
+     * @param acceptLifetime indicates the lifetime (in seconds) that is
+     * requested for this credential to be used at the context acceptor's
+     * end. This value should be ignored if the usage is
+     * INITIATE_ONLY. Predefined contants are available in the
+     * org.ietf.jgss.GSSCredential interface.
+     * @param usage One of the values GSSCredential.INIATE_ONLY,
+     * GSSCredential.ACCEPT_ONLY, and GSSCredential.INITIATE_AND_ACCEPT.
+     * @see org.ietf.jgss.GSSCredential
+     * @throws GSSException if one of the error situations described in RFC
+     * 2743 with the GSS_Acquire_Cred or GSS_Add_Cred calls occurs.
+     */
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+                                                 Map<String,String> store,
+                                                 int initLifetime,
+                                                 int acceptLifetime,
+                                                 int usage)
+        throws GSSException;
+
+    /**
+     * Stores a credential element into a specified location.
+     *
+     * @param cred The credential element to store.
+     * @param usage The credential usage to store.
+     * @param overwrite Whether to overwrite credentials found at the specified
+     * location.
+     * @param @defaultCred Whether to store the credentials as the default
+     * credentials in the specified location.
+     * @param store The location into which to store the credentials.
+     */
+    default void storeCredInto(GSSCredentialSpi cred, int usage,
+                              boolean overwrite, boolean defaultCred,
+                              Map<String,String> store) throws GSSException {
+        throw new GSSException(GSSException.UNAVAILABLE, -1,
+                "The " + getMechanismOid() + "mechanism does not " +
+                "currently support storing GSS credentials handle " +
+                "elements into a \"credential store\"");
+    }
 
     /**
      * Creates a name element for this mechanism to be included as part of
