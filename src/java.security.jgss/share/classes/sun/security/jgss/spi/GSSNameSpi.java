@@ -100,6 +100,23 @@ public interface GSSNameSpi {
      */
     public String toString();
 
+    /**
+     * Returns a local username (platform-specific) corresponding to the
+     * principal name, and may return null when no username is known for the
+     * principal name.
+     *
+     * @return username corresponding to this name, if any
+     */
+    public String getLocalName() throws GSSException;
+
+    /**
+     * Returns a local username (platform-specific) corresponding to the
+     * principal name, and may return null when no username is known for the
+     * principal name.
+     *
+     * @return username corresponding to this name, if any
+     */
+    public String getLocalName(Oid mech) throws GSSException;
 
     /**
      * Returns the oid describing the format of the printable name.
@@ -112,4 +129,10 @@ public interface GSSNameSpi {
      * Indicates if this name object represents an Anonymous name.
      */
     public boolean isAnonymousName();
+
+    /**
+     * Indicates whether this name object refers to whatever name(s) the
+     * default credentials respond to.
+     */
+    public boolean isDefaultCredentialName();
 }

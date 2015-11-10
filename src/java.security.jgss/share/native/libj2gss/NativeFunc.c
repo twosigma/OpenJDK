@@ -37,7 +37,11 @@ static const char COMPARE_NAME[]                = "gss_compare_name";
 static const char CANONICALIZE_NAME[]           = "gss_canonicalize_name";
 static const char EXPORT_NAME[]                 = "gss_export_name";
 static const char DISPLAY_NAME[]                = "gss_display_name";
+static const char LOCAL_NAME[]                  = "gss_localname";
 static const char ACQUIRE_CRED[]                = "gss_acquire_cred";
+static const char ACQUIRE_CRED_WITH_PASSWORD[]  = "gss_acquire_cred_with_password";
+static const char ACQUIRE_CRED_FROM[]           = "gss_acquire_cred_from";
+static const char STORE_CRED_INTO[]             = "gss_store_cred_into";
 static const char RELEASE_CRED[]                = "gss_release_cred";
 static const char INQUIRE_CRED[]                = "gss_inquire_cred";
 static const char IMPORT_SEC_CONTEXT[]          = "gss_import_sec_context";
@@ -125,11 +129,28 @@ int loadNative(const char *libName) {
         goto out;
     }
 
+    /*
+     * This one may not be available for a given GSS library, as it's an
+     * extension, therefore we don't fail if it's missing.
+     */
+    ftab->localName = (LOCAL_NAME_FN_PTR)GETFUNC(gssLib, LOCAL_NAME);
+
     ftab->acquireCred = (ACQUIRE_CRED_FN_PTR)GETFUNC(gssLib, ACQUIRE_CRED);
     if (ftab->acquireCred == NULL) {
         failed = TRUE;
         goto out;
     }
+
+    /*
+     * These may not be available for a given GSS library, as they are
+     * extensions, therefore we don't fail if it's missing.
+     */
+    ftab->acquireCredWithPassword = (ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)
+                        GETFUNC(gssLib, ACQUIRE_CRED_WITH_PASSWORD);
+    ftab->acquireCredFrom = (ACQUIRE_CRED_FROM_FN_PTR)
+                        GETFUNC(gssLib, ACQUIRE_CRED_FROM);
+    ftab->storeCredInto = (STORE_CRED_INTO_FN_PTR)
+                        GETFUNC(gssLib, STORE_CRED_INTO);
 
     ftab->releaseCred = (RELEASE_CRED_FN_PTR)GETFUNC(gssLib, RELEASE_CRED);
     if (ftab->releaseCred == NULL) {
