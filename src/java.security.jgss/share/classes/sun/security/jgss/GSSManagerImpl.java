@@ -25,6 +25,7 @@
 
 package sun.security.jgss;
 
+import java.util.Map;
 import org.ietf.jgss.*;
 import sun.security.action.GetBooleanAction;
 import sun.security.jgss.spi.*;
@@ -137,9 +138,39 @@ public class GSSManagerImpl extends GSSManager {
     }
 
     public GSSCredential createCredential(GSSName aName,
+                                          Map<String,String> store,
+                                          int lifetime, Oid mech, int usage)
+        throws GSSException {
+        return new GSSCredentialImpl(this, aName, store, lifetime, mech,
+            usage);
+    }
+
+    public GSSCredential createCredential(GSSName aName, String password,
+                                          int lifetime, Oid mech, int usage)
+        throws GSSException {
+        return new GSSCredentialImpl(this, aName, password,
+                lifetime, mech, usage);
+    }
+
+    public GSSCredential createCredential(GSSName aName,
                                           int lifetime, Oid[] mechs, int usage)
         throws GSSException {
         return wrap(new GSSCredentialImpl(this, aName, lifetime, mechs, usage));
+    }
+
+    public GSSCredential createCredential(GSSName aName, String password,
+                                          int lifetime, Oid mechs[], int usage)
+        throws GSSException {
+        return new GSSCredentialImpl(this, aName, password,
+                lifetime, mechs, usage);
+    }
+
+    public GSSCredential createCredential(GSSName aName,
+                                          Map<String,String> store,
+                                          int lifetime, Oid mechs[], int usage)
+        throws GSSException {
+        return new GSSCredentialImpl(this, aName, store,
+                lifetime, mechs, usage);
     }
 
     public GSSContext createContext(GSSName peer, Oid mech,
@@ -173,6 +204,28 @@ public class GSSManagerImpl extends GSSManager {
         throws GSSException {
         MechanismFactory factory = list.getMechFactory(mech);
         return factory.getCredentialElement(name, initLifetime,
+                                            acceptLifetime, usage);
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+                                                 String password,
+                                                 int initLifetime,
+                                                 int acceptLifetime,
+                                                 Oid mech, int usage)
+        throws GSSException {
+        MechanismFactory factory = list.getMechFactory(mech);
+        return factory.getCredentialElement(name, password, initLifetime,
+                                            acceptLifetime, usage);
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+                                                 Map<String,String> store,
+                                                 int initLifetime,
+                                                 int acceptLifetime,
+                                                 Oid mech, int usage)
+        throws GSSException {
+        MechanismFactory factory = list.getMechFactory(mech);
+        return factory.getCredentialElement(name, store, initLifetime,
                                             acceptLifetime, usage);
     }
 

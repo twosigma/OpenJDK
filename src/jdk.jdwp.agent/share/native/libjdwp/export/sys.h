@@ -41,6 +41,7 @@ void    dbgsysBuildLibName(char *, int, const char *, const char *);
 void *  dbgsysLoadLibrary(const char *, char *err_buf, int err_buflen);
 void    dbgsysUnloadLibrary(void *);
 void *  dbgsysFindLibraryEntry(void *, const char *);
+int     dbgsysGetLastErrorString(char *, int);
 
 /* Implemented in exec_md.c */
 int     dbgsysExec(char *cmdLine);

@@ -27,6 +27,7 @@ package sun.security.jgss.spi;
 
 import org.ietf.jgss.*;
 import java.security.Provider;
+import java.util.Map;
 
 /**
  * This interface is implemented by a mechanism specific credential
@@ -88,6 +89,13 @@ public interface GSSCredentialSpi {
      */
     boolean isAcceptorCredential() throws GSSException;
 
+     /**
+      * Returns true if the credential is a default credential.
+      *
+      * @return true if the credential is a default credential, else false.
+      */
+     public boolean isDefaultCredential();
+
     /**
      * Returns the oid representing the underlying credential
      * mechanism oid.
@@ -96,6 +104,26 @@ public interface GSSCredentialSpi {
      * @exception GSSException may be thrown
      */
     Oid getMechanism();
+
+    /**
+     * Stores a credential in the location specified by the store
+     * argument.
+     *
+     * @param usage The credential usage to store.
+     * @param overwrite Whether to overwrite any credential found at the
+     * given store location.
+     * @param defaultCred Whether to make the credential the default
+     * credential in the store at the given location.
+     * @param store A map of string keys and values specifying a store
+     * location.
+     */
+    default void storeInto(int usage, boolean overwrite, boolean defaultCred,
+                           Map<String,String> store) throws GSSException {
+        throw new GSSException(GSSException.UNAVAILABLE, -1,
+                "The " + getMechanism() + "mechanism does not " +
+                "currently support storing GSS credentials handle " +
+                "elements into a \"credential store\"");
+    }
 
     /**
      * Impersonates another client.

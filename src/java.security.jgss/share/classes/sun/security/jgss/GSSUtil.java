@@ -72,7 +72,9 @@ public class GSSUtil {
 
     static void debug(String message) {
         assert(message != null);
-        System.out.println(message);
+        if (DEBUG) {
+            System.err.println(message);
+        }
     }
 
     // NOTE: this method is only for creating Oid objects with
