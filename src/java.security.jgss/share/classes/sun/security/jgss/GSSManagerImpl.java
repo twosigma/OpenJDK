@@ -37,7 +37,6 @@ import java.security.PrivilegedAction;
  */
 public class GSSManagerImpl extends GSSManager {
 
-    // Undocumented property
     private static final String USE_NATIVE_PROP =
         "sun.security.jgss.native";
     private static final Boolean USE_NATIVE;
@@ -46,14 +45,8 @@ public class GSSManagerImpl extends GSSManager {
         USE_NATIVE =
             AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
                     public Boolean run() {
-                            String osname = System.getProperty("os.name");
-                            if (osname.startsWith("SunOS") ||
-                                osname.contains("OS X") ||
-                                osname.startsWith("Linux")) {
-                                return Boolean.valueOf(System.getProperty
-                                        (USE_NATIVE_PROP));
-                            }
-                            return Boolean.FALSE;
+                            return Boolean.valueOf(System.getProperty
+                                    (USE_NATIVE_PROP));
                     }
             });
 
