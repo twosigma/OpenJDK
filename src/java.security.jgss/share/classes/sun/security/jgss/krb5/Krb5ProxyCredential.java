@@ -92,6 +92,11 @@ public class Krb5ProxyCredential
     }
 
     @Override
+    public final boolean isDefaultCredential() {
+        return false;
+    }
+
+    @Override
     public final Oid getMechanism() {
         return Krb5MechFactory.GSS_KRB5_MECH_OID;
     }

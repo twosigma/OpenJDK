@@ -25,6 +25,8 @@
 
 package sun.security.jgss.wrapper;
 
+import java.util.Map;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import org.ietf.jgss.Oid;
 import org.ietf.jgss.GSSName;
@@ -65,11 +67,15 @@ class GSSLibStub {
     native boolean compareName(long pName1, long pName2);
     native long canonicalizeName(long pName);
     native byte[] exportName(long pName) throws GSSException;
+    native String localName(long pName, Oid mech) throws GSSException;
     native Object[] displayName(long pName) throws GSSException;
 
     // Credential related routines
-    native long acquireCred(long pName, int lifetime, int usage)
-                                        throws GSSException;
+    native long acquireCred(long pName, String password, String[] store,
+                            int lifetime, int usage) throws GSSException;
+    native long storeCred(long pCred, int usage, Oid mech,
+                          boolean overwrite, boolean defaultCred,
+                          String[] store) throws GSSException;
     native long releaseCred(long pCred);
     native long getCredName(long pCred);
     native int getCredTime(long pCred);
@@ -109,6 +115,27 @@ class GSSLibStub {
         SunNativeProvider.debug("Created GSSLibStub for mech " + mech);
         this.mech = mech;
         this.pMech = getMechPtr(mech.getDER());
+    }
+    private static String[] map2array(Map<String,String> m) {
+        if (m == null)
+            return null;
+        ArrayList<String> l = new ArrayList<String>();
+        for (var e : m.entrySet()) {
+            l.add(e.getKey());
+            l.add(e.getValue());
+        }
+        return l.toArray(new String[0]);
+    }
+    public long acquireCred(long pName, String password,
+                            Map<String,String> store,
+                            int lifetime, int usage) throws GSSException {
+        return acquireCred(pName, password, map2array(store), lifetime, usage);
+    }
+    public long storeCred(long pCred, int usage, Oid mech,
+                          boolean overwrite, boolean defaultCred,
+                          Map<String,String> store) throws GSSException {
+        return storeCred(pCred, usage, mech, overwrite, defaultCred,
+            map2array(store));
     }
     public boolean equals(Object obj) {
         if (obj == this) return true;
