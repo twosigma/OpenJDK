@@ -26,6 +26,7 @@
 package sun.security.jgss.wrapper;
 
 import java.security.Provider;
+import java.util.Map;
 import java.util.Vector;
 import org.ietf.jgss.*;
 import sun.security.jgss.GSSUtil;
@@ -92,6 +93,7 @@ public final class NativeGSSFactory implements MechanismFactory {
     }
 
     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+                                                 String password,
                                                  int initLifetime,
                                                  int acceptLifetime,
                                                  int usage)
@@ -114,20 +116,93 @@ public final class NativeGSSFactory implements MechanismFactory {
         if (credElement == null) {
             // No cred in the Subject
             if (usage == GSSCredential.INITIATE_ONLY) {
-                credElement = new GSSCredElement(nname, initLifetime,
-                                                 usage, cStub);
+                if (password == null) {
+                    credElement = new GSSCredElement(nname, initLifetime,
+                                                     usage, cStub);
+                } else {
+                    credElement = new GSSCredElement(nname, password,
+                                                     initLifetime,
+                                                     usage, cStub);
+                }
             } else if (usage == GSSCredential.ACCEPT_ONLY) {
                 if (nname == null) {
                     nname = GSSNameElement.DEF_ACCEPTOR;
                 }
-                credElement = new GSSCredElement(nname, acceptLifetime,
-                                                 usage, cStub);
+                if (password == null) {
+                    credElement = new GSSCredElement(nname, acceptLifetime,
+                                                     usage, cStub);
+                } else {
+                    credElement = new GSSCredElement(nname, password,
+                                                     acceptLifetime,
+                                                     usage, cStub);
+                }
             } else {
                 throw new GSSException(GSSException.FAILURE, -1,
                                        "Unknown usage mode requested");
             }
         }
         return credElement;
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+                                                 Map<String,String> store,
+                                                 int initLifetime,
+                                                 int acceptLifetime,
+                                                 int usage)
+        throws GSSException {
+        GSSNameElement nname = null;
+        if (name != null && !(name instanceof GSSNameElement)) {
+            nname = (GSSNameElement)
+                getNameElement(name.toString(), name.getStringNameType());
+        } else nname = (GSSNameElement) name;
+
+        if (usage == GSSCredential.INITIATE_AND_ACCEPT) {
+            // Force separate acqusition of cred element since
+            // MIT's impl does not correctly report NO_CRED error.
+            usage = GSSCredential.INITIATE_ONLY;
+        }
+
+        GSSCredElement credElement =
+            getCredFromSubject(nname, (usage == GSSCredential.INITIATE_ONLY));
+
+        if (credElement == null) {
+            // No cred in the Subject
+            if (usage == GSSCredential.INITIATE_ONLY) {
+                if (store == null) {
+                    credElement = new GSSCredElement(nname, initLifetime,
+                                                     usage, cStub);
+                } else {
+                    credElement = new GSSCredElement(nname, store,
+                                                     initLifetime,
+                                                     usage, cStub);
+                }
+            } else if (usage == GSSCredential.ACCEPT_ONLY) {
+                if (nname == null) {
+                    nname = GSSNameElement.DEF_ACCEPTOR;
+                }
+                if (store == null) {
+                    credElement = new GSSCredElement(nname, acceptLifetime,
+                                                     usage, cStub);
+                } else {
+                    credElement = new GSSCredElement(nname, store,
+                                                     acceptLifetime,
+                                                     usage, cStub);
+                }
+            } else {
+                throw new GSSException(GSSException.FAILURE, -1,
+                                       "Unknown usage mode requested");
+            }
+        }
+        return credElement;
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+                                                 int initLifetime,
+                                                 int acceptLifetime,
+                                                 int usage)
+        throws GSSException {
+        return getCredentialElement(name, (String)null, initLifetime,
+                                    acceptLifetime, usage);
     }
 
     public GSSContextSpi getMechanismContext(GSSNameSpi peer,

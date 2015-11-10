@@ -91,4 +91,8 @@ public class SpNegoCredElement implements GSSCredentialSpi {
     public GSSCredentialSpi impersonate(GSSNameSpi name) throws GSSException {
         return cred.impersonate(name);
     }
+
+    public boolean isDefaultCredential() {
+        return cred.isDefaultCredential();
+    }
 }
