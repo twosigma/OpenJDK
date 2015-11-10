@@ -524,6 +524,9 @@ public final class KrbAsReqBuilder {
         }
     }
 
+    // XXX It'd be nice to implement AutoCloseable with a close() that calls
+    // destroy()
+
     /**
      * Checks if the current state is the specified one.
      * @param st the expected state
