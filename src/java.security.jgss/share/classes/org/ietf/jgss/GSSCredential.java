@@ -25,6 +25,8 @@
 
 package org.ietf.jgss;
 
+import java.util.Map;
+
 /**
  * This interface encapsulates the GSS-API credentials for an entity.  A
  * credential contains all the necessary cryptographic information to
@@ -348,6 +350,26 @@ public interface GSSCredential extends Cloneable{
      */
     void add(GSSName name, int initLifetime, int acceptLifetime,
              Oid mech, int usage) throws GSSException;
+
+    /**
+     * Stores a credential element into an external credential store.
+     *
+     * @param usage The credential usage to store.
+     * @param mech The mechanism element of the credential to store.
+     * @param overwrite Whether to overwrite any existing credentials in
+     * the external store.
+     * @param defaultCred Whether to make the credential to be stored
+     * also be the default credential in the external store.
+     * @param store A description of the external store.  Common keys
+     * supported by platform-native GSS-API providers include:
+     * {@code ccache} and {@code keytab}, with the values being
+     * typically file paths.  Consult the documentation for your
+     * platform's native GSS-API providers.  The Java-native Krb5
+     * provider does not support this method at this time.
+     */
+    public void storeInto(int usage, Oid mech,
+                          boolean overwrite, boolean defaultCred,
+                          Map<String,String> store) throws GSSException;
 
     /**
      * Tests if this GSSCredential asserts the same entity as the supplied

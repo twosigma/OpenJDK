@@ -43,6 +43,7 @@ public class LoginConfigImpl extends Configuration {
     private final Configuration config;
     private final GSSCaller caller;
     private final String mechName;
+    private final boolean useNative;
     private static final sun.security.util.Debug debug =
         sun.security.util.Debug.getInstance("gssloginconfig", "\t[GSS LoginConfigImpl]");
 
@@ -67,8 +68,17 @@ public class LoginConfigImpl extends Configuration {
 
         this.caller = caller;
 
-        if (mech.equals(GSSUtil.GSS_KRB5_MECH_OID)) {
+        useNative = "true".equalsIgnoreCase(
+                System.getProperty("sun.security.jgss.native"));
+
+        if (mech.equals(GSSUtil.GSS_KRB5_MECH_OID) ||
+                mech.equals(GSSUtil.GSS_KRB5_MECH_OID2) ||
+                mech.equals(GSSUtil.GSS_KRB5_MECH_OID_MS)) {
             mechName = "krb5";
+        } else if (useNative) {
+            // We don't really need a mechName, nor do we have any sort of
+            // standard notion of mechanism name (other than OIDs).
+            mechName = mech.toString();
         } else {
             throw new IllegalArgumentException(mech.toString() + " not supported");
         }
@@ -96,7 +106,7 @@ public class LoginConfigImpl extends Configuration {
         // For the 4 old callers, old entry names will be used if the new
         // entry name is not provided.
 
-        if ("krb5".equals(mechName)) {
+        if ("krb5".equals(mechName) || useNative) {
             if (caller == GSSCaller.CALLER_INITIATE) {
                 alts = new String[] {
                     "com.sun.security.jgss.krb5.initiate",
@@ -116,7 +126,7 @@ public class LoginConfigImpl extends Configuration {
             }
         } else {
             throw new IllegalArgumentException(mechName + " not supported");
-            // No other mech at the moment, maybe --
+            // No other Java-coded mech at the moment, maybe --
             /*
             switch (caller) {
             case GSSUtil.CALLER_INITIATE:
@@ -163,30 +173,42 @@ public class LoginConfigImpl extends Configuration {
      * the system-wide Configuration object.
      */
     private AppConfigurationEntry[] getDefaultConfigurationEntry() {
-        HashMap <String, String> options = new HashMap<>(2);
+        HashMap <String, String> gssOptions = new HashMap<>(2);
+        HashMap <String, String> krb5Options = new HashMap<>(2);
 
-        if (mechName == null || mechName.equals("krb5")) {
+        if (mechName == null || mechName.equals("krb5") || useNative) {
             if (isServerSide(caller)) {
+                gssOptions.put("useDefaultCreds", "true");
+                gssOptions.put("doNotPrompt", "true");
+                gssOptions.put("accept", "true");
                 // Assuming the keytab file can be found through
                 // krb5 config file or under user home directory
-                options.put("useKeyTab", "true");
-                options.put("storeKey", "true");
-                options.put("doNotPrompt", "true");
-                options.put("principal", "*");
-                options.put("isInitiator", "false");
+                krb5Options.put("useKeyTab", "true");
+                krb5Options.put("storeKey", "true");
+                krb5Options.put("doNotPrompt", "true");
+                krb5Options.put("principal", "*");
+                krb5Options.put("isInitiator", "false");
             } else {
                 if (caller instanceof HttpCaller && !HTTP_USE_GLOBAL_CREDS) {
-                    options.put("useTicketCache", "false");
+                    gssOptions.put("tryDefaultCreds", "false");
+                    krb5Options.put("useTicketCache", "false");
                 } else {
-                    options.put("useTicketCache", "true");
+                    gssOptions.put("tryDefaultCreds", "true");
+                    krb5Options.put("useTicketCache", "true");
                 }
-                options.put("doNotPrompt", "false");
+                gssOptions.put("initiate", "true");
+                gssOptions.put("doNotPrompt", "false");
+                krb5Options.put("doNotPrompt", "false");
             }
             return new AppConfigurationEntry[] {
                 new AppConfigurationEntry(
-                        "com.sun.security.auth.module.Krb5LoginModule",
+                        "com.sun.security.auth.module.GssLoginModule",
                         AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-                        options)
+                        gssOptions),
+                new AppConfigurationEntry(
+                        "com.sun.security.auth.module.Krb5LoginModule",
+                        AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT,
+                        krb5Options)
             };
         }
         return null;
