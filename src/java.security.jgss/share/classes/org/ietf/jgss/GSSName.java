@@ -24,6 +24,7 @@
  */
 
 package org.ietf.jgss;
+import java.security.Principal;
 
 /**
  * This interface encapsulates a single GSS-API principal entity. The
@@ -102,7 +103,7 @@ package org.ietf.jgss;
  * @author Mayank Upadhyay
  * @since 1.4
  */
-public interface GSSName {
+public interface GSSName extends Principal {
 
     /**
      * Oid indicating a host-based service name form.  It is used to
@@ -262,6 +263,16 @@ public interface GSSName {
     public byte[] export() throws GSSException;
 
     /**
+     * Returns a local username form of a mechanism name, if available.
+     */
+    public String getLocalName() throws GSSException;
+
+    /**
+     * Returns a local username form of a mechanism name, if available.
+     */
+    public String getLocalName(Oid mech) throws GSSException;
+
+    /**
      * Returns a textual representation of the <code>GSSName</code> object.  To retrieve
      * the printed name format, which determines the syntax of the returned
      * string, use the {@link #getStringNameType() getStringNameType}
@@ -270,6 +281,26 @@ public interface GSSName {
      * @return a String representing this name in printable form.
      */
     public String toString();
+
+    /**
+     * Returns a textual representation of the <code>GSSName</code> object.
+     *
+     * If <code>this</code> is not an MN then the returned name should be the
+     * same as the generic name used to construct it.  Otherwise the returned
+     * name may be a mechanism-specific name string.
+     *
+     * @return a String representing this name in printable form.
+     */
+    public String getName();
+
+    /**
+     * Returns a textual representation of the <code>GSSName</code> object
+     * element corresponding to the given <code>mech</code>.  This will be a
+     * mechanism-specific representation of <code>this</code.
+     *
+     * @return a String representing this name in printable form.
+     */
+    public String getName(Oid mech) throws GSSException;
 
     /**
      * Returns the name type of the printable
