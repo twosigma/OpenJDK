@@ -27,29 +27,27 @@ include LibCommon.gmk
 
 ################################################################################
 
-ifneq ($(OPENJDK_TARGET_OS), windows)
-  LIBJ2GSS_SRC := $(TOPDIR)/src/java.security.jgss/share/native/libj2gss \
-      $(TOPDIR)/src/java.security.jgss/$(OPENJDK_TARGET_OS_TYPE)/native/libj2gss \
-      #
+LIBJ2GSS_SRC := $(TOPDIR)/src/java.security.jgss/share/native/libj2gss
+LIBJ2GSS_EXTRA := $(TOPDIR)/src/jdk.jdwp.agent/$(OPENJDK_TARGET_OS_TYPE)/native/libjdwp/linker_md.c
+$(eval $(call SetupNativeCompilation,BUILD_LIBJ2GSS, \
+    LIBRARY := j2gss, \
+    OUTPUT_DIR := $(INSTALL_LIBRARIES_HERE), \
+    SRC := $(LIBJ2GSS_SRC), \
+    EXTRA_FILES := $(LIBJ2GSS_EXTRA), \
+    OPTIMIZATION := LOW, \
+    CFLAGS := $(CFLAGS_JDKLIB) $(addprefix -I, $(LIBJ2GSS_SRC)) \
+        $(LIBJAVA_HEADER_FLAGS) \
+        -I$(SUPPORT_OUTPUTDIR)/headers/java.security.jgss \
+        -I$(TOPDIR)/src/jdk.jdwp.agent/share/native/libjdwp/export, \
+    MAPFILE := $(TOPDIR)/make/mapfiles/libj2gss/mapfile-vers, \
+    LDFLAGS := $(LDFLAGS_JDKLIB) \
+        $(call SET_SHARED_LIBRARY_ORIGIN), \
+    LIBS := $(LIBDL), \
+    LIBS_solaris := -lc, \
+    OBJECT_DIR := $(SUPPORT_OUTPUTDIR)/native/$(MODULE)/libj2gss, \
+))
 
-  $(eval $(call SetupNativeCompilation,BUILD_LIBJ2GSS, \
-      LIBRARY := j2gss, \
-      OUTPUT_DIR := $(INSTALL_LIBRARIES_HERE), \
-      SRC := $(LIBJ2GSS_SRC), \
-      OPTIMIZATION := LOW, \
-      CFLAGS := $(CFLAGS_JDKLIB) $(addprefix -I, $(LIBJ2GSS_SRC)) \
-          $(LIBJAVA_HEADER_FLAGS) \
-          -I$(SUPPORT_OUTPUTDIR)/headers/java.security.jgss, \
-      MAPFILE := $(TOPDIR)/make/mapfiles/libj2gss/mapfile-vers, \
-      LDFLAGS := $(LDFLAGS_JDKLIB) \
-          $(call SET_SHARED_LIBRARY_ORIGIN), \
-      LIBS := $(LIBDL), \
-      LIBS_solaris := -lc, \
-      OBJECT_DIR := $(SUPPORT_OUTPUTDIR)/native/$(MODULE)/libj2gss, \
-  ))
-
-  TARGETS += $(BUILD_LIBJ2GSS)
-endif
+TARGETS += $(BUILD_LIBJ2GSS)
 
 ################################################################################
 
