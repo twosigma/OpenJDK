@@ -25,7 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <dlfcn.h>
+#include "sys.h"
 #include "NativeFunc.h"
 
 /* standard GSS method names (ordering is from mapfile) */
@@ -64,8 +64,9 @@ static const char RELEASE_BUFFER[]              = "gss_release_buffer";
 /**
  * Initialize native GSS function pointers
  */
-char* loadNative(const char *libName) {
-
+char* loadNative(const char *libName)
+{
+    char err_buf[2048];
     char *error;
     void *gssLib;
     int failed;
@@ -75,7 +76,7 @@ char* loadNative(const char *libName) {
     failed = FALSE;
     error = NULL;
 
-    gssLib = dlopen(libName, RTLD_NOW);
+    gssLib = dbgsysLoadLibrary(libName, err_buf, sizeof(err_buf));
     if (gssLib == NULL) {
         failed = TRUE;
         goto out;
@@ -88,183 +89,195 @@ char* loadNative(const char *libName) {
         goto out;
     }
 
-    ftab->releaseName = (RELEASE_NAME_FN_PTR)dlsym(gssLib, RELEASE_NAME);
+    ftab->releaseName = (RELEASE_NAME_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, RELEASE_NAME);
     if (ftab->releaseName == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->importName = (IMPORT_NAME_FN_PTR)dlsym(gssLib, IMPORT_NAME);
+    ftab->importName = (IMPORT_NAME_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, IMPORT_NAME);
     if (ftab->importName == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->compareName = (COMPARE_NAME_FN_PTR)dlsym(gssLib, COMPARE_NAME);
+    ftab->compareName = (COMPARE_NAME_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, COMPARE_NAME);
     if (ftab->compareName == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->canonicalizeName = (CANONICALIZE_NAME_FN_PTR)
-                                dlsym(gssLib, CANONICALIZE_NAME);
+                        dbgsysFindLibraryEntry(gssLib, CANONICALIZE_NAME);
     if (ftab->canonicalizeName == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->exportName = (EXPORT_NAME_FN_PTR)dlsym(gssLib, EXPORT_NAME);
+    ftab->exportName = (EXPORT_NAME_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, EXPORT_NAME);
     if (ftab->exportName == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->displayName = (DISPLAY_NAME_FN_PTR)dlsym(gssLib, DISPLAY_NAME);
+    ftab->displayName = (DISPLAY_NAME_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, DISPLAY_NAME);
     if (ftab->displayName == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->acquireCred = (ACQUIRE_CRED_FN_PTR)dlsym(gssLib, ACQUIRE_CRED);
+    ftab->acquireCred = (ACQUIRE_CRED_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, ACQUIRE_CRED);
     if (ftab->acquireCred == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->releaseCred = (RELEASE_CRED_FN_PTR)dlsym(gssLib, RELEASE_CRED);
+    ftab->releaseCred = (RELEASE_CRED_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, RELEASE_CRED);
     if (ftab->releaseCred == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->inquireCred = (INQUIRE_CRED_FN_PTR)dlsym(gssLib, INQUIRE_CRED);
+    ftab->inquireCred = (INQUIRE_CRED_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, INQUIRE_CRED);
     if (ftab->inquireCred == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->importSecContext = (IMPORT_SEC_CONTEXT_FN_PTR)
-                        dlsym(gssLib, IMPORT_SEC_CONTEXT);
+                        dbgsysFindLibraryEntry(gssLib, IMPORT_SEC_CONTEXT);
     if (ftab->importSecContext == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->initSecContext = (INIT_SEC_CONTEXT_FN_PTR)
-                        dlsym(gssLib, INIT_SEC_CONTEXT);
+                        dbgsysFindLibraryEntry(gssLib, INIT_SEC_CONTEXT);
     if (ftab->initSecContext == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->acceptSecContext = (ACCEPT_SEC_CONTEXT_FN_PTR)
-                        dlsym(gssLib, ACCEPT_SEC_CONTEXT);
+                        dbgsysFindLibraryEntry(gssLib, ACCEPT_SEC_CONTEXT);
     if (ftab->acceptSecContext == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->inquireContext = (INQUIRE_CONTEXT_FN_PTR)
-                        dlsym(gssLib, INQUIRE_CONTEXT);
+                        dbgsysFindLibraryEntry(gssLib, INQUIRE_CONTEXT);
     if (ftab->inquireContext == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->deleteSecContext = (DELETE_SEC_CONTEXT_FN_PTR)
-                        dlsym(gssLib, DELETE_SEC_CONTEXT);
+                        dbgsysFindLibraryEntry(gssLib, DELETE_SEC_CONTEXT);
     if (ftab->deleteSecContext == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->contextTime = (CONTEXT_TIME_FN_PTR)dlsym(gssLib, CONTEXT_TIME);
+    ftab->contextTime = (CONTEXT_TIME_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, CONTEXT_TIME);
     if (ftab->contextTime == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->wrapSizeLimit = (WRAP_SIZE_LIMIT_FN_PTR)
-                        dlsym(gssLib, WRAP_SIZE_LIMIT);
+                        dbgsysFindLibraryEntry(gssLib, WRAP_SIZE_LIMIT);
     if (ftab->wrapSizeLimit == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->exportSecContext = (EXPORT_SEC_CONTEXT_FN_PTR)
-                        dlsym(gssLib, EXPORT_SEC_CONTEXT);
+                        dbgsysFindLibraryEntry(gssLib, EXPORT_SEC_CONTEXT);
     if (ftab->exportSecContext == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->getMic = (GET_MIC_FN_PTR)dlsym(gssLib, GET_MIC);
+    ftab->getMic = (GET_MIC_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, GET_MIC);
     if (ftab->getMic == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->verifyMic = (VERIFY_MIC_FN_PTR)dlsym(gssLib, VERIFY_MIC);
+    ftab->verifyMic = (VERIFY_MIC_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, VERIFY_MIC);
     if (ftab->verifyMic == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->wrap = (WRAP_FN_PTR)dlsym(gssLib, WRAP);
+    ftab->wrap = (WRAP_FN_PTR)dbgsysFindLibraryEntry(gssLib, WRAP);
     if (ftab->wrap == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->unwrap = (UNWRAP_FN_PTR)dlsym(gssLib, UNWRAP);
+    ftab->unwrap = (UNWRAP_FN_PTR)dbgsysFindLibraryEntry(gssLib, UNWRAP);
     if (ftab->unwrap == NULL) {
         failed = TRUE;
         goto out;
     }
 
-    ftab->indicateMechs = (INDICATE_MECHS_FN_PTR)dlsym(gssLib, INDICATE_MECHS);
+    ftab->indicateMechs = (INDICATE_MECHS_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib, INDICATE_MECHS);
     if (ftab->indicateMechs == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->inquireNamesForMech = (INQUIRE_NAMES_FOR_MECH_FN_PTR)
-                        dlsym(gssLib, INQUIRE_NAMES_FOR_MECH);
+                        dbgsysFindLibraryEntry(gssLib, INQUIRE_NAMES_FOR_MECH);
     if (ftab->inquireNamesForMech == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->addOidSetMember = (ADD_OID_SET_MEMBER_FN_PTR)
-                        dlsym(gssLib, ADD_OID_SET_MEMBER);
+                        dbgsysFindLibraryEntry(gssLib, ADD_OID_SET_MEMBER);
     if (ftab->addOidSetMember == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->displayStatus = (DISPLAY_STATUS_FN_PTR)
-                        dlsym(gssLib, DISPLAY_STATUS);
+                        dbgsysFindLibraryEntry(gssLib, DISPLAY_STATUS);
     if (ftab->displayStatus == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->createEmptyOidSet = (CREATE_EMPTY_OID_SET_FN_PTR)
-                        dlsym(gssLib, CREATE_EMPTY_OID_SET);
+                        dbgsysFindLibraryEntry(gssLib, CREATE_EMPTY_OID_SET);
     if (ftab->createEmptyOidSet == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->releaseOidSet = (RELEASE_OID_SET_FN_PTR)
-                        dlsym(gssLib, RELEASE_OID_SET);
+                        dbgsysFindLibraryEntry(gssLib, RELEASE_OID_SET);
     if (ftab->releaseOidSet == NULL) {
         failed = TRUE;
         goto out;
     }
 
     ftab->releaseBuffer = (RELEASE_BUFFER_FN_PTR)
-                        dlsym(gssLib, RELEASE_BUFFER);
+                        dbgsysFindLibraryEntry(gssLib, RELEASE_BUFFER);
     if (ftab->releaseBuffer == NULL) {
         failed = TRUE;
         goto out;
@@ -280,8 +293,8 @@ char* loadNative(const char *libName) {
 
 out:
     if (failed == TRUE) {
-        error = dlerror();
-        if (gssLib != NULL) dlclose(gssLib);
+        dbgsysGetLastErrorString(error = err_buf, sizeof(err_buf));
+        if (gssLib != NULL) dbgsysUnloadLibrary(gssLib);
         if (ftab != NULL) free(ftab);
     }
     return error;
