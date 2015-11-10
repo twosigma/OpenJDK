@@ -271,9 +271,9 @@ DEF_JNI_OnLoad(JavaVM *jvm, void *reserved) {
   }
   MID_GSSNameElement_ctor =
     (*env)->GetMethodID(env, CLS_GSSNameElement,
-                        "<init>", "(JLsun/security/jgss/wrapper/GSSLibStub;)V");
+                        "<init>", "(JLorg/ietf/jgss/Oid;Lsun/security/jgss/wrapper/GSSLibStub;)V");
   if (MID_GSSNameElement_ctor == NULL) {
-    printf("Couldn't find GSSNameElement(long, GSSLibStub) constructor\n");
+    printf("Couldn't find GSSNameElement(long, Oid, GSSLibStub) constructor\n");
     return JNI_ERR;
   }
   MID_GSSCredElement_ctor =
@@ -455,6 +455,14 @@ void throwOutOfMemoryError(JNIEnv *env, const char *message) {
     throwByName(env, "java/lang/OutOfMemoryError", message);
 }
 
+static jsize
+safe_jsize(size_t n)
+{
+    jsize res = (jsize)n;
+
+    return (res >= 0 && (size_t)res == n) ? res : -1;
+}
+
 /*
  * Utility routine for creating a java.lang.String object
  * using the specified gss_buffer_t structure. The specified
@@ -463,31 +471,33 @@ void throwOutOfMemoryError(JNIEnv *env, const char *message) {
 jstring getJavaString(JNIEnv *env, gss_buffer_t bytes) {
   jstring result = NULL;
   OM_uint32 minor;
-  int len;
+  jsize len;
   jbyteArray jbytes;
 
-  if (bytes != NULL) {
-    /* constructs the String object with new String(byte[])
-       NOTE: do NOT include the trailing NULL */
-    len = (int) bytes->length;
-    jbytes = (*env)->NewByteArray(env, len);
-    if (jbytes == NULL) {
-      goto finish;
-    }
+  if (bytes == NULL) {
+    return NULL;
+  }
 
-    (*env)->SetByteArrayRegion(env, jbytes, 0, len, (jbyte *) bytes->value);
-    if ((*env)->ExceptionCheck(env)) {
-      goto finish;
-    }
+  /* constructs the String object with new String(byte[]) */
+  if ((len = safe_jsize(bytes->length)) < 0) {
+    (*ftab->releaseBuffer)(&minor, bytes);
+    return NULL;
+  }
+  jbytes = (*env)->NewByteArray(env, len);
+  if (jbytes == NULL) {
+    (*ftab->releaseBuffer)(&minor, bytes);
+    return NULL;
+  }
 
+  (*env)->SetByteArrayRegion(env, jbytes, 0, len, (jbyte *) bytes->value);
+  if ((*env)->ExceptionCheck(env) == JNI_FALSE) {
     result = (*env)->NewObject(env, CLS_String, MID_String_ctor,
                                jbytes);
-  finish:
-    (*env)->DeleteLocalRef(env, jbytes);
-    (*ftab->releaseBuffer)(&minor, bytes);
-    return result;
-  } /* else fall through */
-  return NULL;
+  }
+
+  (*env)->DeleteLocalRef(env, jbytes);
+  (*ftab->releaseBuffer)(&minor, bytes);
+  return result;
 }
 /*
  * Utility routine for generate message for the specified minor
@@ -519,7 +529,7 @@ jstring getMinorMessage(JNIEnv *env, jobject jstub, OM_uint32 statusValue) {
  * not GSS_S_COMPLETE (i.e. 0).
  */
 void checkStatus(JNIEnv *env, jobject jstub, OM_uint32 major,
-                 OM_uint32 minor, char* methodName) {
+                 OM_uint32 minor, const char *methodName) {
   int callingErr, routineErr, supplementaryInfo;
   jint jmajor, jminor;
   char* msg;
@@ -580,48 +590,166 @@ void checkStatus(JNIEnv *env, jobject jstub, OM_uint32 major,
  * Utility routine for initializing gss_buffer_t structure
  * with the byte[] in the specified jbyteArray object.
  * NOTE: must call resetGSSBuffer() to free up the resources
- * inside the gss_buffer_t structure.
  */
 void initGSSBuffer(JNIEnv *env, jbyteArray jbytes,
-                     gss_buffer_t cbytes) {
-
-  int len;
+                     gss_buffer_t cbytes, jboolean wantCopy)
+{
+  jboolean isCopy;
+  jint len;
   void* value;
 
-  if (jbytes != NULL) {
-    len = (*env)->GetArrayLength(env, jbytes);
-    value = malloc(len);
-    if (value == NULL) {
+  cbytes->length = 0;
+  cbytes->value = NULL;
+
+  if (jbytes == NULL ||
+      (len = (*env)->GetArrayLength(env, jbytes)) == 0)
+    return;
+
+  cbytes->length = len;
+
+  if (wantCopy == JNI_FALSE) {
+    cbytes->value = (*env)->GetByteArrayElements(env, jbytes, &isCopy);
+    if (cbytes->value == NULL) {
       throwOutOfMemoryError(env, NULL);
-      return;
-    } else {
-      (*env)->GetByteArrayRegion(env, jbytes, 0, len, value);
-      if ((*env)->ExceptionCheck(env)) {
-        free(value);
-        return;
-      } else {
-        cbytes->length = len;
-        cbytes->value = value;
-      }
     }
-  } else {
-    cbytes->length = 0;
+    return;
+  }
+
+  value = malloc(len);
+  if (value == NULL) {
+    throwOutOfMemoryError(env, NULL);
+    return;
+  }
+
+  (*env)->GetByteArrayRegion(env, jbytes, 0, len, value);
+  if ((*env)->ExceptionCheck(env)) {
+    free(value);
+    return;
+  }
+  cbytes->value = value;
+}
+
+/*
+ * Utility routine for freeing the buffer obtained via initGSSBuffer().
+ * If jbytes is null this is a malloced copy.
+ */
+void resetGSSBuffer(JNIEnv *env, jbyteArray jbytes, gss_buffer_t cbytes)
+{
+  if (cbytes->value == NULL)
+    return;
+  if (jbytes != NULL) {
+    (*env)->ReleaseByteArrayElements(env, jbytes, cbytes->value, JNI_ABORT);
+  } else if (cbytes->length > 0) {
+    free(cbytes->value);
     cbytes->value = NULL;
+    cbytes->length = 0;
   }
 }
 
 /*
- * Utility routine for freeing the bytes malloc'ed
- * in initGSSBuffer() method.
- * NOTE: used in conjunction with initGSSBuffer(...).
+ * Utility routine for initializing gss_buffer_t structure
+ * with a String.
+ * NOTE: need to call resetGSSBufferString(...) to free up
+ * the resources.
  */
-void resetGSSBuffer(gss_buffer_t cbytes) {
-  if ((cbytes != NULL) && (cbytes != GSS_C_NO_BUFFER)) {
-    free(cbytes->value);
-    cbytes->length = 0;
-    cbytes->value = NULL;
+void initGSSBufferString(JNIEnv* env, jstring jstr, gss_buffer_t buf)
+{
+  const char *s;
+
+  buf->length = 0;
+  buf->value = NULL;
+  if (jstr != NULL) {
+    s = (*env)->GetStringUTFChars(env, jstr, NULL);
+    if (s == NULL) {
+      throwOutOfMemoryError(env, NULL);
+    } else {
+      buf->length = strlen(s);
+      buf->value = (char *)s; /* Drop const */
+    }
   }
 }
+
+/*
+ * Utility routine for unpinning/releasing the String
+ * associated with the specified jstring object.
+ * NOTE: used in conjunction with initGSSBufferString(...).
+ */
+void resetGSSBufferString(JNIEnv *env, jstring jstr, gss_buffer_t buf)
+{
+  if (jstr != NULL && buf->value != NULL)
+    (*env)->ReleaseStringUTFChars(env, jstr, buf->value);
+}
+
+void initGSSCredStore(JNIEnv *env, jarray jstore,
+                      gss_key_value_set_desc *store) {
+  jsize nelements = 0;
+  jsize n, i, k;
+
+  store->count = 0;
+  store->elements = NULL;
+  if (jstore == NULL) {
+    return;
+  }
+  n = (*env)->GetArrayLength(env, jstore);
+  for (i = 0; i < n; i += 2) {
+    jobject jkey = (*env)->GetObjectArrayElement(env, jstore, i);
+    jobject jval = (*env)->GetObjectArrayElement(env, jstore, i + 1);
+    
+    if (!jkey || !jval) {
+      break;
+    }
+    if (!(*env)->IsInstanceOf(env, jkey, CLS_String) ||
+        !(*env)->IsInstanceOf(env, jval, CLS_String)) {
+      throwByName(env, "java/lang/IllegalArgumentException",
+                  "invalid GSS credential store element type; must be String");
+      store->count = 0;
+      return;
+    }
+    store->count += 1;
+    nelements += 2;
+  }
+  if (nelements < 0 || nelements > INT32_MAX) {
+    throwOutOfMemoryError(env,NULL);
+    store->count = 0;
+    return;
+  }
+  store->elements = calloc(store->count, sizeof(store->elements[0]));
+  if (store->elements == NULL) {
+    throwOutOfMemoryError(env,NULL);
+    store->count = 0;
+    return;
+  }
+  for (i = 0, k = 0; i < nelements; i += 2, k++) {
+    jobject jkey = (*env)->GetObjectArrayElement(env, jstore, i);
+    jobject jval = (*env)->GetObjectArrayElement(env, jstore, i + 1);
+    store->elements[k].key = (*env)->GetStringUTFChars(env, jkey, NULL);
+    store->elements[k].value = (*env)->GetStringUTFChars(env, jval, NULL);
+    TRACE2("[GSSLibStub initGSSCredStore] element %ld key %s",
+           (long)k, store->elements[k].key);
+    TRACE2("[GSSLibStub initGSSCredStore] element %ld value %s",
+           (long)k, store->elements[k].value);
+  }
+}
+
+void resetGSSCredStore(JNIEnv *env,
+                       jarray jstore,
+                       gss_key_value_set_desc *store) {
+  jobject jstr;
+  jsize i;
+
+  for (i = 0; i < (jsize)store->count; i++) {
+    jstr = (*env)->GetObjectArrayElement(env, jstore, i);
+    if (!(i & 0x01)) {
+      (*env)->ReleaseStringUTFChars(env, jstr, store->elements[i].key);
+    } else {
+      (*env)->ReleaseStringUTFChars(env, jstr, store->elements[i].value);
+    }
+  }
+  free(store->elements);
+  store->elements = NULL;
+  store->count = 0;
+}
+
 
 /*
  * Utility routine for creating a jbyteArray object using
@@ -629,27 +757,32 @@ void resetGSSBuffer(gss_buffer_t cbytes) {
  * NOTE: the specified gss_buffer_t structure is always
  * released.
  */
-jbyteArray getJavaBuffer(JNIEnv *env, gss_buffer_t cbytes) {
+jbyteArray getJavaBuffer(JNIEnv *env, gss_buffer_t cbytes, jboolean isToken) {
   jbyteArray result = NULL;
-  OM_uint32 minor; // don't care, just so it compiles
+  OM_uint32 dummy;
 
-  if (cbytes != NULL) {
-    if ((cbytes != GSS_C_NO_BUFFER) && (cbytes->length != 0)) {
-      result = (*env)->NewByteArray(env, (int) cbytes->length);
-      if (result == NULL) {
-        goto finish;
-      }
-      (*env)->SetByteArrayRegion(env, result, 0, (int) cbytes->length,
+  /*
+   * Zero length tokens map to NULL outputs, but otherwise to a zero-length
+   * Java byte array.
+   */
+  if (cbytes != GSS_C_NO_BUFFER &&
+      (isToken == JNI_FALSE || cbytes->length > 0)) {
+    jsize len = safe_jsize(cbytes->length);
+
+    if (len >= 0) {
+      result = (*env)->NewByteArray(env, len);
+    }
+    if (result != NULL) {
+      (*env)->SetByteArrayRegion(env, result, 0, len,
                                  cbytes->value);
       if ((*env)->ExceptionCheck(env)) {
+        (*env)->DeleteLocalRef(env, result);
         result = NULL;
       }
     }
-  finish:
-    (*ftab->releaseBuffer)(&minor, cbytes);
-    return result;
   }
-  return NULL;
+  (void) (*ftab->releaseBuffer)(&dummy, cbytes);
+  return result;
 }
 
 /*
@@ -737,50 +870,34 @@ jobject getJavaOID(JNIEnv *env, gss_OID cOid) {
   return result;
 }
 /*
- * Utility routine for creating a gss_OID_set structure
- * using the specified gss_OID.
- * NOTE: need to call deleteGSSOIDSet(...) afterwards
- * to release the created gss_OID_set structure.
+ * Utility routine for filling in a 1-element gss_OID_set structure using the
+ * specified gss_OID (storage owned by caller).  However, with SPNEGO we return
+ * a static set containing all the available mechanisms.
  */
-gss_OID_set newGSSOIDSet(gss_OID oid) {
-  gss_OID_set oidSet;
-  OM_uint32 minor; // don't care; just so it compiles
-
-  if (oid->length != 6 ||
-      memcmp(oid->elements, SPNEGO_BYTES, 6) != 0) {
-      (*ftab->createEmptyOidSet)(&minor, &oidSet);
-      (*ftab->addOidSetMember)(&minor, oid, &oidSet);
-      return oidSet;
-  } else {
-      // Use all mechs for SPNEGO in order to work with
-      // various native GSS impls
-      return (ftab->mechs);
+gss_OID_set makeGSSOIDSet(gss_OID_set mechs, gss_OID oid) {
+  if (oid->length != 6 || memcmp(oid->elements, SPNEGO_BYTES, 6) != 0) {
+      mechs->count = 1;
+      mechs->elements = oid;
+      return mechs;
   }
-}
-/*
- * Utility routine for releasing a gss_OID_set structure.
- * NOTE: used in conjunction with newGSSOIDSet(...).
- */
-void deleteGSSOIDSet(gss_OID_set oidSet) {
-  OM_uint32 minor; /* don't care; just so it compiles */
-
-  if ((oidSet != ftab->mechs) &&
-      (oidSet != NULL) && (oidSet != GSS_C_NO_OID_SET)) {
-    (*ftab->releaseOidSet)(&minor, &oidSet);
-  }
+  /* Use all mechs for SPNEGO in order to work with various native GSS impls */
+  return (ftab->mechs);
 }
 /*
  * Utility routine for creating a org.ietf.jgss.Oid[]
  * using the specified gss_OID_set structure.
  */
 jobjectArray getJavaOIDArray(JNIEnv *env, gss_OID_set cOidSet) {
-  int numOfOids = 0;
+  jsize numOfOids = 0;
   jobjectArray jOidSet;
   jobject jOid;
-  int i;
+  jsize i;
 
   if (cOidSet != NULL && cOidSet != GSS_C_NO_OID_SET) {
-    numOfOids = (int) cOidSet->count;
+    numOfOids = safe_jsize(cOidSet->count);
+    if (numOfOids < 0) {
+      return NULL;
+    }
     jOidSet = (*env)->NewObjectArray(env, numOfOids, CLS_Oid, NULL);
     if ((*env)->ExceptionCheck(env)) {
       return NULL;

@@ -109,7 +109,14 @@ public final class SunNativeProvider extends Provider {
                             if (GSSLibStub.init(libName, DEBUG)) {
                                 debug("Loaded GSS library: " + libName);
                                 Oid[] mechs = GSSLibStub.indicateMechs();
-                                HashMap<String,String> map = new HashMap<>();
+                                HashMap<String, String> map =
+                                            new HashMap<String, String>();
+                                // If the GSSLibStub does not support SPNEGO,
+                                // we could use ours, but ours has too much
+                                // knowledge of the Java Krb5 GSS mechanism, so
+                                // we can't, but if we could we'd do it thusly:
+                                //   map.put("GssApiMechanism.1.3.6.1.5.5.2",
+                                //           "sun.security.jgss.spnego.SpNegoMechFactory");
                                 for (int i = 0; i < mechs.length; i++) {
                                     debug("Native MF for " + mechs[i]);
                                     map.put("GssApiMechanism." + mechs[i],
