@@ -52,6 +52,7 @@ public class GSSNameElement implements GSSNameSpi {
     long pName = 0; // Pointer to the gss_name_t structure
     private String printableName;
     private Oid printableType;
+    private Oid mech;
     private GSSLibStub cStub;
 
     static final GSSNameElement DEF_ACCEPTOR = new GSSNameElement();
@@ -96,14 +97,14 @@ public class GSSNameElement implements GSSNameSpi {
         printableName = "<DEFAULT ACCEPTOR>";
     }
 
-    // Warning: called by NativeUtil.c
-    GSSNameElement(long pNativeName, GSSLibStub stub) throws GSSException {
+    GSSNameElement(long pNativeName, Oid mech, GSSLibStub stub) throws GSSException {
         assert(stub != null);
         if (pNativeName == 0) {
             throw new GSSException(GSSException.BAD_NAME);
         }
         // Note: pNativeName is assumed to be a MN.
         pName = pNativeName;
+        this.mech = mech;
         cStub = stub;
         setPrintables();
     }
@@ -116,6 +117,7 @@ public class GSSNameElement implements GSSNameSpi {
         }
         cStub = stub;
         byte[] name = nameBytes;
+        mech = cStub.getMech();
 
         if (nameType != null) {
             // Special handling the specified name type if
@@ -128,7 +130,6 @@ public class GSSNameElement implements GSSNameSpi {
                 // method) for "NT_EXPORT_NAME"
                 byte[] mechBytes = null;
                 DerOutputStream dout = new DerOutputStream();
-                Oid mech = cStub.getMech();
                 try {
                     dout.putOID(ObjectIdentifier.of(mech.toString()));
                 } catch (IOException e) {
@@ -196,7 +197,28 @@ public class GSSNameElement implements GSSNameSpi {
     public String getKrbName() throws GSSException {
         long mName = 0;
         GSSLibStub stub = cStub;
-        if (!GSSUtil.isKerberosMech(cStub.getMech())) {
+        if (!GSSUtil.isKerberosMech(mech)) {
+            // XXX We can't expect this to work generally.  We should
+            // generalize the permission checks so that they can deal
+            // with name forms other than those of Kerberos.
+            //
+            // Alternatively we could have a method in GSSLibStub for
+            // mapping a non-Kerberos MN to a Kerberos MN, but depending
+            // on the specifics of the non-Kerberos mechanism we would
+            // either end up needing new conventions for Kerberos naming
+            // or else having cases where we can end up failing to
+            // support unconventional name forms.
+            //
+            // Consider a SAML assertion with a variety of identifying
+            // attributes and a variety of non-identifying attributes
+            // that are relevant to authorization.  How should a
+            // Kerberos-equivalent be constructed?  GSS does have
+            // extensions for decorating name objects with attributes,
+            // so that's not an issue, but if there are multiple
+            // identifying attributes then we'd have to pick one.  Now,
+            // suppose the identifying attribute has a form like
+            // <phone-number> -- we'd need a Kerberos convention for
+            // that, which might be PHONE/<number>@<ASSERTION-SIGNER>.
             stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
         }
         mName = stub.canonicalizeName(pName);
@@ -268,11 +290,21 @@ public class GSSNameElement implements GSSNameSpi {
     }
 
     public Oid getMechanism() {
-        return cStub.getMech();
+        return (mech != null) ? mech : cStub.getMech();
     }
 
     public String toString() {
         return printableName;
+    }
+
+    public String getLocalName() throws GSSException {
+        return cStub.localName(pName, mech);
+    }
+
+    public String getLocalName(Oid mech) throws GSSException {
+        if (mech.equals(this.mech))
+            return cStub.localName(pName, mech);
+        throw new GSSException(GSSException.BAD_MECH);
     }
 
     public Oid getStringNameType() {
@@ -281,6 +313,10 @@ public class GSSNameElement implements GSSNameSpi {
 
     public boolean isAnonymousName() {
         return (GSSName.NT_ANONYMOUS.equals(printableType));
+    }
+
+    public boolean isDefaultCredentialName() {
+        return (this == DEF_ACCEPTOR);
     }
 
     public void dispose() {
