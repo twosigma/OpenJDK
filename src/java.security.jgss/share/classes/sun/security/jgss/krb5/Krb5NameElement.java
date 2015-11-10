@@ -310,6 +310,32 @@ public class Krb5NameElement
     }
 
     /**
+     * Returns a local username (platform-specific) corresponding to the
+     * principal name, and may return null when no username is known for the
+     * principal name.
+     *
+     * @return username corresponding to this principal name, if any
+     */
+    public String getLocalName() throws GSSException {
+        throw new GSSException(GSSException.UNAVAILABLE, -1,
+                "Mapping Kerberos principal names to usernames is not " +
+                "currently supported");
+    }
+
+    /**
+     * Returns a local username (platform-specific) corresponding to the
+     * principal name, and may return null when no username is known for the
+     * principal name.
+     *
+     * @return username corresponding to this principal name, if any
+     */
+    public String getLocalName(Oid mech) throws GSSException {
+        throw new GSSException(GSSException.UNAVAILABLE, -1,
+                "Mapping Kerberos principal names to usernames is not " +
+                "currently supported");
+    }
+
+    /**
      * Returns the name type oid.
      */
     public Oid getGSSNameType() {
@@ -332,6 +358,10 @@ public class Krb5NameElement
      */
     public boolean isAnonymousName() {
         return (gssNameType.equals(GSSName.NT_ANONYMOUS));
+    }
+
+    public boolean isDefaultCredentialName() {
+        return false;
     }
 
     public Provider getProvider() {
