@@ -59,6 +59,7 @@ public class Krb5InitCredential
     @SuppressWarnings("serial") // Not statically typed as Serializable
     private final Credentials krb5Credentials;
     public KerberosTicket proxyTicket;
+    private boolean isDefCred;
 
     private Krb5InitCredential(Krb5NameElement name,
                                byte[] asn1Encoding,
@@ -91,6 +92,8 @@ public class Krb5InitCredential
         KerberosSecrets.getJavaxSecurityAuthKerberosAccess()
                 .kerberosTicketSetServerAlias(this, serverAlias);
         this.name = name;
+        if (name == null)
+            isDefCred = true;
 
         try {
             // Cache this for later use by the sun.security.krb5 package.
@@ -149,7 +152,8 @@ public class Krb5InitCredential
                 .kerberosTicketSetServerAlias(this, serverAlias);
         this.name = name;
         // A delegated cred does not have all fields set. So do not try to
-        // create new Credentials out of the delegatedCred.
+        // create new Credentials out of the delegatedCred.  Also, a
+        // delegated credential is not a default credential.
         this.krb5Credentials = delegatedCred;
     }
 
@@ -309,6 +313,15 @@ public class Krb5InitCredential
      */
     public final Oid getMechanism() {
         return Krb5MechFactory.GSS_KRB5_MECH_OID;
+    }
+
+    /**
+     * Returns true if the credential is a default credential.
+     *
+     * @return true if the credential is a default credential, else false.
+     */
+    public boolean isDefaultCredential() {
+        return isDefCred;
     }
 
     public final java.security.Provider getProvider() {

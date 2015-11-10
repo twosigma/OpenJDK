@@ -73,6 +73,28 @@ static void dll_build_name(char* buffer, size_t buflen,
     jvmtiDeallocate(paths_copy);
 }
 
+int
+dbgsysGetLastErrorString(char *buf, int len)
+{
+    const char *s = dlerror();
+    size_t n;
+    size_t l = (size_t)len;
+
+    if (len <= 0)
+        return 0;
+
+    *buf = '\0';
+    if (s == NULL)
+        return 0;
+
+    n = strlen(s);
+    if (n >= l)
+        n = l - 1;
+    strncpy(buf, s, n);
+    buf[n] = '\0'; /* not actually needed */
+    return n;
+}
+
 /*
  * create a string for the JNI native function name by adding the
  * appropriate decorations.

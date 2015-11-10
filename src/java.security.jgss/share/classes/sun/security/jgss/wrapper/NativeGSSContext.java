@@ -195,12 +195,17 @@ class NativeGSSContext implements GSSContextSpi {
         if (info.length != NUM_OF_INQUIRE_VALUES) {
             throw new RuntimeException("Bug w/ GSSLibStub.inquireContext()");
         }
-        srcName = new GSSNameElement(info[0], cStub);
-        targetName = new GSSNameElement(info[1], cStub);
         isInitiator = (info[2] != 0);
         isEstablished = (info[3] != 0);
         flags = (int) info[4];
         lifetime = (int) info[5];
+        if (isEstablished) {
+            srcName = new GSSNameElement(info[0], actualMech, cStub);
+            targetName = new GSSNameElement(info[1], actualMech, cStub);
+        } else {
+            srcName = null;
+            targetName = null;
+        }
     }
 
     public Provider getProvider() {
@@ -229,22 +234,33 @@ class NativeGSSContext implements GSSContextSpi {
                         (outToken == null ? 0 : outToken.length));
             }
 
-            // Only inspect the token when the permission check
-            // has not been performed
-            if (GSSUtil.isSpNegoMech(cStub.getMech()) && outToken != null) {
+            if (!GSSUtil.isSpNegoMech(cStub.getMech())) {
+                actualMech = cStub.getMech();
+            } else if (actualMech == null && outToken != null) {
                 // WORKAROUND for SEAM bug#6287358
-                actualMech = getMechFromSpNegoToken(outToken, true);
+                //
+                // This is where some C GSS SPNEGO implementations fail to make
+                // the real actual mechanism available.
+                // getMechFromSpNegoToken() does the horrible, no good, very
+                // bad thing its name says it does.  For now we retain this bit
+                // of evil.
+                //
+                // XXX Time to remove this workaround.  It's been 20
+                // years.
+                try {
+                    actualMech = getMechFromSpNegoToken(outToken, true);
+                } catch (GSSException e) { }
             }
 
             if (isEstablished) {
+                // XXX We should attempt to get actualMech from the cStub here,
+                // and take it even if we got a semblance of an actualMech from
+                // the SPNEGO token, as long as the one returned by the cStub
+                // isn't the SPNEGO OID.
                 if (srcName == null) {
                     srcName = new GSSNameElement
-                        (cStub.getContextName(pContext, true), cStub);
-                }
-                if (cred == null) {
-                    disposeCred = cred =
-                        new GSSCredElement(srcName, lifetime,
-                                GSSCredential.INITIATE_ONLY, cStub);
+                        (cStub.getContextName(pContext, true), actualMech,
+                         cStub);
                 }
             }
         }
@@ -268,17 +284,15 @@ class NativeGSSContext implements GSSContextSpi {
                         (outToken == null ? 0 : outToken.length));
             }
 
-            if (targetName == null) {
+            if (isEstablished && targetName == null) {
                 targetName = new GSSNameElement
-                    (cStub.getContextName(pContext, false), cStub);
-                // Replace the current default acceptor cred now that
-                // the context acceptor name is available
-                if (disposeCred != null) {
-                    disposeCred.dispose();
-                }
-                disposeCred = cred =
-                    new GSSCredElement(targetName, lifetime,
-                            GSSCredential.ACCEPT_ONLY, cStub);
+                    (cStub.getContextName(pContext, false), actualMech, cStub);
+            }
+            if (GSSUtil.isSpNegoMech(cStub.getMech()) && outToken != null &&
+                actualMech == null) {
+                try {
+                    actualMech = getMechFromSpNegoToken(outToken, true);
+                } catch (GSSException e) { }
             }
         }
         return outToken;

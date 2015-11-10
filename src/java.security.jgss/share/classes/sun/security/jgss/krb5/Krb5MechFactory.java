@@ -31,6 +31,7 @@ import sun.security.jgss.GSSCaller;
 import sun.security.jgss.spi.*;
 import java.security.Provider;
 import java.util.Vector;
+import java.util.Map;
 
 /**
  * Krb5 Mechanism plug in for JGSS
@@ -121,6 +122,45 @@ public final class Krb5MechFactory implements MechanismFactory {
                                        "Unknown usage mode requested");
         }
         return credElement;
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+           String password, int initLifetime, int acceptLifetime,
+           int usage) throws GSSException {
+
+        if (password != null) {
+            // XXX Implement!  Shouldn't be too hard...
+            throw new GSSException(GSSException.UNAVAILABLE, -1,
+                    "The Kerberos mechanism Java implementation does not " +
+                    "currently support acquiring GSS credentials handle " +
+                    "elements with a password");
+        }
+
+        return getCredentialElement(name, initLifetime, acceptLifetime, usage);
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+           Map<String,String> store, int initLifetime, int acceptLifetime,
+           int usage) throws GSSException {
+
+        if (store != null) {
+            // XXX Implement!  Shouldn't be too hard...
+            throw new GSSException(GSSException.UNAVAILABLE, -1,
+                    "The Kerberos mechanism Java implementation does not " +
+                    "currently support acquiring GSS credentials handle " +
+                    "elements using a \"credential store\"");
+        }
+
+        return getCredentialElement(name, initLifetime, acceptLifetime, usage);
+    }
+
+    public void storeCredInto(GSSCredentialSpi cred, int usage,
+                              boolean overwrite, boolean defaultCred,
+                              Map<String,String> store) throws GSSException {
+        throw new GSSException(GSSException.UNAVAILABLE, -1,
+                "The Kerberos mechanism Java implementation does not " +
+                "currently support storing GSS credentials handle " +
+                "elements into a \"credential store\"");
     }
 
     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
