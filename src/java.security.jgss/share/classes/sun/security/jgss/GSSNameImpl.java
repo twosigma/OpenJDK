@@ -430,8 +430,57 @@ public final class GSSNameImpl implements GSSName {
     }
 
     public String toString() {
-         return printableName;
+        return printableName;
+    }
 
+    public String getName() {
+        return printableName;
+    }
+
+    public String getName(Oid mech) throws GSSException {
+        GSSNameSpi element = elements.get(mech);
+        if (element == null) {
+            throw new GSSExceptionImpl(GSSException.UNAVAILABLE,
+                    "GSSName object does not have an element for the " +
+                    "given mechanism");
+        }
+        return element.toString();
+    }
+
+    public String getLocalName() throws GSSException {
+        String lname = null;
+        Oid mech = null;
+        Oid mech2 = null;
+
+        for (GSSNameSpi v : elements.values()) {
+            String mname = v.getLocalName();
+            if (mname == null)
+                continue;
+            if (lname == null) {
+                mech = v.getMechanism();
+                lname = mname;
+                continue;
+            }
+            if (!lname.equals(mname)) {
+                mech2 = v.getMechanism();
+                break;
+            }
+        }
+        if (mech2 == null)
+            return lname;
+        throw new GSSExceptionImpl(GSSException.UNAVAILABLE,
+                "Localname conflict between mechanisms " +
+                mech + " and " + mech2);
+    }
+
+    public String getLocalName(Oid mech) throws GSSException {
+        GSSNameSpi element = elements.get(mech);
+        if (element == null) {
+            throw new GSSExceptionImpl(GSSException.UNAVAILABLE,
+                    "GSSName object does not have an element for the " +
+                    "given mechanism");
+        }
+        return element.getLocalName();
     }
 
     public Oid getStringNameType() throws GSSException {
