@@ -823,7 +823,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importContext(JNIEnv *env,
   } else {
     /* mech mismatch - clean up then return null */
     major = (*ftab->deleteSecContext)(&minor, &contextHdl, GSS_C_NO_BUFFER);
-    checkStatus(env, jobj, major, minor,
+    checkStatus(env, jobj, GSS_S_FAILURE, minor,
         "[GSSLibStub_importContext] cleanup");
     return NULL;
   }
