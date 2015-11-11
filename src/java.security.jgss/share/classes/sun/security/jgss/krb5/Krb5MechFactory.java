@@ -108,8 +108,16 @@ public final class Krb5MechFactory implements MechanismFactory {
     }
 
     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
-           int initLifetime, int acceptLifetime,
+           String password, int initLifetime, int acceptLifetime,
            int usage) throws GSSException {
+
+        if (password != null) {
+            // XXX Implement!  Shouldn't be too hard...
+            throw new GSSException(GSSException.UNAVAILABLE, -1,
+                    "The Kerberos mechanism Java implementation does not " +
+                    "currently support acquiring GSS credentials handle " +
+                    "elements with a password");
+        }
 
         if (name != null && !(name instanceof Krb5NameElement)) {
             name = Krb5NameElement.getInstance(name.toString(),
@@ -139,6 +147,12 @@ public final class Krb5MechFactory implements MechanismFactory {
         return credElement;
     }
 
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+            int initLifetime, int acceptLifetime, int usage)
+        throws GSSException {
+        return getCredentialElement(name, null, initLifetime, acceptLifetime, usage);
+    }
+
     public static void checkInitCredPermission(Krb5NameElement name) {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
@@ -151,7 +165,7 @@ public final class Krb5MechFactory implements MechanismFactory {
                 sm.checkPermission(perm);
             } catch (SecurityException e) {
                 if (DEBUG) {
-                    System.out.println("Permission to initiate" +
+                    System.out.println("Permission to initiate " +
                         "kerberos init credential" + e.getMessage());
                 }
                 throw e;

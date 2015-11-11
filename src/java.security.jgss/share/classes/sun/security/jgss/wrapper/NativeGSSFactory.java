@@ -96,6 +96,7 @@ public final class NativeGSSFactory implements MechanismFactory {
     }
 
     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+                                                 String password,
                                                  int initLifetime,
                                                  int acceptLifetime,
                                                  int usage)
@@ -118,20 +119,41 @@ public final class NativeGSSFactory implements MechanismFactory {
         if (credElement == null) {
             // No cred in the Subject
             if (usage == GSSCredential.INITIATE_ONLY) {
-                credElement = new GSSCredElement(nname, initLifetime,
-                                                 usage, cStub);
+                if (password == null) {
+                    credElement = new GSSCredElement(nname, initLifetime,
+                                                     usage, cStub);
+                } else {
+                    credElement = new GSSCredElement(nname, password,
+                                                     initLifetime,
+                                                     usage, cStub);
+                }
             } else if (usage == GSSCredential.ACCEPT_ONLY) {
                 if (nname == null) {
                     nname = GSSNameElement.DEF_ACCEPTOR;
                 }
-                credElement = new GSSCredElement(nname, acceptLifetime,
-                                                 usage, cStub);
+                if (password == null) {
+                    credElement = new GSSCredElement(nname, acceptLifetime,
+                                                     usage, cStub);
+                } else {
+                    credElement = new GSSCredElement(nname, password,
+                                                     acceptLifetime,
+                                                     usage, cStub);
+                }
             } else {
                 throw new GSSException(GSSException.FAILURE, -1,
                                        "Unknown usage mode requested");
             }
         }
         return credElement;
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+                                                 int initLifetime,
+                                                 int acceptLifetime,
+                                                 int usage)
+        throws GSSException {
+        return getCredentialElement(name, null, initLifetime,
+                                    acceptLifetime, usage);
     }
 
     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
