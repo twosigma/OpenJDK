@@ -37,6 +37,7 @@ static const char EXPORT_NAME[]                 = "gss_export_name";
 static const char DISPLAY_NAME[]                = "gss_display_name";
 static const char LOCAL_NAME[]                  = "gss_localname";
 static const char ACQUIRE_CRED[]                = "gss_acquire_cred";
+static const char ACQUIRE_CRED_WITH_PASSWORD[]  = "gss_acquire_cred_with_password";
 static const char RELEASE_CRED[]                = "gss_release_cred";
 static const char INQUIRE_CRED[]                = "gss_inquire_cred";
 static const char IMPORT_SEC_CONTEXT[]          = "gss_import_sec_context";
@@ -145,6 +146,14 @@ char* loadNative(const char *libName)
         failed = TRUE;
         goto out;
     }
+
+    /*
+     * This one may not be available for a given GSS library, as it's an
+     * extension, therefore we don't fail if it's missing.
+     */
+    ftab->acquireCredWithPassword = (ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)
+                        dbgsysFindLibraryEntry(gssLib,
+                                               ACQUIRE_CRED_WITH_PASSWORD);
 
     ftab->releaseCred = (RELEASE_CRED_FN_PTR)
                         dbgsysFindLibraryEntry(gssLib, RELEASE_CRED);
