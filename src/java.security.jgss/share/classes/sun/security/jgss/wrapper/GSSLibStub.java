@@ -69,8 +69,8 @@ class GSSLibStub {
     native Object[] displayName(long pName) throws GSSException;
 
     // Credential related routines
-    native long acquireCred(long pName, int lifetime, int usage)
-                                        throws GSSException;
+    native long acquireCred(long pName, String password,
+                            int lifetime, int usage) throws GSSException;
     native long releaseCred(long pCred);
     native long getCredName(long pCred);
     native int getCredTime(long pCred);
