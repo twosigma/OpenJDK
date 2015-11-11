@@ -66,16 +66,32 @@ public class GSSCredentialImpl implements GSSCredential {
     }
 
     GSSCredentialImpl(GSSManagerImpl gssManager, GSSName name,
-                             int lifetime, Oid mech, int usage)
+                      int lifetime, Oid mech, int usage)
         throws GSSException {
         if (mech == null) mech = ProviderList.DEFAULT_MECH_OID;
 
         init(gssManager);
-        add(name, lifetime, lifetime, mech, usage);
+        String password = null;
+        add(name, password, lifetime, lifetime, mech, usage);
+    }
+
+    GSSCredentialImpl(GSSManagerImpl gssManager, GSSName name, String password,
+                      int lifetime, Oid mech, int usage)
+        throws GSSException {
+        if (mech == null) mech = ProviderList.DEFAULT_MECH_OID;
+
+        init(gssManager);
+        add(name, password, lifetime, lifetime, mech, usage);
     }
 
     GSSCredentialImpl(GSSManagerImpl gssManager, GSSName name,
                       int lifetime, Oid[] mechs, int usage)
+        throws GSSException {
+        this(gssManager, name, (String)null, lifetime, mechs, usage);
+    }
+
+    GSSCredentialImpl(GSSManagerImpl gssManager, GSSName name,
+                      String password, int lifetime, Oid mechs[], int usage)
         throws GSSException {
         init(gssManager);
         boolean defaultList = false;
@@ -86,7 +102,7 @@ public class GSSCredentialImpl implements GSSCredential {
 
         for (int i = 0; i < mechs.length; i++) {
             try {
-                add(name, lifetime, lifetime, mechs[i], usage);
+                add(name, password, lifetime, lifetime, mechs[i], usage);
             } catch (GSSException e) {
                 if (defaultList) {
                     // Try the next mechanism
@@ -417,6 +433,13 @@ public class GSSCredentialImpl implements GSSCredential {
 
     public void add(GSSName name, int initLifetime, int acceptLifetime,
                     Oid mech, int usage) throws GSSException {
+        String password = null;
+        add(name, password, initLifetime, acceptLifetime, mech, usage);
+    }
+
+    public void add(GSSName name, String password, int initLifetime,
+                    int acceptLifetime, Oid mech, int usage)
+                    throws GSSException {
 
         if (destroyed) {
             throw new IllegalStateException("This credential is " +
@@ -437,6 +460,7 @@ public class GSSCredentialImpl implements GSSCredential {
                                   ((GSSNameImpl)name).getElement(mech));
 
         tempCred = gssManager.getCredentialElement(nameElement,
+                                                   password,
                                                    initLifetime,
                                                    acceptLifetime,
                                                    mech,
@@ -474,11 +498,20 @@ public class GSSCredentialImpl implements GSSCredential {
                 key = new SearchKey(mech, currentUsage);
                 hashtable.put(key, tempCred);
 
-                tempCred = gssManager.getCredentialElement(nameElement,
-                                                        initLifetime,
-                                                        acceptLifetime,
-                                                        mech,
-                                                        desiredUsage);
+                if (password == null) {
+                    tempCred = gssManager.getCredentialElement(nameElement,
+                                                               initLifetime,
+                                                               acceptLifetime,
+                                                               mech,
+                                                               desiredUsage);
+                } else {
+                    tempCred = gssManager.getCredentialElement(nameElement,
+                                                               password,
+                                                               initLifetime,
+                                                               acceptLifetime,
+                                                               mech,
+                                                               desiredUsage);
+                }
 
                 key = new SearchKey(mech, desiredUsage);
                 hashtable.put(key, tempCred);

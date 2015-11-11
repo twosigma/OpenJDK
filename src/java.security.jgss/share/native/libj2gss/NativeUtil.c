@@ -799,37 +799,18 @@ jobject getJavaOID(JNIEnv *env, gss_OID cOid) {
   return result;
 }
 /*
- * Utility routine for creating a gss_OID_set structure
- * using the specified gss_OID.
- * NOTE: need to call deleteGSSOIDSet(...) afterwards
- * to release the created gss_OID_set structure.
+ * Utility routine for filling in a 1-element gss_OID_set structure using the
+ * specified gss_OID (storage owned by caller).  However, with SPNEGO we return
+ * a static set containing all the available mechanisms.
  */
-gss_OID_set newGSSOIDSet(gss_OID oid) {
-  gss_OID_set oidSet;
-  OM_uint32 minor; // don't care; just so it compiles
-
-  if (oid->length != 6 ||
-      memcmp(oid->elements, SPNEGO_BYTES, 6) != 0) {
-      (*ftab->createEmptyOidSet)(&minor, &oidSet);
-      (*ftab->addOidSetMember)(&minor, oid, &oidSet);
-      return oidSet;
-  } else {
-      // Use all mechs for SPNEGO in order to work with
-      // various native GSS impls
-      return (ftab->mechs);
+gss_OID_set makeGSSOIDSet(gss_OID_set mechs, gss_OID oid) {
+  if (oid->length != 6 || memcmp(oid->elements, SPNEGO_BYTES, 6) != 0) {
+      mechs->count = 1;
+      mechs->elements = oid;
+      return mechs;
   }
-}
-/*
- * Utility routine for releasing a gss_OID_set structure.
- * NOTE: used in conjunction with newGSSOIDSet(...).
- */
-void deleteGSSOIDSet(gss_OID_set oidSet) {
-  OM_uint32 minor; /* don't care; just so it compiles */
-
-  if ((oidSet != ftab->mechs) &&
-      (oidSet != NULL) && (oidSet != GSS_C_NO_OID_SET)) {
-    (*ftab->releaseOidSet)(&minor, &oidSet);
-  }
+  /* Use all mechs for SPNEGO in order to work with various native GSS impls */
+  return (ftab->mechs);
 }
 /*
  * Utility routine for creating a org.ietf.jgss.Oid[]
