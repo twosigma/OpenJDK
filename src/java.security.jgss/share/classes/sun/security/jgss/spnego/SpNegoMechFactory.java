@@ -149,6 +149,22 @@ public final class SpNegoMechFactory implements MechanismFactory {
         return credElement;
     }
 
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+           String password, int initLifetime, int acceptLifetime,
+           int usage) throws GSSException {
+
+        SpNegoCredElement credElement = getCredFromSubject
+            (name, (usage != GSSCredential.ACCEPT_ONLY));
+
+        if (credElement == null) {
+            // get CredElement for the default Mechanism
+            credElement = new SpNegoCredElement
+                (manager.getCredentialElement(name, password, initLifetime,
+                acceptLifetime, null, usage));
+        }
+        return credElement;
+    }
+
     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
                              GSSCredentialSpi myInitiatorCred, int lifetime)
         throws GSSException {

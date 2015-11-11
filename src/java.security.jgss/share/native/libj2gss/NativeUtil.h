@@ -46,8 +46,7 @@ extern "C" {
 
   extern gss_OID newGSSOID(JNIEnv *, jobject);
   extern void deleteGSSOID(gss_OID);
-  extern gss_OID_set newGSSOIDSet(gss_OID);
-  extern void deleteGSSOIDSet(gss_OID_set);
+  extern gss_OID_set makeGSSOIDSet(gss_OID_set, gss_OID);
 
   extern jbyteArray getJavaBuffer(JNIEnv *, gss_buffer_t, jboolean);
   extern jstring getJavaString(JNIEnv *, gss_buffer_t);
