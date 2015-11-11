@@ -69,20 +69,26 @@ public class GSSCredElement implements GSSCredentialSpi {
         name = srcName;
     }
 
-    GSSCredElement(GSSNameElement name, int lifetime, int usage,
-                   GSSLibStub stub) throws GSSException {
+    GSSCredElement(GSSNameElement name, String password, int lifetime,
+                   int usage, GSSLibStub stub) throws GSSException {
         cStub = stub;
         this.usage = usage;
 
         if (name != null) { // Could be GSSNameElement.DEF_ACCEPTOR
             this.name = name;
             doServicePermCheck();
-            pCred = cStub.acquireCred(this.name.pName, lifetime, usage);
+            pCred = cStub.acquireCred(this.name.pName, password, lifetime,
+                    usage);
         } else {
-            pCred = cStub.acquireCred(0, lifetime, usage);
+            pCred = cStub.acquireCred(0, password, lifetime, usage);
             this.name = new GSSNameElement(cStub.getCredName(pCred), cStub.getMech(), cStub);
             doServicePermCheck();
         }
+    }
+
+    GSSCredElement(GSSNameElement name, int lifetime, int usage,
+                   GSSLibStub stub) throws GSSException {
+        this(name, (String)null, lifetime, usage, stub);
     }
 
     public Provider getProvider() {
