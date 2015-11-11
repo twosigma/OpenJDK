@@ -145,7 +145,7 @@ DEF_JNI_OnLoad(JavaVM *jvm, void *reserved) {
     return JNI_ERR;
   }
   CLS_GSSNameElement = (*env)->NewGlobalRef(env, cls);
-  if (CLS_GSSException == NULL) {
+  if (CLS_GSSNameElement == NULL) {
     return JNI_ERR;
   }
   cls = (*env)->FindClass(env, "sun/security/jgss/wrapper/GSSCredElement");
@@ -497,7 +497,6 @@ jstring getMinorMessage(JNIEnv *env, jobject jstub, OM_uint32 statusValue) {
   OM_uint32 messageContext, minor, major;
   gss_buffer_desc statusString;
   gss_OID mech;
-  jstring msg;
 
   messageContext = 0;
   if (jstub != NULL) {
@@ -661,7 +660,6 @@ jbyteArray getJavaBuffer(JNIEnv *env, gss_buffer_t cbytes) {
 gss_OID newGSSOID(JNIEnv *env, jobject jOid) {
   jbyteArray jbytes;
   gss_OID cOid;
-  jthrowable gssEx;
   if (jOid != NULL) {
     jbytes = (*env)->CallObjectMethod(env, jOid, MID_Oid_getDER);
     if ((*env)->ExceptionCheck(env)) {

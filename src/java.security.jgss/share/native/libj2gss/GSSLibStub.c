@@ -88,7 +88,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_getMechPtr(JNIEnv *env,
   gss_OID cOid;
   unsigned int i, len;
   jbyte* bytes;
-  jthrowable gssEx;
   int found;
 
   if (jbytes != NULL) {
@@ -154,7 +153,6 @@ gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
   gss_channel_bindings_t cb;
   jobject jinetAddr;
   jbyteArray value;
-  int i;
 
   if (jcb == NULL) {
     return GSS_C_NO_CHANNEL_BINDINGS;
@@ -959,7 +957,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
   jobject jsrcName=GSS_C_NO_NAME;
   jobject jdelCred;
   jobject jMech;
-  jbyteArray jresult;
   jboolean setTarget;
   gss_name_t targetName;
   jobject jtargetName;
