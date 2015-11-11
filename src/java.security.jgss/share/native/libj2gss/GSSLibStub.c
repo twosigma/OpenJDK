@@ -296,7 +296,7 @@ JNIEXPORT jobjectArray JNICALL
 Java_sun_security_jgss_wrapper_GSSLibStub_inquireNamesForMech(JNIEnv *env,
                                                               jobject jobj)
 {
-  OM_uint32 minor, major;
+  OM_uint32 minor, major, dummy;
   gss_OID mech;
   gss_OID_set nameTypes;
   jobjectArray result;
@@ -310,7 +310,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_inquireNamesForMech(JNIEnv *env,
 
     /* release intermediate buffers before checking status */
     result = getJavaOIDArray(env, nameTypes);
-    deleteGSSOIDSet(nameTypes);
+    (*ftab->releaseOidSet)(&dummy, &nameTypes);
     if ((*env)->ExceptionCheck(env)) {
       return NULL;
     }
@@ -641,17 +641,19 @@ Java_sun_security_jgss_wrapper_GSSLibStub_displayName(JNIEnv *env,
 /*
  * Class:     sun_security_jgss_wrapper_GSSLibStub
  * Method:    acquireCred
- * Signature: (JII)J
+ * Signature: (JLjava/lang/String;II)J
  */
 JNIEXPORT jlong JNICALL
 Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
                                                       jobject jobj,
                                                       jlong pName,
+                                                      jstring jPassword,
                                                       jint reqTime,
                                                       jint usage)
 {
   OM_uint32 minor, major;
   gss_OID mech;
+  gss_OID_set_desc singleton;
   gss_OID_set mechs;
   gss_cred_usage_t credUsage;
   gss_name_t nameHdl;
@@ -661,7 +663,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
   TRACE0("[GSSLibStub_acquireCred]");
 
   mech = (gss_OID) jlong_to_ptr((*env)->GetLongField(env, jobj, FID_GSSLibStub_pMech));
-  mechs = newGSSOIDSet(mech);
   credUsage = (gss_cred_usage_t) usage;
   nameHdl = (gss_name_t) jlong_to_ptr(pName);
 
@@ -669,11 +670,29 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
 
   /* gss_acquire_cred(...) => GSS_S_BAD_MECH, GSS_S_BAD_NAMETYPE,
      GSS_S_BAD_NAME, GSS_S_CREDENTIALS_EXPIRED, GSS_S_NO_CRED */
-  major =
-    (*ftab->acquireCred)(&minor, nameHdl, reqTime, mechs,
-                     credUsage, &credHdl, NULL, NULL);
-  /* release intermediate buffers */
-  deleteGSSOIDSet(mechs);
+  if (jPassword == NULL) {
+    mechs = makeGSSOIDSet(&singleton, mech);
+    major = (*ftab->acquireCred)(&minor, nameHdl, reqTime, mechs, credUsage,
+                                 &credHdl, NULL, NULL);
+  } else {
+    gss_buffer_desc password;
+
+    if (ftab->acquireCredWithPassword == NULL) {
+      const char *msg = "GSSLibStub_acquireCred with password not supported "
+          "by GSS provider";
+
+      TRACE0(msg);
+      checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0, msg);
+      return ptr_to_jlong(NULL);
+    }
+
+    initGSSBufferString(env, jPassword, &password);
+    mechs = makeGSSOIDSet(&singleton, mech);
+    major = (*ftab->acquireCredWithPassword)(&minor, nameHdl, &password,
+                                             reqTime, mechs, credUsage,
+                                             &credHdl, NULL, NULL);
+    resetGSSBufferString(env, jPassword, &password);
+  }
 
   TRACE1("[GSSLibStub_acquireCred] pCred=%" PRIuPTR "", (uintptr_t) credHdl);
 
