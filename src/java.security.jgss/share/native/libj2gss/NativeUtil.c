@@ -590,45 +590,59 @@ void checkStatus(JNIEnv *env, jobject jstub, OM_uint32 major,
  * Utility routine for initializing gss_buffer_t structure
  * with the byte[] in the specified jbyteArray object.
  * NOTE: must call resetGSSBuffer() to free up the resources
- * inside the gss_buffer_t structure.
  */
 void initGSSBuffer(JNIEnv *env, jbyteArray jbytes,
-                     gss_buffer_t cbytes) {
-
-  int len;
+                     gss_buffer_t cbytes, jboolean wantCopy)
+{
+  jboolean isCopy;
+  jint len;
   void* value;
 
   cbytes->length = 0;
   cbytes->value = NULL;
 
-  if (jbytes == NULL)
+  if (jbytes == NULL ||
+      (len = (*env)->GetArrayLength(env, jbytes)) == 0)
     return;
 
-  len = (*env)->GetArrayLength(env, jbytes);
+  cbytes->length = len;
+
+  if (wantCopy == JNI_FALSE) {
+    cbytes->value = (*env)->GetByteArrayElements(env, jbytes, &isCopy);
+    if (cbytes->value == NULL) {
+      throwOutOfMemoryError(env, NULL);
+    }
+    return;
+  }
+
   value = malloc(len);
   if (value == NULL) {
     throwOutOfMemoryError(env, NULL);
     return;
   }
+
   (*env)->GetByteArrayRegion(env, jbytes, 0, len, value);
   if ((*env)->ExceptionCheck(env)) {
     free(value);
     return;
   }
-  cbytes->length = len;
   cbytes->value = value;
 }
 
 /*
- * Utility routine for freeing the bytes malloc'ed
- * in initGSSBuffer() method.
- * NOTE: used in conjunction with initGSSBuffer(...).
+ * Utility routine for freeing the buffer obtained via initGSSBuffer().
+ * If jbytes is null this is a malloced copy.
  */
-void resetGSSBuffer(gss_buffer_t cbytes) {
-  if ((cbytes != NULL) && (cbytes != GSS_C_NO_BUFFER)) {
+void resetGSSBuffer(JNIEnv *env, jbyteArray jbytes, gss_buffer_t cbytes)
+{
+  if (cbytes->value == NULL)
+    return;
+  if (jbytes != NULL) {
+    (*env)->ReleaseByteArrayElements(env, jbytes, cbytes->value, JNI_ABORT);
+  } else if (cbytes->length > 0) {
     free(cbytes->value);
-    cbytes->length = 0;
     cbytes->value = NULL;
+    cbytes->length = 0;
   }
 }
 
