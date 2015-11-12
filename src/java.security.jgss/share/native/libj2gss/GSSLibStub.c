@@ -123,7 +123,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_getMechPtr(JNIEnv *env,
  * Utility routine which releases the specified gss_channel_bindings_t
  * structure.
  */
-void deleteGSSCB(gss_channel_bindings_t cb) {
+static void deleteGSSCB(JNIEnv *env, gss_channel_bindings_t cb) {
   jobject jinetAddr;
   jbyteArray value;
 
@@ -131,15 +131,15 @@ void deleteGSSCB(gss_channel_bindings_t cb) {
 
   /* release initiator address */
   if (cb->initiator_addrtype != GSS_C_AF_NULLADDR) {
-    resetGSSBuffer(&(cb->initiator_address));
+    resetGSSBuffer(env, NULL, &(cb->initiator_address));
   }
   /* release acceptor address */
   if (cb->acceptor_addrtype != GSS_C_AF_NULLADDR) {
-    resetGSSBuffer(&(cb->acceptor_address));
+    resetGSSBuffer(env, NULL, &(cb->acceptor_address));
   }
   /* release application data */
-  if (cb->application_data.length != 0) {
-    resetGSSBuffer(&(cb->application_data));
+  if (cb->application_data.value != NULL) {
+    resetGSSBuffer(env, NULL, &(cb->application_data));
   }
   free(cb);
 }
@@ -164,9 +164,11 @@ gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
     return NULL;
   }
 
-  // initialize addrtype in CB first
+  /* Fully initialize to a state safe for cleanup */
   cb->initiator_addrtype = GSS_C_AF_NULLADDR;
   cb->acceptor_addrtype = GSS_C_AF_NULLADDR;
+  cb->application_data.length = 0;
+  cb->application_data.value = NULL;
 
   /* set up initiator address */
   jinetAddr = (*env)->CallObjectMethod(env, jcb,
@@ -180,11 +182,11 @@ gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
     if ((*env)->ExceptionCheck(env)) {
       goto cleanup;
     }
-    cb->initiator_addrtype = GSS_C_AF_INET;
-    initGSSBuffer(env, value, &(cb->initiator_address));
+    initGSSBuffer(env, value, &(cb->initiator_address), JNI_TRUE);
     if ((*env)->ExceptionCheck(env)) {
       goto cleanup;
     }
+    cb->initiator_addrtype = GSS_C_AF_INET;
   }
   /* set up acceptor address */
   jinetAddr = (*env)->CallObjectMethod(env, jcb,
@@ -198,11 +200,11 @@ gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
     if ((*env)->ExceptionCheck(env)) {
       goto cleanup;
     }
-    cb->acceptor_addrtype = GSS_C_AF_INET;
-    initGSSBuffer(env, value, &(cb->acceptor_address));
+    initGSSBuffer(env, value, &(cb->acceptor_address), JNI_TRUE);
     if ((*env)->ExceptionCheck(env)) {
       goto cleanup;
     }
+    cb->acceptor_addrtype = GSS_C_AF_INET;
   }
   /* set up application data */
   value = (*env)->CallObjectMethod(env, jcb,
@@ -210,13 +212,13 @@ gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
   if ((*env)->ExceptionCheck(env)) {
     goto cleanup;
   }
-  initGSSBuffer(env, value, &(cb->application_data));
+  initGSSBuffer(env, value, &(cb->application_data), JNI_TRUE);
   if ((*env)->ExceptionCheck(env)) {
     goto cleanup;
   }
   return cb;
 cleanup:
-  deleteGSSCB(cb);
+  deleteGSSCB(env, cb);
   return NULL;
 }
 
@@ -338,14 +340,14 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importName(JNIEnv *env,
 
   TRACE0("[GSSLibStub_importName]");
 
-  initGSSBuffer(env, jnameVal, &nameVal);
+  initGSSBuffer(env, jnameVal, &nameVal, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
       return jlong_zero;
   }
 
   nameType = newGSSOID(env, jnameType);
   if ((*env)->ExceptionCheck(env)) {
-    resetGSSBuffer(&nameVal);
+    resetGSSBuffer(env, jnameVal, &nameVal);
     return jlong_zero;
   }
 
@@ -357,7 +359,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importName(JNIEnv *env,
 
   /* release intermediate buffers */
   deleteGSSOID(nameType);
-  resetGSSBuffer(&nameVal);
+  resetGSSBuffer(env, jnameVal, &nameVal);
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_importName]");
   if ((*env)->ExceptionCheck(env)) {
@@ -754,7 +756,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importContext(JNIEnv *env,
   TRACE0("[GSSLibStub_importContext]");
 
   contextHdl = GSS_C_NO_CONTEXT;
-  initGSSBuffer(env, jctxtToken, &ctxtToken);
+  initGSSBuffer(env, jctxtToken, &ctxtToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
@@ -766,7 +768,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importContext(JNIEnv *env,
   TRACE1("[GSSLibStub_importContext] pContext=%ld", (long) contextHdl);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&ctxtToken);
+  resetGSSBuffer(env, jctxtToken, &ctxtToken);
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_importContext]");
   /* return immediately if an exception has occurred */
@@ -847,9 +849,9 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
     return NULL;
   }
 
-  initGSSBuffer(env, jinToken, &inToken);
+  initGSSBuffer(env, jinToken, &inToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
-    deleteGSSCB(cb);
+    deleteGSSCB(env, cb);
     return NULL;
   }
 
@@ -904,8 +906,8 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
   }
 
   /* release intermediate buffers before checking status */
-  deleteGSSCB(cb);
-  resetGSSBuffer(&inToken);
+  deleteGSSCB(env, cb);
+  resetGSSBuffer(env, jinToken, &inToken);
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_initContext]");
   if ((*env)->ExceptionCheck(env)) {
@@ -953,13 +955,13 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
   contextHdl = contextHdlSave = (gss_ctx_id_t)jlong_to_ptr(
     (*env)->GetLongField(env, jcontextSpi, FID_NativeGSSContext_pContext));
   credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
-  initGSSBuffer(env, jinToken, &inToken);
+  initGSSBuffer(env, jinToken, &inToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
   cb = newGSSCB(env, jcb);
   if ((*env)->ExceptionCheck(env)) {
-    resetGSSBuffer(&inToken);
+    resetGSSBuffer(env, jinToken, &inToken);
     return NULL;
   }
   setTarget = (credHdl == GSS_C_NO_CREDENTIAL);
@@ -979,8 +981,8 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
                            &aFlags, &aTime, &delCred);
   /* release intermediate buffers before checking status */
 
-  deleteGSSCB(cb);
-  resetGSSBuffer(&inToken);
+  deleteGSSCB(env, cb);
+  resetGSSBuffer(env, jinToken, &inToken);
 
   TRACE3("[GSSLibStub_acceptContext] after: pCred=%ld, pContext=%ld, pDelegCred=%ld",
         (long)credHdl, (long)contextHdl, (long) delCred);
@@ -1413,18 +1415,17 @@ Java_sun_security_jgss_wrapper_GSSLibStub_getMic(JNIEnv *env, jobject jobj,
     return NULL;
   }
   qop = (gss_qop_t) jqop;
-  initGSSBuffer(env, jmsg, &msg);
+  initGSSBuffer(env, jmsg, &msg, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
 
   /* gss_get_mic(...) => GSS_S_CONTEXT_EXPIRED, GSS_S_NO_CONTEXT(!),
      GSS_S_BAD_QOP */
-  major =
-    (*ftab->getMic)(&minor, contextHdl, qop, &msg, &msgToken);
+  major = (*ftab->getMic)(&minor, contextHdl, qop, &msg, &msgToken);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&msg);
+  resetGSSBuffer(env, jmsg, &msg);
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_getMic]");
   if ((*env)->ExceptionCheck(env)) {
@@ -1469,12 +1470,12 @@ Java_sun_security_jgss_wrapper_GSSLibStub_verifyMic(JNIEnv *env,
   qop = (gss_qop_t) (*env)->CallIntMethod(env, jprop, MID_MessageProp_getQOP);
   if ((*env)->ExceptionCheck(env)) { return; }
 
-  initGSSBuffer(env, jmsg, &msg);
+  initGSSBuffer(env, jmsg, &msg, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) { return; }
 
-  initGSSBuffer(env, jmsgToken, &msgToken);
+  initGSSBuffer(env, jmsgToken, &msgToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
-    resetGSSBuffer(&msg);
+    resetGSSBuffer(env, jmsg, &msg);
     return;
   }
 
@@ -1485,8 +1486,8 @@ Java_sun_security_jgss_wrapper_GSSLibStub_verifyMic(JNIEnv *env,
     (*ftab->verifyMic)(&minor, contextHdl, &msg, &msgToken, &qop);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&msg);
-  resetGSSBuffer(&msgToken);
+  resetGSSBuffer(env, jmsg, &msg);
+  resetGSSBuffer(env, jmsgToken, &msgToken);
 
   /*
    * We don't throw on supplementary status codes here, instead we pass only
@@ -1550,7 +1551,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_wrap(JNIEnv *env,
     return NULL;
   }
 
-  initGSSBuffer(env, jmsg, &msg);
+  initGSSBuffer(env, jmsg, &msg, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
@@ -1561,9 +1562,9 @@ Java_sun_security_jgss_wrapper_GSSLibStub_wrap(JNIEnv *env,
                    &msgToken);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&msg);
-
+  resetGSSBuffer(env, jmsg, &msg);
   checkStatus(env, jobj, major, minor, "[GSSLibStub_wrap]");
+
   if ((*env)->ExceptionCheck(env)) {
     (void) (*ftab->releaseBuffer)(&dummy, &msgToken);
     return NULL;
@@ -1614,7 +1615,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_unwrap(JNIEnv *env,
     return NULL;
   }
 
-  initGSSBuffer(env, jmsgToken, &msgToken);
+  initGSSBuffer(env, jmsgToken, &msgToken, JNI_FALSE);
   if ((*env)->ExceptionCheck(env)) {
     return NULL;
   }
@@ -1628,7 +1629,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_unwrap(JNIEnv *env,
     (*ftab->unwrap)(&minor, contextHdl, &msgToken, &msg, &confState, &qop);
 
   /* release intermediate buffers */
-  resetGSSBuffer(&msgToken);
+  resetGSSBuffer(env, jmsgToken, &msgToken);
 
   /*
    * We don't throw on supplementary status codes here, instead we pass only
