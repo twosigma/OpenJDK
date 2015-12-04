@@ -321,30 +321,44 @@ public class GSSUtil {
                     public Vector<T> run() throws Exception {
                         Subject accSubj = Subject.getSubject(acc);
                         Vector<T> result = null;
-                        if (accSubj != null) {
-                            result = new Vector<T>();
-                            Iterator<GSSCredentialImpl> iterator =
-                                accSubj.getPrivateCredentials
-                                (GSSCredentialImpl.class).iterator();
-                            while (iterator.hasNext()) {
-                                GSSCredentialImpl cred = iterator.next();
-                                debug("...Found cred" + cred);
-                                try {
-                                    GSSCredentialSpi ce =
-                                        cred.getElement(mech, initiate);
-                                    debug("......Found element: " + ce);
-                                    if (ce.getClass().equals(credCls) &&
-                                        (name == null ||
-                                         name.equals((Object) ce.getName()))) {
+                        if (accSubj == null) {
+                            debug("No Subject");
+                            return result;
+                        }
+
+                        result = new Vector<T>();
+                        Iterator<GSSCredentialImpl> iterator =
+                            accSubj.getPrivateCredentials
+                            (GSSCredentialImpl.class).iterator();
+                        while (iterator.hasNext()) {
+                            GSSCredentialImpl cred = iterator.next();
+                            debug("...Found cred" + cred);
+                            try {
+                                GSSCredentialSpi ce =
+                                    cred.getElement(mech, initiate);
+                                debug("......Found element: " + ce);
+                                if (!ce.getClass().equals(credCls)) {
+                                    debug("......Discard element (class mismatch)");
+                                } else if (name == null) {
+                                    /*
+                                     * If the caller doesn't care about
+                                     * the specific name, then prefer
+                                     * default credentials to
+                                     * non-default credentials.
+                                     */
+                                    if (ce.isDefaultCredential())
+                                        result.add(0, credCls.cast(ce));
+                                    else
                                         result.add(credCls.cast(ce));
-                                    } else {
-                                        debug("......Discard element");
-                                    }
-                                } catch (GSSException ge) {
-                                    debug("...Discard cred (" + ge + ")");
+                                } else if (name.equals((Object) ce.getName())) {
+                                    result.add(credCls.cast(ce));
+                                } else {
+                                    debug("......Discard element (name mismatch)");
                                 }
+                            } catch (GSSException ge) {
+                                debug("...Discard cred (exception: " + ge + ")");
                             }
-                        } else debug("No Subject");
+                        }
                         return result;
                     }
                 });
