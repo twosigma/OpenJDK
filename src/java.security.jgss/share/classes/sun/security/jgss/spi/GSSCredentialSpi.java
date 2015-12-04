@@ -88,6 +88,13 @@ public interface GSSCredentialSpi {
      */
     public boolean isAcceptorCredential() throws GSSException;
 
+     /**
+      * Returns true if the credential is a default credential.
+      *
+      * @return true if the credential is a default credential, else false.
+      */
+     public boolean isDefaultCredential();
+
     /**
      * Returns the oid representing the underlying credential
      * mechanism oid.
