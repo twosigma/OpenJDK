@@ -450,6 +450,20 @@ public class GSSNameImpl implements GSSName {
         return printableName;
     }
 
+    public String getName() {
+        return printableName;
+    }
+
+    public String getName(Oid mech) throws GSSException {
+        GSSNameSpi element = elements.get(mech);
+        if (element == null) {
+            throw new GSSExceptionImpl(GSSException.UNAVAILABLE,
+                    "GSSName object does not have an element for the " +
+                    "given mechanism");
+        }
+        return element.toString();
+    }
+
     public String getLocalName() throws GSSException {
         String lname = null;
         Oid mech = null;
