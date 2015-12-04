@@ -214,10 +214,48 @@ public final class ServicePermission extends Permission
 
 
     boolean impliesIgnoreMask(ServicePermission p) {
-        return ((this.getName().equals("*")) ||
-                this.getName().equals(p.getName()) ||
-                (p.getName().startsWith("@") &&
-                        this.getName().endsWith(p.getName())));
+        if ((this.getName().equals("*")) ||
+	     this.getName().equals(p.getName()) ||
+	     (p.getName().startsWith("@") &&
+	             this.getName().endsWith(p.getName())))
+            return true;
+
+        /*
+         * Empty realm in this or p is a wild-card.  This is needed to support
+         * non-Kerberos ServicePermissions for GSS (a band-aid until we can
+         * implement a proper GssAcceptorPermission class), but also because
+         * users may not know and might not care what realm the service is in,
+         * especially when they are using a keytab.
+         *
+         * If the user is using a password, then the realm matters more.  An
+         * untrusted actor could cause KDCs for a realm they control to see
+         * material they could attack offline, but that was already the case
+         * anyways, and the answer is the same in all cases: use stronger
+         * passwords, use randomized keys in a keytab, or let us implement
+         * SPAKE or similar alternatives to the venerable PA-ENC-TIMESTAMP.
+         */
+        if ((this.getName().equals("krbtgt/@") &&
+             p.getName().startsWith("krbtgt/")) ||
+            (p.getName().equals("krbtgt/@") &&
+             this.getName().startsWith("krbtgt/")))
+            return true;
+
+        char[] n = this.getName().toCharArray();
+        int i;
+        for (i = 0; i < n.length; i++) {
+            if (n[i] == '\\') {
+                i++;
+                continue;
+            }
+            if (n[i] == '@') {
+                String s = new String(n, 0, i + 1);
+                return (p.getName().startsWith(s) &&
+                    (p.getName().equals(s) || this.getName().equals(s)));
+            }
+        }
+
+        // No realm, not even empty -> fail
+        return false;
     }
 
     /**
