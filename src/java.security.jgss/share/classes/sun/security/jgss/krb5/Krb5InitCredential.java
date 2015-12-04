@@ -55,6 +55,7 @@ public class Krb5InitCredential
 
     private Krb5NameElement name;
     private Credentials krb5Credentials;
+    private boolean isDefCred;
 
     private Krb5InitCredential(Krb5NameElement name,
                                byte[] asn1Encoding,
@@ -82,6 +83,8 @@ public class Krb5InitCredential
               clientAddresses);
 
         this.name = name;
+        if (name == null)
+            isDefCred = true;
 
         try {
             // Cache this for later use by the sun.security.krb5 package.
@@ -134,7 +137,8 @@ public class Krb5InitCredential
 
         this.name = name;
         // A delegated cred does not have all fields set. So do not try to
-        // creat new Credentials out of the delegatedCred.
+        // creat new Credentials out of the delegatedCred.  Also, a delegated
+        // credential is not a default credential.
         this.krb5Credentials = delegatedCred;
     }
 
@@ -271,6 +275,15 @@ public class Krb5InitCredential
      */
     public final Oid getMechanism() {
         return Krb5MechFactory.GSS_KRB5_MECH_OID;
+    }
+
+    /**
+     * Returns true if the credential is a default credential.
+     *
+     * @return true if the credential is a default credential, else false.
+     */
+    public boolean isDefaultCredential() {
+        return isDefCred;
     }
 
     public final java.security.Provider getProvider() {
