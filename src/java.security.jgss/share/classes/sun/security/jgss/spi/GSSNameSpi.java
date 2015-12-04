@@ -129,4 +129,10 @@ public interface GSSNameSpi {
      * Indicates if this name object represents an Anonymous name.
      */
     public boolean isAnonymousName();
+
+    /**
+     * Indicates whether this name object refers to whatever name(s) the
+     * default credentials respond to.
+     */
+    public boolean isDefaultCredentialName();
 }
