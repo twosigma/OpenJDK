@@ -42,6 +42,7 @@ public class GSSCredElement implements GSSCredentialSpi {
     long pCred; // Pointer to the gss_cred_id_t structure
     private GSSNameElement name = null;
     private GSSLibStub cStub;
+    public boolean isDefCred;
 
     // Perform the necessary ServicePermission check on this cred
     void doServicePermCheck() throws GSSException {
@@ -80,10 +81,13 @@ public class GSSCredElement implements GSSCredentialSpi {
             doServicePermCheck();
             pCred = cStub.acquireCred(this.name.pName, password, lifetime,
                     usage);
+            if (name == GSSNameElement.DEF_ACCEPTOR)
+                isDefCred = true;
         } else {
             pCred = cStub.acquireCred(0, password, lifetime, usage);
             this.name = new GSSNameElement(cStub.getCredName(pCred), cStub.getMech(), cStub);
             doServicePermCheck();
+            isDefCred = true;
         }
     }
 
@@ -130,6 +134,10 @@ public class GSSCredElement implements GSSCredentialSpi {
 
     public Oid getMechanism() {
         return cStub.getMech();
+    }
+
+    public boolean isDefaultCredential() {
+        return isDefCred;
     }
 
     public String toString() {
