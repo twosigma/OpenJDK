@@ -131,24 +131,8 @@ public class GSSUtil {
 
         Set<GSSCredentialSpi> gssCredentials = null;
 
-        Set<KerberosPrincipal> krb5Principals =
-                                new HashSet<KerberosPrincipal>();
-
-        if (name instanceof GSSNameImpl) {
-            try {
-                GSSNameSpi ne = ((GSSNameImpl) name).getElement
-                    (GSS_KRB5_MECH_OID);
-                String krbName = ne.toString();
-                if (ne instanceof Krb5NameElement) {
-                    krbName =
-                        ((Krb5NameElement) ne).getKrb5PrincipalName().getName();
-                }
-                KerberosPrincipal krbPrinc = new KerberosPrincipal(krbName);
-                krb5Principals.add(krbPrinc);
-            } catch (GSSException ge) {
-                debug("Skipped name " + name + " due to " + ge);
-            }
-        }
+        Set<GSSName> names = new HashSet<GSSName>();
+        names.add(name);
 
         if (creds instanceof GSSCredentialImpl) {
             gssCredentials = ((GSSCredentialImpl) creds).getElements();
@@ -158,12 +142,11 @@ public class GSSUtil {
             privCredentials = new HashSet<Object>(); // empty Set
         }
         debug("Created Subject with the following");
-        debug("principals=" + krb5Principals);
+        debug("principals=" + names);
         debug("public creds=" + pubCredentials);
         debug("private creds=" + privCredentials);
 
-        return new Subject(false, krb5Principals, pubCredentials,
-                           privCredentials);
+        return new Subject(false, names, pubCredentials, privCredentials);
 
     }
 
