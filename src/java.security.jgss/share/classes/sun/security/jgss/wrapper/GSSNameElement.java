@@ -294,6 +294,10 @@ public class GSSNameElement implements GSSNameSpi {
         return (GSSName.NT_ANONYMOUS.equals(printableType));
     }
 
+    public boolean isDefaultCredentialName() {
+        return (this == DEF_ACCEPTOR);
+    }
+
     public void dispose() {
         if (pName != 0) {
             cStub.releaseName(pName);
