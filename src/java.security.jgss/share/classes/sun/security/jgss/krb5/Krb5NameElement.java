@@ -367,6 +367,10 @@ public class Krb5NameElement
         return (gssNameType.equals(GSSName.NT_ANONYMOUS));
     }
 
+    public boolean isDefaultCredentialName() {
+        return false;
+    }
+
     public Provider getProvider() {
         return Krb5MechFactory.PROVIDER;
     }
