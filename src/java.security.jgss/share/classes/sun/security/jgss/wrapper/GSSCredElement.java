@@ -45,7 +45,11 @@ public class GSSCredElement implements GSSCredentialSpi {
     public boolean isDefCred;
 
     // Perform the necessary ServicePermission check on this cred
+    // FIXME Don't use any Krb5-specific code here.
     void doServicePermCheck() throws GSSException {
+        // FIXME We need only do this check in initSecContext() and
+        // acceptSecContext(), so gut this here, and never ever do the
+        // Krb5Util.getTGSName(name) check.
         if (GSSUtil.isKerberosMech(cStub.getMech())) {
             if (System.getSecurityManager() != null) {
                 if (isInitiatorCredential()) {
