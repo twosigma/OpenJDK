@@ -52,6 +52,7 @@ public class GSSNameElement implements GSSNameSpi {
     long pName = 0; // Pointer to the gss_name_t structure
     private String printableName;
     private Oid printableType;
+    private Oid mech;
     private GSSLibStub cStub;
 
     static final GSSNameElement DEF_ACCEPTOR = new GSSNameElement();
@@ -96,14 +97,14 @@ public class GSSNameElement implements GSSNameSpi {
         printableName = "<DEFAULT ACCEPTOR>";
     }
 
-    // Warning: called by NativeUtil.c
-    GSSNameElement(long pNativeName, GSSLibStub stub) throws GSSException {
+    GSSNameElement(long pNativeName, Oid mech, GSSLibStub stub) throws GSSException {
         assert(stub != null);
         if (pNativeName == 0) {
             throw new GSSException(GSSException.BAD_NAME);
         }
         // Note: pNativeName is assumed to be a MN.
         pName = pNativeName;
+        this.mech = mech;
         cStub = stub;
         setPrintables();
     }
@@ -116,6 +117,7 @@ public class GSSNameElement implements GSSNameSpi {
         }
         cStub = stub;
         byte[] name = nameBytes;
+        mech = cStub.getMech();
 
         if (nameType != null) {
             // Special handling the specified name type if
@@ -128,7 +130,6 @@ public class GSSNameElement implements GSSNameSpi {
                 // method) for "NT_EXPORT_NAME"
                 byte[] mechBytes = null;
                 DerOutputStream dout = new DerOutputStream();
-                Oid mech = cStub.getMech();
                 try {
                     dout.putOID(new ObjectIdentifier(mech.toString()));
                 } catch (IOException e) {
@@ -195,7 +196,7 @@ public class GSSNameElement implements GSSNameSpi {
     public String getKrbName() throws GSSException {
         long mName = 0;
         GSSLibStub stub = cStub;
-        if (!GSSUtil.isKerberosMech(cStub.getMech())) {
+        if (!GSSUtil.isKerberosMech(mech)) {
             stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
         }
         mName = stub.canonicalizeName(pName);
@@ -267,7 +268,7 @@ public class GSSNameElement implements GSSNameSpi {
     }
 
     public Oid getMechanism() {
-        return cStub.getMech();
+        return (mech != null) ? mech : cStub.getMech();
     }
 
     public String toString() {

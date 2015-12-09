@@ -854,10 +854,8 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
   gss_channel_bindings_t cb;
   gss_buffer_desc inToken;
   gss_buffer_desc outToken = GSS_C_EMPTY_BUFFER;
-/* UNCOMMENT after SEAM bug#6287358 is backported to S10
   gss_OID aMech;
   jobject jMech;
-*/
 
   TRACE0("[GSSLibStub_initContext]");
 
@@ -891,7 +889,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
      GSS_S_BAD_NAMETYPE, GSS_S_BAD_NAME(!), GSS_S_BAD_MECH */
   major = (*ftab->initSecContext)(&minor, credHdl,
                                  &contextHdl, targetName, mech,
-                                 flags, time, cb, &inToken, NULL /*aMech*/,
+                                 flags, time, cb, &inToken, &aMech,
                                  &outToken, &aFlags, &aTime);
 
   TRACE2("[GSSLibStub_initContext] after: pContext=%" PRIuPTR ", outToken len=%ld",
@@ -920,11 +918,9 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
                               FID_NativeGSSContext_isEstablished,
                               JNI_TRUE);
 
-/* UNCOMMENT after SEAM bug#6287358 is backported to S10
       jMech = getJavaOID(env, aMech);
       (*env)->SetObjectField(env, jcontextSpi,
                              FID_NativeGSSContext_actualMech, jMech);
-*/
     } else if (major & GSS_S_CONTINUE_NEEDED) {
       TRACE0("[GSSLibStub_initContext] context not established");
       major &= ~GSS_S_CONTINUE_NEEDED;
@@ -1024,7 +1020,20 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
 
   if (GSS_ERROR(major) == GSS_S_COMPLETE) {
     /* update member values if needed */
-    // WORKAROUND for an old Heimdal bug
+
+    if (aMech != GSS_C_NO_OID) {
+      jMech = getJavaOID(env, aMech);
+      if ((*env)->ExceptionCheck(env)) {
+        goto error;
+      }
+      (*env)->SetObjectField(env, jcontextSpi,
+                             FID_NativeGSSContext_actualMech, jMech);
+      if ((*env)->ExceptionCheck(env)) {
+        goto error;
+      }
+    }
+
+    /* WORKAROUND for an old Heimdal bug */
     if (delCred == GSS_C_NO_CREDENTIAL) {
         aFlags &= ~GSS_C_DELEG_FLAG;
     }
@@ -1043,7 +1052,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
 
       jtargetName = (*env)->NewObject(env, CLS_GSSNameElement,
                                 MID_GSSNameElement_ctor,
-                                ptr_to_jlong(targetName), jobj);
+                                ptr_to_jlong(targetName), jMech, jobj);
       if ((*env)->ExceptionCheck(env)) {
         goto error;
       }
@@ -1061,7 +1070,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
     if (srcName != GSS_C_NO_NAME) {
       jsrcName = (*env)->NewObject(env, CLS_GSSNameElement,
                                    MID_GSSNameElement_ctor,
-                                   ptr_to_jlong(srcName), jobj);
+                                   ptr_to_jlong(srcName), jMech, jobj);
       if ((*env)->ExceptionCheck(env)) {
         goto error;
       }
@@ -1083,12 +1092,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
       (*env)->SetBooleanField(env, jcontextSpi,
                               FID_NativeGSSContext_isEstablished,
                               JNI_TRUE);
-      jMech = getJavaOID(env, aMech);
-      if ((*env)->ExceptionCheck(env)) {
-        goto error;
-      }
-      (*env)->SetObjectField(env, jcontextSpi,
-                             FID_NativeGSSContext_actualMech, jMech);
       if ((*env)->ExceptionCheck(env)) {
         goto error;
       }
