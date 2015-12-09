@@ -80,7 +80,7 @@ public class GSSCredElement implements GSSCredentialSpi {
             pCred = cStub.acquireCred(this.name.pName, lifetime, usage);
         } else {
             pCred = cStub.acquireCred(0, lifetime, usage);
-            this.name = new GSSNameElement(cStub.getCredName(pCred), cStub);
+            this.name = new GSSNameElement(cStub.getCredName(pCred), cStub.getMech(), cStub);
             doServicePermCheck();
         }
     }
