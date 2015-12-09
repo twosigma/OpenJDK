@@ -271,9 +271,9 @@ DEF_JNI_OnLoad(JavaVM *jvm, void *reserved) {
   }
   MID_GSSNameElement_ctor =
     (*env)->GetMethodID(env, CLS_GSSNameElement,
-                        "<init>", "(JLsun/security/jgss/wrapper/GSSLibStub;)V");
+                        "<init>", "(JLorg/ietf/jgss/Oid;Lsun/security/jgss/wrapper/GSSLibStub;)V");
   if (MID_GSSNameElement_ctor == NULL) {
-    printf("Couldn't find GSSNameElement(long, GSSLibStub) constructor\n");
+    printf("Couldn't find GSSNameElement(long, Oid, GSSLibStub) constructor\n");
     return JNI_ERR;
   }
   MID_GSSCredElement_ctor =
