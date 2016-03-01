@@ -686,6 +686,15 @@ GSS_DLLIMP OM_uint32 gss_canonicalize_name(
 #    pragma pack(pop)
 #endif
 
+/* Common extension for aname2lname (NOT in RFC2744) */
+OM_uint32
+gss_localname(
+        OM_uint32 *,            /* minor_status */
+        const gss_name_t,       /* name */
+        gss_OID,                /* mech_type */
+        gss_buffer_t            /* localname */
+);
+
 #ifdef __cplusplus
 }
 #endif
