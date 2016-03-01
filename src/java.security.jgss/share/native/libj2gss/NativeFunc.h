@@ -84,6 +84,12 @@ typedef OM_uint32 (*DISPLAY_NAME_FN_PTR)
                                 gss_buffer_t output_name_buffer,
                                 gss_OID *output_name_type);
 
+typedef OM_uint32 (*LOCAL_NAME_FN_PTR)
+                                (OM_uint32 *minor_status,
+                                gss_name_t input_name,
+                                gss_OID mech,
+                                gss_buffer_t output_name_buffer);
+
 typedef OM_uint32 (*ACQUIRE_CRED_FN_PTR)
                                 (OM_uint32 *minor_status,
                                 gss_name_t desired_name,
@@ -249,6 +255,7 @@ typedef struct GSS_FUNCTION_TABLE {
     CANONICALIZE_NAME_FN_PTR            canonicalizeName;
     EXPORT_NAME_FN_PTR                  exportName;
     DISPLAY_NAME_FN_PTR                 displayName;
+    LOCAL_NAME_FN_PTR                   localName;
     ACQUIRE_CRED_FN_PTR                 acquireCred;
     RELEASE_CRED_FN_PTR                 releaseCred;
     INQUIRE_CRED_FN_PTR                 inquireCred;
