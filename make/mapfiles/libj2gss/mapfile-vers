@@ -35,6 +35,7 @@ SUNWprivate_1.1 {
 		Java_sun_security_jgss_wrapper_GSSLibStub_canonicalizeName;
 		Java_sun_security_jgss_wrapper_GSSLibStub_exportName;
 		Java_sun_security_jgss_wrapper_GSSLibStub_displayName;
+		Java_sun_security_jgss_wrapper_GSSLibStub_localName;
 		Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred;
 		Java_sun_security_jgss_wrapper_GSSLibStub_releaseCred;
 		Java_sun_security_jgss_wrapper_GSSLibStub_getCredName;
