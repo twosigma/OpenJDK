@@ -275,6 +275,16 @@ public class GSSNameElement implements GSSNameSpi {
         return printableName;
     }
 
+    public String getLocalName() throws GSSException {
+        return cStub.localName(pName, mech);
+    }
+
+    public String getLocalName(Oid mech) throws GSSException {
+        if (mech.equals(this.mech))
+            return cStub.localName(pName, mech);
+        throw new GSSException(GSSException.BAD_MECH);
+    }
+
     public Oid getStringNameType() {
         return printableType;
     }
