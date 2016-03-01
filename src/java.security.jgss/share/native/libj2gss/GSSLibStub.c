@@ -513,6 +513,69 @@ Java_sun_security_jgss_wrapper_GSSLibStub_exportName(JNIEnv *env,
 
 /*
  * Class:     sun_security_jgss_wrapper_GSSLibStub
+ * Method:    localName
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_sun_security_jgss_wrapper_GSSLibStub_localName(JNIEnv *env,
+                                                    jobject jobj,
+                                                    jlong pName,
+                                                    jobject jOid)
+{
+  OM_uint32 minor, major, dummy;
+  gss_name_t nameHdl, mnNameHdl;
+  gss_buffer_desc outBuf = GSS_C_EMPTY_BUFFER;
+  gss_OID mech;
+
+  nameHdl = (gss_name_t) jlong_to_ptr(pName);
+
+  if (ftab->localName == NULL) {
+    TRACE0("GSSLibStub_localName not supported by GSS provider");
+    checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0,
+                "[GSSLibStub_localName]");
+    return NULL;
+  }
+  mech = newGSSOID(env, jOid);
+
+  /* gss_localname(...) => GSS_S_NAME_NOT_MN, GSS_S_BAD_NAMETYPE,
+     GSS_S_BAD_NAME */
+  major = (*ftab->localName)(&minor, nameHdl, mech, &outBuf);
+  if (major == GSS_S_COMPLETE) {
+    deleteGSSOID(mech);
+    return getJavaString(env, &outBuf);
+  }
+  (*ftab->releaseBuffer)(&minor, &outBuf);
+
+  if (major != GSS_S_NAME_NOT_MN) {
+    checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
+    goto err;
+  }
+
+  /* canonicalize the internal name to MN and retry */
+  TRACE0("[GSSLibStub_localName] canonicalize and re-try");
+
+  major = (*ftab->canonicalizeName)(&minor, nameHdl, mech, &mnNameHdl);
+  checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
+  if ((*env)->ExceptionCheck(env))
+    goto err;
+
+  major = (*ftab->localName)(&minor, mnNameHdl, mech, &outBuf);
+  (void) (*ftab->releaseName)(&dummy, &mnNameHdl);
+
+  checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
+  if ((*env)->ExceptionCheck(env) == JNI_FALSE && major == GSS_S_COMPLETE) {
+    deleteGSSOID(mech);
+    return getJavaString(env, &outBuf);
+  }
+  (*ftab->releaseBuffer)(&minor, &outBuf);
+
+err:
+  deleteGSSOID(mech);
+  return NULL;
+}
+
+/*
+ * Class:     sun_security_jgss_wrapper_GSSLibStub
  * Method:    displayName
  * Signature: (J)[Ljava/lang/Object;
  */
