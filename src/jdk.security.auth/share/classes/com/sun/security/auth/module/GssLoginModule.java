@@ -68,6 +68,8 @@ public class GssLoginModule implements LoginModule {
     private GSSCredential gssICred;
     private GSSCredential gssACred;
 
+    private boolean useNative; // sun.security.jgss.native property
+
     private boolean useFirstPass;
     private boolean tryFirstPass;
     private boolean storePass;
@@ -124,6 +126,34 @@ public class GssLoginModule implements LoginModule {
         this.callbackHandler = callbackHandler;
         this.sharedState = (Map<String, Object>)sharedState;
         this.options = options;
+
+        /*
+         * When sun.security.jgss.native=false (i.e., not using the system's
+         * native C/ELF/DLL GSS implementation) then there's nothing for this
+         * login module to do.  Otherwise we'd get into an infinite recursion
+         * problem due to re-entering GssLoginModule like this:
+         *
+         * Application -> LoginContext -> GssLoginModule -> Krb5 ->
+         *      GSSUtil.login -> LoginContext -> GssLoginModule -> ...
+         *
+         * It stands to reason that when sun.security.jgss.native=false the
+         * login modules corresponding to the actual GSS mechanisms coded in
+         * Java are the ones that should be acquiring their corresponding
+         * credentials.
+         *
+         * A policy like "let the application use GSS credentials but not the
+         * raw, underlying Krb5 credentials" when
+         * sun.security.jgss.native=false" could be expressible by adding a
+         * module option to Krb5LoginModule that causes it to add only GSS
+         * credentials to the Subject, not Krb5 credentials.
+         *
+         * (It has never been possible to express such a policy, so we lose
+         * nothing by punting here when sun.security.jgss.native=false.)
+         */
+        useNative = "true".equalsIgnoreCase(
+                System.getProperty("sun.security.jgss.native"));
+        if (!useNative)
+            return;
 
         manager = GSSManager.getInstance();
 
@@ -212,6 +242,13 @@ public class GssLoginModule implements LoginModule {
      */
     public boolean login() throws LoginException {
         succeeded = false;
+
+        /*
+         * See commentary in initialize().  By returning false we cause
+         * LoginContext to ignore this module.
+         */
+        if (!useNative)
+            return false;
         try {
             if (tryFirstPass || useFirstPass) {
                 attemptAuthentication(true);
@@ -265,8 +302,6 @@ public class GssLoginModule implements LoginModule {
             gssICred = manager.createCredential(gssName, password,
                     GSSCredential.DEFAULT_LIFETIME, (Oid[])null,
                     GSSCredential.INITIATE_ONLY);
-            if (gssName == null)
-                gssName = gssICred.getName();
             if (debug)
                 System.out.println("\t\t[GssLoginModule] acquired" +
                     " initiator credentials: " + gssName);
@@ -284,6 +319,10 @@ public class GssLoginModule implements LoginModule {
                 System.out.println("\t\t[GssLoginModule] acquired" +
                     " acceptor credentials");
         }
+        if (gssName == null && gssICred != null)
+            gssName = gssICred.getName();
+        if (gssName == null && gssACred != null)
+            gssName = gssACred.getName();
     }
 
     private void attemptAuthentication(boolean getPasswdFromSharedState)
@@ -463,6 +502,9 @@ public class GssLoginModule implements LoginModule {
         if (succeeded == false)
             return false;
 
+        if (!useNative)
+            return false;
+
         succeeded = false;
         if (initiate && (gssICred == null)) {
             gssName = null;
@@ -559,6 +601,13 @@ public class GssLoginModule implements LoginModule {
      *          should not be ignored.</p>
      */
     public boolean logout() throws LoginException {
+        /*
+         * See commentary in initialize().  By returning false we cause
+         * LoginContext to ignore this module.
+         */
+        if (!useNative)
+            return false;
+
         if (subject.isReadOnly())
             throw new LoginException("Subject is Readonly");
 
