@@ -1000,9 +1000,11 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
                               FID_NativeGSSContext_isEstablished,
                               JNI_TRUE);
 
-      jMech = getJavaOID(env, aMech);
-      (*env)->SetObjectField(env, jcontextSpi,
-                             FID_NativeGSSContext_actualMech, jMech);
+      jMech = (aMech == GSS_C_NO_OID) ? NULL : getJavaOID(env, aMech);
+      if (!(*env)->ExceptionCheck(env)) {
+        (*env)->SetObjectField(env, jcontextSpi,
+                               FID_NativeGSSContext_actualMech, jMech);
+      }
     } else if (major & GSS_S_CONTINUE_NEEDED) {
       TRACE0("[GSSLibStub_initContext] context not established");
       major &= ~GSS_S_CONTINUE_NEEDED;
@@ -1103,16 +1105,13 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
   if (GSS_ERROR(major) == GSS_S_COMPLETE) {
     /* update member values if needed */
 
-    if (aMech != GSS_C_NO_OID) {
-      jMech = getJavaOID(env, aMech);
-      if ((*env)->ExceptionCheck(env)) {
-        goto error;
-      }
+    jMech = (aMech == GSS_C_NO_OID) ? NULL : getJavaOID(env, aMech);
+    if (!(*env)->ExceptionCheck(env)) {
       (*env)->SetObjectField(env, jcontextSpi,
                              FID_NativeGSSContext_actualMech, jMech);
-      if ((*env)->ExceptionCheck(env)) {
-        goto error;
-      }
+    }
+    if ((*env)->ExceptionCheck(env)) {
+      goto error;
     }
 
     /* WORKAROUND for an old Heimdal bug */
