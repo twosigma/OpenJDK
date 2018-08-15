@@ -257,7 +257,9 @@ class NativeGSSContext implements GSSContextSpi {
         }
 
         // Do Service Permission check when importing SPNEGO context
-        // just to be safe
+        // just to be safe.  WAT, no.  If the caller has an exported sec
+        // context token, it's because someone gave it to it, therefore there's
+        // no need to do any further permission checking.  REMOVE!
         Oid mech = cStub.getMech();
         if (GSSUtil.isSpNegoMech(mech) || GSSUtil.isKerberosMech(mech)) {
             doServicePermCheck();
