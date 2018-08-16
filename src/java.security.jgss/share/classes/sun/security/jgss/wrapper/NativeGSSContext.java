@@ -63,6 +63,7 @@ class NativeGSSContext implements GSSContextSpi {
     private GSSNameElement srcName;
     private GSSNameElement targetName;
     private GSSCredElement cred;
+    private GSSCredElement disposeCred;
     private boolean isInitiator;
     private boolean isEstablished;
     private Oid actualMech; // Assigned during context establishment
@@ -192,6 +193,7 @@ class NativeGSSContext implements GSSContextSpi {
         }
         cStub = stub;
         cred = myCred;
+        disposeCred = null;
         targetName = peer;
         isInitiator = true;
         lifetime = time;
@@ -199,8 +201,9 @@ class NativeGSSContext implements GSSContextSpi {
         if (GSSUtil.isKerberosMech(cStub.getMech())) {
             doServicePermCheck();
             if (cred == null) {
-                cred = new GSSCredElement(null, lifetime,
-                                          GSSCredential.INITIATE_ONLY, cStub);
+                disposeCred = cred =
+                    new GSSCredElement(null, lifetime,
+                            GSSCredential.INITIATE_ONLY, cStub);
             }
             srcName = cred.getName();
         }
@@ -211,6 +214,7 @@ class NativeGSSContext implements GSSContextSpi {
         throws GSSException {
         cStub = stub;
         cred = myCred;
+        disposeCred = null;
 
         if (cred != null) targetName = cred.getName();
 
@@ -298,9 +302,9 @@ class NativeGSSContext implements GSSContextSpi {
                          cStub);
                 }
                 if (cred == null) {
-                    cred = new GSSCredElement(srcName, lifetime,
-                                              GSSCredential.INITIATE_ONLY,
-                                              cStub);
+                    disposeCred = cred =
+                        new GSSCredElement(srcName, lifetime,
+                                GSSCredential.INITIATE_ONLY, cStub);
                 }
             }
         }
@@ -324,9 +328,11 @@ class NativeGSSContext implements GSSContextSpi {
                     (cStub.getContextName(pContext, false), actualMech, cStub);
                 // Replace the current default acceptor cred now that
                 // the context acceptor name is available
-                if (cred != null) cred.dispose();
-                cred = new GSSCredElement(targetName, lifetime,
-                                          GSSCredential.ACCEPT_ONLY, cStub);
+                if (disposeCred != null)
+                    disposeCred.dispose();
+                disposeCred = cred =
+                    new GSSCredElement(targetName, lifetime,
+                            GSSCredential.ACCEPT_ONLY, cStub);
             }
 
             // Only inspect token when the permission check has not
@@ -347,9 +353,11 @@ class NativeGSSContext implements GSSContextSpi {
     }
 
     public void dispose() throws GSSException {
+        if (disposeCred != null)
+            disposeCred.dispose();
+        disposeCred = cred = null;
         srcName = null;
         targetName = null;
-        cred = null;
         delegatedCred = null;
         if (pContext != 0) {
             pContext = cStub.deleteContext(pContext);
