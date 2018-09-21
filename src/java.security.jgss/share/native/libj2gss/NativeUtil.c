@@ -463,31 +463,34 @@ void throwOutOfMemoryError(JNIEnv *env, const char *message) {
 jstring getJavaString(JNIEnv *env, gss_buffer_t bytes) {
   jstring result = NULL;
   OM_uint32 minor;
-  int len;
+  jsize len;
   jbyteArray jbytes;
 
-  if (bytes != NULL) {
-    /* constructs the String object with new String(byte[])
-       NOTE: do NOT include the trailing NULL */
-    len = (int) bytes->length;
-    jbytes = (*env)->NewByteArray(env, len);
-    if (jbytes == NULL) {
-      goto finish;
-    }
+  if (bytes == NULL) {
+    return NULL;
+  }
 
-    (*env)->SetByteArrayRegion(env, jbytes, 0, len, (jbyte *) bytes->value);
-    if ((*env)->ExceptionCheck(env)) {
-      goto finish;
-    }
+  /* constructs the String object with new String(byte[]) */
+  len = (jsize)bytes->length;
+  if (len < 0 || bytes->length != (size_t)len) {
+    (*ftab->releaseBuffer)(&minor, bytes);
+    return NULL;
+  }
+  jbytes = (*env)->NewByteArray(env, len);
+  if (jbytes == NULL) {
+    (*ftab->releaseBuffer)(&minor, bytes);
+    return NULL;
+  }
 
+  (*env)->SetByteArrayRegion(env, jbytes, 0, len, (jbyte *) bytes->value);
+  if ((*env)->ExceptionCheck(env) == JNI_FALSE) {
     result = (*env)->NewObject(env, CLS_String, MID_String_ctor,
                                jbytes);
-  finish:
-    (*env)->DeleteLocalRef(env, jbytes);
-    (*ftab->releaseBuffer)(&minor, bytes);
-    return result;
-  } /* else fall through */
-  return NULL;
+  }
+
+  (*env)->DeleteLocalRef(env, jbytes);
+  (*ftab->releaseBuffer)(&minor, bytes);
+  return result;
 }
 /*
  * Utility routine for generate message for the specified minor
@@ -519,7 +522,7 @@ jstring getMinorMessage(JNIEnv *env, jobject jstub, OM_uint32 statusValue) {
  * not GSS_S_COMPLETE (i.e. 0).
  */
 void checkStatus(JNIEnv *env, jobject jstub, OM_uint32 major,
-                 OM_uint32 minor, char* methodName) {
+                 OM_uint32 minor, const char *methodName) {
   int callingErr, routineErr, supplementaryInfo;
   jint jmajor, jminor;
   char* msg;
@@ -629,27 +632,34 @@ void resetGSSBuffer(gss_buffer_t cbytes) {
  * NOTE: the specified gss_buffer_t structure is always
  * released.
  */
-jbyteArray getJavaBuffer(JNIEnv *env, gss_buffer_t cbytes) {
+jbyteArray getJavaBuffer(JNIEnv *env, gss_buffer_t cbytes, jboolean isToken) {
   jbyteArray result = NULL;
-  OM_uint32 minor; // don't care, just so it compiles
+  OM_uint32 dummy;
 
-  if (cbytes != NULL) {
-    if ((cbytes != GSS_C_NO_BUFFER) && (cbytes->length != 0)) {
-      result = (*env)->NewByteArray(env, (int) cbytes->length);
-      if (result == NULL) {
-        goto finish;
-      }
-      (*env)->SetByteArrayRegion(env, result, 0, (int) cbytes->length,
+  /*
+   * Zero length tokens map to NULL outputs, but otherwise to a zero-length
+   * Java byte array.
+   */
+  if (cbytes != GSS_C_NO_BUFFER &&
+      (isToken == JNI_FALSE || cbytes->length > 0)) {
+    jsize len = (jsize)cbytes->length;
+
+    if (len < 0 || cbytes->length != (size_t)len) {
+      /* XXX: Throw exception */
+      return NULL;
+    }
+    result = (*env)->NewByteArray(env, len);
+    if (result != NULL) {
+      (*env)->SetByteArrayRegion(env, result, 0, len,
                                  cbytes->value);
       if ((*env)->ExceptionCheck(env)) {
+        (*env)->DeleteLocalRef(env, result);
         result = NULL;
       }
     }
-  finish:
-    (*ftab->releaseBuffer)(&minor, cbytes);
-    return result;
   }
-  return NULL;
+  (void) (*ftab->releaseBuffer)(&dummy, cbytes);
+  return result;
 }
 
 /*
@@ -777,13 +787,16 @@ void deleteGSSOIDSet(gss_OID_set oidSet) {
  * using the specified gss_OID_set structure.
  */
 jobjectArray getJavaOIDArray(JNIEnv *env, gss_OID_set cOidSet) {
-  int numOfOids = 0;
+  jsize numOfOids = 0;
   jobjectArray jOidSet;
   jobject jOid;
-  int i;
+  jsize i;
 
   if (cOidSet != NULL && cOidSet != GSS_C_NO_OID_SET) {
-    numOfOids = (int) cOidSet->count;
+    numOfOids = (jsize) cOidSet->count;
+    if (numOfOids < 0 || cOidSet->count != (size_t)numOfOids) {
+      return NULL;
+    }
     jOidSet = (*env)->NewObjectArray(env, numOfOids, CLS_Oid, NULL);
     if ((*env)->ExceptionCheck(env)) {
       return NULL;
