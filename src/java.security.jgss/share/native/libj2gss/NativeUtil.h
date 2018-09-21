@@ -36,7 +36,7 @@ extern "C" {
 #endif
   extern jint getJavaTime(OM_uint32);
   extern OM_uint32 getGSSTime(jint);
-  extern void checkStatus(JNIEnv *, jobject, OM_uint32, OM_uint32, char*);
+  extern void checkStatus(JNIEnv *, jobject, OM_uint32, OM_uint32, const char *);
   extern jint checkTime(OM_uint32);
   extern void throwOutOfMemoryError(JNIEnv *, const char*);
   extern void initGSSBuffer(JNIEnv *, jbyteArray, gss_buffer_t);
@@ -47,7 +47,7 @@ extern "C" {
   extern gss_OID_set newGSSOIDSet(gss_OID);
   extern void deleteGSSOIDSet(gss_OID_set);
 
-  extern jbyteArray getJavaBuffer(JNIEnv *, gss_buffer_t);
+  extern jbyteArray getJavaBuffer(JNIEnv *, gss_buffer_t, jboolean);
   extern jstring getJavaString(JNIEnv *, gss_buffer_t);
   extern jobject getJavaOID(JNIEnv *, gss_OID);
   extern jobjectArray getJavaOIDArray(JNIEnv *, gss_OID_set);
