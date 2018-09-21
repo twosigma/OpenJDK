@@ -41,6 +41,8 @@ extern "C" {
   extern void throwOutOfMemoryError(JNIEnv *, const char*);
   extern void initGSSBuffer(JNIEnv *, jbyteArray, gss_buffer_t);
   extern void resetGSSBuffer(gss_buffer_t);
+  void initGSSBufferString(JNIEnv *, jstring, gss_buffer_t);
+  void resetGSSBufferString(JNIEnv *, jstring, gss_buffer_t);
 
   extern gss_OID newGSSOID(JNIEnv *, jobject);
   extern void deleteGSSOID(gss_OID);
