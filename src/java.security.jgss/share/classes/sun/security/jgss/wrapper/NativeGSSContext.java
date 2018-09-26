@@ -75,8 +75,8 @@ class NativeGSSContext implements GSSContextSpi {
     private int lifetime = GSSCredential.DEFAULT_LIFETIME;
     private final GSSLibStub cStub;
 
-    private boolean skipDelegPermCheck;
-    private boolean skipServicePermCheck;
+    private boolean skipDelegPermCheck = false;
+    private boolean skipServicePermCheck = false;
 
     // Retrieve the (preferred) mech out of SPNEGO tokens, i.e.
     // NegTokenInit & NegTokenTarg
@@ -111,28 +111,20 @@ class NativeGSSContext implements GSSContextSpi {
     // Perform the Service permission check
     private void doServicePermCheck() throws GSSException {
         if (System.getSecurityManager() != null) {
-            String action = (isInitiator? "initiate" : "accept");
-            // Need to check Service permission for accessing
-            // initiator cred for SPNEGO during context establishment
-            if (GSSUtil.isSpNegoMech(cStub.getMech()) && isInitiator
-                && !isEstablished) {
-                if (srcName == null) {
-                    // Check by creating default initiator KRB5 cred
-                    GSSCredElement tempCred =
-                        new GSSCredElement(null, lifetime,
-                                           GSSCredential.INITIATE_ONLY,
-                                           GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID));
-                    tempCred.dispose();
-                } else {
+            try {
+                if (isInitiator && srcName != null) {
                     String tgsName = Krb5Util.getTGSName(srcName);
-                    Krb5Util.checkServicePermission(tgsName, action);
+                    Krb5Util.checkServicePermission(tgsName, "initiate");
+                    skipServicePermCheck = true;
+                } else if (!isInitiator && targetName != null) {
+                    String targetStr = targetName.getKrbName();
+                    Krb5Util.checkServicePermission(targetStr, "accept");
+                    skipServicePermCheck = true;
                 }
+            } catch (GSSException ge) {
+                dispose();
+                throw ge;
             }
-            if (targetName == null)
-                return;
-            String targetStr = targetName.getKrbName();
-            Krb5Util.checkServicePermission(targetStr, action);
-            skipServicePermCheck = true;
         }
     }
 
@@ -204,13 +196,13 @@ class NativeGSSContext implements GSSContextSpi {
         lifetime = time;
 
         if (GSSUtil.isKerberosMech(cStub.getMech())) {
-            doServicePermCheck();
             if (cred == null) {
                 disposeCred = cred =
                     new GSSCredElement(null, lifetime,
                             GSSCredential.INITIATE_ONLY, cStub);
             }
             srcName = cred.getName();
+            doServicePermCheck();
         }
     }
 
@@ -307,6 +299,9 @@ class NativeGSSContext implements GSSContextSpi {
                 // getMechFromSpNegoToken() does the horrible, no good, very
                 // bad thing its name says it does.  For now we retain this bit
                 // of evil.
+                //
+                // XXX Time to remove this workaround.  It's been 20
+                // years.
                 try {
                     actualMech = getMechFromSpNegoToken(outToken, true);
                 } catch (GSSException e) { }
@@ -327,13 +322,7 @@ class NativeGSSContext implements GSSContextSpi {
                         (cStub.getContextName(pContext, true), actualMech,
                          cStub);
                 }
-                // XXX Attempt to get the actual target name from the cStub.
-
-                if (cred == null) {
-                    disposeCred = cred =
-                        new GSSCredElement(srcName, lifetime,
-                                GSSCredential.INITIATE_ONLY, cStub);
-                }
+                if (!skipServicePermCheck) doServicePermCheck();
             }
         }
         return outToken;
@@ -355,27 +344,15 @@ class NativeGSSContext implements GSSContextSpi {
             if (isEstablished && targetName == null) {
                 targetName = new GSSNameElement
                     (cStub.getContextName(pContext, false), actualMech, cStub);
-                // Replace the current default acceptor cred now that
-                // the context acceptor name is available
-                if (disposeCred != null) {
-                    disposeCred.dispose();
-                }
-                disposeCred = cred =
-                    new GSSCredElement(targetName, lifetime,
-                            GSSCredential.ACCEPT_ONLY, cStub);
             }
-
-            // Only inspect token when the permission check has not
-            // been performed
-            //
-            // XXX No, we should inspect the token the one time we can, just
-            // like with actualMech on the initiator side.
-            if (GSSUtil.isSpNegoMech(cStub.getMech()) &&
-                (outToken != null) && !skipServicePermCheck) {
-                if (GSSUtil.isKerberosMech(getMechFromSpNegoToken
-                                           (outToken, false))) {
-                    doServicePermCheck();
-                }
+            if (GSSUtil.isSpNegoMech(cStub.getMech()) && outToken != null &&
+                actualMech == null) {
+                try {
+                    actualMech = getMechFromSpNegoToken(outToken, true);
+                } catch (GSSException e) { }
+            }
+            if (isEstablished && targetName != null && !skipServicePermCheck) {
+                doServicePermCheck();
             }
         }
         return outToken;
