@@ -70,6 +70,7 @@ class NativeGSSContext implements GSSContextSpi {
 
     private ChannelBinding cb;
     private GSSCredElement delegatedCred;
+    private GSSCredElement disposeDelegatedCred;
     private int flags;
     private int lifetime = GSSCredential.DEFAULT_LIFETIME;
     private final GSSLibStub cStub;
@@ -336,6 +337,7 @@ class NativeGSSContext implements GSSContextSpi {
                                     inToken.length);
             long pCred = (cred == null? 0 : cred.pCred);
             outToken = cStub.acceptContext(pCred, cb, inToken, this);
+            disposeDelegatedCred = delegatedCred;
             SunNativeProvider.debug("acceptSecContext=> outToken len=" +
                                     (outToken == null? 0 : outToken.length));
 
@@ -363,7 +365,9 @@ class NativeGSSContext implements GSSContextSpi {
     public void dispose() throws GSSException {
         if (disposeCred != null)
             disposeCred.dispose();
-        disposeCred = cred = null;
+        if (disposeDelegatedCred != null)
+            disposeDelegatedCred.dispose();
+        disposeDelegatedCred = disposeCred = cred = null;
         srcName = null;
         targetName = null;
         delegatedCred = null;
@@ -629,6 +633,7 @@ class NativeGSSContext implements GSSContextSpi {
         }
     }
     public GSSCredentialSpi getDelegCred() throws GSSException {
+        disposeDelegatedCred = null;
         return delegatedCred;
     }
     public boolean isInitiator() {
