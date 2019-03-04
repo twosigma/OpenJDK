@@ -84,9 +84,26 @@ typedef OM_uint32 (*DISPLAY_NAME_FN_PTR)
                                 gss_buffer_t output_name_buffer,
                                 gss_OID *output_name_type);
 
+typedef OM_uint32 (*LOCAL_NAME_FN_PTR)
+                                (OM_uint32 *minor_status,
+                                gss_name_t input_name,
+                                gss_OID mech,
+                                gss_buffer_t output_name_buffer);
+
 typedef OM_uint32 (*ACQUIRE_CRED_FN_PTR)
                                 (OM_uint32 *minor_status,
                                 gss_name_t desired_name,
+                                OM_uint32 time_req,
+                                gss_OID_set desired_mech,
+                                gss_cred_usage_t cred_usage,
+                                gss_cred_id_t *output_cred_handle,
+                                gss_OID_set *actual_mechs,
+                                OM_uint32 *time_rec);
+
+typedef OM_uint32 (*ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)
+                                (OM_uint32 *minor_status,
+                                gss_name_t desired_name,
+                                gss_buffer_t password,
                                 OM_uint32 time_req,
                                 gss_OID_set desired_mech,
                                 gss_cred_usage_t cred_usage,
@@ -249,7 +266,9 @@ typedef struct GSS_FUNCTION_TABLE {
     CANONICALIZE_NAME_FN_PTR            canonicalizeName;
     EXPORT_NAME_FN_PTR                  exportName;
     DISPLAY_NAME_FN_PTR                 displayName;
+    LOCAL_NAME_FN_PTR                   localName;
     ACQUIRE_CRED_FN_PTR                 acquireCred;
+    ACQUIRE_CRED_WITH_PASSWORD_FN_PTR   acquireCredWithPassword;
     RELEASE_CRED_FN_PTR                 releaseCred;
     INQUIRE_CRED_FN_PTR                 inquireCred;
     IMPORT_SEC_CONTEXT_FN_PTR           importSecContext;

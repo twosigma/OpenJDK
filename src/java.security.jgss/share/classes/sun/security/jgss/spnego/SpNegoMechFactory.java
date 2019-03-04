@@ -79,6 +79,10 @@ public final class SpNegoMechFactory implements MechanismFactory {
                                     null : creds.firstElement());
 
         // Force permission check before returning the cred to caller
+        //
+        // FIXME This code assumes that the Kerberos mechanism is Java-coded,
+        // whereas it should be possible to mix Java-coded SPNEGO with a native
+        // (C-coded) mechanism.  For now this assumption stands.
         if (result != null) {
             GSSCredentialSpi cred = result.getInternalCred();
             if (GSSUtil.isKerberosMech(cred.getMechanism())) {
@@ -144,6 +148,22 @@ public final class SpNegoMechFactory implements MechanismFactory {
             // get CredElement for the default Mechanism
             credElement = new SpNegoCredElement
                 (manager.getCredentialElement(name, initLifetime,
+                acceptLifetime, null, usage));
+        }
+        return credElement;
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+           String password, int initLifetime, int acceptLifetime,
+           int usage) throws GSSException {
+
+        SpNegoCredElement credElement = getCredFromSubject
+            (name, (usage != GSSCredential.ACCEPT_ONLY));
+
+        if (credElement == null) {
+            // get CredElement for the default Mechanism
+            credElement = new SpNegoCredElement
+                (manager.getCredentialElement(name, password, initLifetime,
                 acceptLifetime, null, usage));
         }
         return credElement;

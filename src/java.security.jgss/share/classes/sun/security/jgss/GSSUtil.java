@@ -124,24 +124,8 @@ public class GSSUtil {
 
         Set<GSSCredentialSpi> gssCredentials = null;
 
-        Set<KerberosPrincipal> krb5Principals =
-                                new HashSet<KerberosPrincipal>();
-
-        if (name instanceof GSSNameImpl) {
-            try {
-                GSSNameSpi ne = ((GSSNameImpl) name).getElement
-                    (GSS_KRB5_MECH_OID);
-                String krbName = ne.toString();
-                if (ne instanceof Krb5NameElement) {
-                    krbName =
-                        ((Krb5NameElement) ne).getKrb5PrincipalName().getName();
-                }
-                KerberosPrincipal krbPrinc = new KerberosPrincipal(krbName);
-                krb5Principals.add(krbPrinc);
-            } catch (GSSException ge) {
-                debug("Skipped name " + name + " due to " + ge);
-            }
-        }
+        Set<GSSName> names = new HashSet<GSSName>();
+        names.add(name);
 
         if (creds instanceof GSSCredentialImpl) {
             gssCredentials = ((GSSCredentialImpl) creds).getElements();
@@ -151,12 +135,11 @@ public class GSSUtil {
             privCredentials = new HashSet<Object>(); // empty Set
         }
         debug("Created Subject with the following");
-        debug("principals=" + krb5Principals);
+        debug("principals=" + names);
         debug("public creds=" + pubCredentials);
         debug("private creds=" + privCredentials);
 
-        return new Subject(false, krb5Principals, pubCredentials,
-                           privCredentials);
+        return new Subject(false, names, pubCredentials, privCredentials);
 
     }
 
@@ -321,30 +304,44 @@ public class GSSUtil {
                     public Vector<T> run() throws Exception {
                         Subject accSubj = Subject.getSubject(acc);
                         Vector<T> result = null;
-                        if (accSubj != null) {
-                            result = new Vector<T>();
-                            Iterator<GSSCredentialImpl> iterator =
-                                accSubj.getPrivateCredentials
-                                (GSSCredentialImpl.class).iterator();
-                            while (iterator.hasNext()) {
-                                GSSCredentialImpl cred = iterator.next();
-                                debug("...Found cred" + cred);
-                                try {
-                                    GSSCredentialSpi ce =
-                                        cred.getElement(mech, initiate);
-                                    debug("......Found element: " + ce);
-                                    if (ce.getClass().equals(credCls) &&
-                                        (name == null ||
-                                         name.equals((Object) ce.getName()))) {
+                        if (accSubj == null) {
+                            debug("No Subject");
+                            return result;
+                        }
+
+                        result = new Vector<T>();
+                        Iterator<GSSCredentialImpl> iterator =
+                            accSubj.getPrivateCredentials
+                            (GSSCredentialImpl.class).iterator();
+                        while (iterator.hasNext()) {
+                            GSSCredentialImpl cred = iterator.next();
+                            debug("...Found cred" + cred);
+                            try {
+                                GSSCredentialSpi ce =
+                                    cred.getElement(mech, initiate);
+                                debug("......Found element: " + ce);
+                                if (!ce.getClass().equals(credCls)) {
+                                    debug("......Discard element (class mismatch)");
+                                } else if (name == null) {
+                                    /*
+                                     * If the caller doesn't care about
+                                     * the specific name, then prefer
+                                     * default credentials to
+                                     * non-default credentials.
+                                     */
+                                    if (ce.isDefaultCredential())
+                                        result.add(0, credCls.cast(ce));
+                                    else
                                         result.add(credCls.cast(ce));
-                                    } else {
-                                        debug("......Discard element");
-                                    }
-                                } catch (GSSException ge) {
-                                    debug("...Discard cred (" + ge + ")");
+                                } else if (name.equals((Object) ce.getName())) {
+                                    result.add(credCls.cast(ce));
+                                } else {
+                                    debug("......Discard element (name mismatch)");
                                 }
+                            } catch (GSSException ge) {
+                                debug("...Discard cred (exception: " + ge + ")");
                             }
-                        } else debug("No Subject");
+                        }
                         return result;
                     }
                 });

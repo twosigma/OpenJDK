@@ -65,11 +65,12 @@ class GSSLibStub {
     native boolean compareName(long pName1, long pName2);
     native long canonicalizeName(long pName);
     native byte[] exportName(long pName) throws GSSException;
+    native String localName(long pName, Oid mech) throws GSSException;
     native Object[] displayName(long pName) throws GSSException;
 
     // Credential related routines
-    native long acquireCred(long pName, int lifetime, int usage)
-                                        throws GSSException;
+    native long acquireCred(long pName, String password,
+                            int lifetime, int usage) throws GSSException;
     native long releaseCred(long pCred);
     native long getCredName(long pCred);
     native int getCredTime(long pCred);
