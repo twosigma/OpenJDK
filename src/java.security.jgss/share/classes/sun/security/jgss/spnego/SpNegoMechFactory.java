@@ -34,6 +34,7 @@ import sun.security.jgss.krb5.Krb5AcceptCredential;
 import sun.security.jgss.krb5.Krb5NameElement;
 import java.security.Provider;
 import java.util.Vector;
+import java.util.Map;
 
 /**
  * SpNego Mechanism plug in for JGSS
@@ -167,6 +168,31 @@ public final class SpNegoMechFactory implements MechanismFactory {
                 acceptLifetime, null, usage));
         }
         return credElement;
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+           Map<String,String> store, int initLifetime, int acceptLifetime,
+           int usage) throws GSSException {
+
+        SpNegoCredElement credElement = getCredFromSubject
+            (name, (usage != GSSCredential.ACCEPT_ONLY));
+
+        if (credElement == null) {
+            // get CredElement for the default Mechanism
+            credElement = new SpNegoCredElement
+                (manager.getCredentialElement(name, store, initLifetime,
+                acceptLifetime, null, usage));
+        }
+        return credElement;
+    }
+
+    public void storeCredInto(GSSCredentialSpi cred, int usage,
+                              boolean overwrite, boolean defaultCred,
+                              Map<String,String> store) throws GSSException {
+        throw new GSSException(GSSException.UNAVAILABLE, -1,
+                "The SpNego mechanism does not " +
+                "currently support storing GSS credentials handle " +
+                "elements into a \"credential store\"");
     }
 
     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
