@@ -26,6 +26,9 @@ package sun.security.jgss.wrapper;
 
 import org.ietf.jgss.*;
 import java.security.Provider;
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import sun.security.jgss.GSSUtil;
 import sun.security.jgss.spi.GSSCredentialSpi;
 import sun.security.jgss.spi.GSSNameSpi;
@@ -74,29 +77,47 @@ public class GSSCredElement implements GSSCredentialSpi {
         name = srcName;
     }
 
-    GSSCredElement(GSSNameElement name, String password, int lifetime,
-                   int usage, GSSLibStub stub) throws GSSException {
+    private GSSCredElement(GSSNameElement name, String password,
+                           Map<String,String> store, int lifetime, int usage,
+                           GSSLibStub stub) throws GSSException {
         cStub = stub;
         this.usage = usage;
 
         if (name != null) { // Could be GSSNameElement.DEF_ACCEPTOR
             this.name = name;
             doServicePermCheck();
-            pCred = cStub.acquireCred(this.name.pName, password, lifetime,
-                    usage);
+            pCred = cStub.acquireCred(this.name.pName, password, store,
+                lifetime, usage);
             if (name == GSSNameElement.DEF_ACCEPTOR)
                 isDefCred = true;
         } else {
-            pCred = cStub.acquireCred(0, password, lifetime, usage);
+            pCred = cStub.acquireCred(0, password, store, lifetime, usage);
             this.name = new GSSNameElement(cStub.getCredName(pCred), cStub.getMech(), cStub);
             doServicePermCheck();
             isDefCred = true;
         }
     }
 
+    GSSCredElement(GSSNameElement name, Map<String,String> store, int lifetime,
+                   int usage, GSSLibStub stub) throws GSSException {
+        this(name, (String)null, store, lifetime, usage, stub);
+    }
+
+    GSSCredElement(GSSNameElement name, String password, int lifetime,
+                   int usage, GSSLibStub stub) throws GSSException {
+        this(name, password, (Map<String,String>)null, lifetime, usage, stub);
+    }
+
     GSSCredElement(GSSNameElement name, int lifetime, int usage,
                    GSSLibStub stub) throws GSSException {
         this(name, (String)null, lifetime, usage, stub);
+    }
+
+    public void storeInto(int usage, boolean overwrite, boolean defaultCred,
+                          Map<String,String> store)
+            throws GSSException {
+        cStub.storeCred(pCred, usage, getMechanism(), overwrite,
+                        defaultCred, store);
     }
 
     public Provider getProvider() {
