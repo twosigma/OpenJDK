@@ -111,6 +111,28 @@ typedef OM_uint32 (*ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)
                                 gss_OID_set *actual_mechs,
                                 OM_uint32 *time_rec);
 
+typedef OM_uint32 (*ACQUIRE_CRED_FROM_FN_PTR)
+                                (OM_uint32 *minor_status,
+                                 gss_const_name_t desired_name,
+                                 OM_uint32 time_req,
+                                 const gss_OID_set desired_mechs,
+                                 gss_cred_usage_t cred_usage,
+                                 gss_const_key_value_set_t cred_store,
+                                 gss_cred_id_t * output_cred_handle,
+                                 gss_OID_set * actual_mechs,
+                                 OM_uint32 * time_rec);
+
+typedef OM_uint32 (*STORE_CRED_INTO_FN_PTR)
+                                (OM_uint32 *minor_status,
+                                 gss_const_cred_id_t input_cred_handle,
+                                 gss_cred_usage_t input_usage,
+                                 const gss_OID desired_mech,
+                                 OM_uint32 overwrite_cred,
+                                 OM_uint32 default_cred,
+                                 gss_const_key_value_set_t cred_store,
+                                 gss_OID_set * elements_stored,
+                                 gss_cred_usage_t * cred_usage_stored);
+
 typedef OM_uint32 (*RELEASE_CRED_FN_PTR)
                                 (OM_uint32 *minor_status,
                                 gss_cred_id_t *cred_handle);
@@ -269,6 +291,8 @@ typedef struct GSS_FUNCTION_TABLE {
     LOCAL_NAME_FN_PTR                   localName;
     ACQUIRE_CRED_FN_PTR                 acquireCred;
     ACQUIRE_CRED_WITH_PASSWORD_FN_PTR   acquireCredWithPassword;
+    ACQUIRE_CRED_FROM_FN_PTR            acquireCredFrom;
+    STORE_CRED_INTO_FN_PTR              storeCredInto;
     RELEASE_CRED_FN_PTR                 releaseCred;
     INQUIRE_CRED_FN_PTR                 inquireCred;
     IMPORT_SEC_CONTEXT_FN_PTR           importSecContext;
