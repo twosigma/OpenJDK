@@ -119,6 +119,19 @@ typedef const struct gss_channel_bindings_struct *gss_const_channel_bindings_t;
 typedef OM_uint32       gss_qop_t;
 typedef int             gss_cred_usage_t;
 
+/* Credential store extensions */
+typedef struct gss_key_value_element_struct {
+    const char *key;
+    const char *value;
+} gss_key_value_element_desc;
+
+typedef struct gss_key_value_set_struct {
+    OM_uint32 count; /* should be size_t, but for MIT compat */
+    gss_key_value_element_desc *elements;
+} gss_key_value_set_desc, *gss_key_value_set_t;
+
+typedef const gss_key_value_set_desc *gss_const_key_value_set_t;
+
 /*
  * Flag bits for context-level services.
  */
@@ -703,10 +716,10 @@ GSS_DLLIMP OM_uint32 gss_canonicalize_name(
 OM_uint32
 gss_add_cred_with_password(
         OM_uint32 *,            /* minor_status */
-        const gss_cred_id_t,    /* input_cred_handle */
-        const gss_name_t,       /* desired_name */
-        const gss_OID,          /* desired_mech */
-        const gss_buffer_t,     /* password */
+        gss_const_cred_id_t,    /* input_cred_handle */
+        gss_const_name_t,       /* desired_name */
+        gss_const_OID,          /* desired_mech */
+        gss_const_buffer_t,     /* password */
         gss_cred_usage_t,       /* cred_usage */
         OM_uint32,              /* initiator_time_req */
         OM_uint32,              /* acceptor_time_req */
@@ -720,7 +733,7 @@ gss_add_cred_with_password(
 OM_uint32
 gss_localname(
         OM_uint32 *,            /* minor_status */
-        const gss_name_t,       /* name */
+        gss_const_name_t,       /* name */
         gss_OID,                /* mech_type */
         gss_buffer_t            /* localname */
 );
