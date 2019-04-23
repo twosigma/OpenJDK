@@ -680,6 +680,77 @@ void resetGSSBufferString(JNIEnv *env, jstring jstr, gss_buffer_t buf)
     (*env)->ReleaseStringUTFChars(env, jstr, buf->value);
 }
 
+void initGSSCredStore(JNIEnv *env, jarray jstore,
+                      gss_key_value_set_desc *store) {
+  jsize nelements = 0;
+  jsize n, i, k;
+
+  store->count = 0;
+  store->elements = NULL;
+  if (jstore == NULL) {
+    return;
+  }
+  n = (*env)->GetArrayLength(env, jstore);
+  for (i = 0; i < n; i += 2) {
+    jobject jkey = (*env)->GetObjectArrayElement(env, jstore, i);
+    jobject jval = (*env)->GetObjectArrayElement(env, jstore, i + 1);
+    
+    if (!jkey || !jval) {
+      break;
+    }
+    if (!(*env)->IsInstanceOf(env, jkey, CLS_String) ||
+        !(*env)->IsInstanceOf(env, jval, CLS_String)) {
+      throwByName(env, "java/lang/IllegalArgumentException",
+                  "invalid GSS credential store element type; must be String");
+      store->count = 0;
+      return;
+    }
+    store->count += 1;
+    nelements += 2;
+  }
+  if (nelements < 0 || nelements > INT32_MAX) {
+    throwOutOfMemoryError(env,NULL);
+    store->count = 0;
+    return;
+  }
+  store->elements = calloc(store->count, sizeof(store->elements[0]));
+  if (store->elements == NULL) {
+    throwOutOfMemoryError(env,NULL);
+    store->count = 0;
+    return;
+  }
+  for (i = 0, k = 0; i < nelements; i += 2, k++) {
+    jobject jkey = (*env)->GetObjectArrayElement(env, jstore, i);
+    jobject jval = (*env)->GetObjectArrayElement(env, jstore, i + 1);
+    store->elements[k].key = (*env)->GetStringUTFChars(env, jkey, NULL);
+    store->elements[k].value = (*env)->GetStringUTFChars(env, jval, NULL);
+    TRACE2("[GSSLibStub initGSSCredStore] element %ld key %s",
+           (long)k, store->elements[k].key);
+    TRACE2("[GSSLibStub initGSSCredStore] element %ld value %s",
+           (long)k, store->elements[k].value);
+  }
+}
+
+void resetGSSCredStore(JNIEnv *env,
+                       jarray jstore,
+                       gss_key_value_set_desc *store) {
+  jobject jstr;
+  jsize i;
+
+  for (i = 0; i < (jsize)store->count; i++) {
+    jstr = (*env)->GetObjectArrayElement(env, jstore, i);
+    if (!(i & 0x01)) {
+      (*env)->ReleaseStringUTFChars(env, jstr, store->elements[i].key);
+    } else {
+      (*env)->ReleaseStringUTFChars(env, jstr, store->elements[i].value);
+    }
+  }
+  free(store->elements);
+  store->elements = NULL;
+  store->count = 0;
+}
+
+
 /*
  * Utility routine for creating a jbyteArray object using
  * the byte[] value in specified gss_buffer_t structure.

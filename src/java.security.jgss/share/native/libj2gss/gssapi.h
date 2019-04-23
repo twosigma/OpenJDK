@@ -57,9 +57,12 @@ extern "C" {
  */
 #include <sys/types.h>
 
-typedef void * gss_name_t;
-typedef void * gss_cred_id_t;
-typedef void * gss_ctx_id_t;
+typedef struct gss_name_s *gss_name_t;
+typedef struct gss_cred_s *gss_cred_id_t;
+typedef struct gss_ctx_s  *gss_ctx_id_t;
+
+typedef const struct gss_name_s *gss_const_name_t;
+typedef const struct gss_cred_s *gss_const_cred_id_t;
 
 /*
  * The following type must be defined as the smallest natural unsigned integer
@@ -82,16 +85,19 @@ typedef struct gss_OID_desc_struct {
       OM_uint32 length;
       void *elements;
 } gss_OID_desc, *gss_OID;
+typedef const struct gss_OID_desc_struct *gss_const_OID;
 
 typedef struct gss_OID_set_desc_struct  {
       size_t  count;
       gss_OID elements;
 } gss_OID_set_desc, *gss_OID_set;
+typedef const struct gss_OID_set_desc_struct *gss_const_OID_set;
 
 typedef struct gss_buffer_desc_struct {
       size_t length;
       void *value;
 } gss_buffer_desc, *gss_buffer_t;
+typedef struct gss_buffer_desc_struct *gss_const_buffer_t;
 
 typedef struct gss_channel_bindings_struct {
       OM_uint32 initiator_addrtype;
@@ -106,6 +112,19 @@ typedef struct gss_channel_bindings_struct {
  */
 typedef OM_uint32       gss_qop_t;
 typedef int             gss_cred_usage_t;
+
+/* Credential store extensions */
+typedef struct gss_key_value_element_struct {
+    const char *key;
+    const char *value;
+} gss_key_value_element_desc;
+
+typedef struct gss_key_value_set_struct {
+    OM_uint32 count; /* should be size_t, but for MIT compat */
+    gss_key_value_element_desc *elements;
+} gss_key_value_set_desc, *gss_key_value_set_t;
+
+typedef const gss_key_value_set_desc *gss_const_key_value_set_t;
 
 /*
  * Flag bits for context-level services.
@@ -391,7 +410,7 @@ GSS_DLLIMP OM_uint32 gss_acquire_cred(
         OM_uint32 *,            /* minor_status */
         gss_name_t,             /* desired_name */
         OM_uint32,              /* time_req */
-        gss_OID_set,            /* desired_mechs */
+        gss_const_OID_set,      /* desired_mechs */
         gss_cred_usage_t,       /* cred_usage */
         gss_cred_id_t *,        /* output_cred_handle */
         gss_OID_set *,          /* actual_mechs */
@@ -408,7 +427,7 @@ GSS_DLLIMP OM_uint32 gss_init_sec_context(
         gss_cred_id_t,          /* claimant_cred_handle */
         gss_ctx_id_t *,         /* context_handle */
         gss_name_t,             /* target_name */
-        gss_OID,                /* mech_type (used to be const) */
+        gss_const_OID,          /* mech_type */
         OM_uint32,              /* req_flags */
         OM_uint32,              /* time_req */
         gss_channel_bindings_t, /* input_chan_bindings */
@@ -494,7 +513,7 @@ GSS_DLLIMP OM_uint32 gss_display_status(
         OM_uint32 *,            /* minor_status */
         OM_uint32,              /* status_value */
         int,                    /* status_type */
-        gss_OID,                /* mech_type (used to be const) */
+        gss_const_OID,          /* mech_type */
         OM_uint32 *,            /* message_context */
         gss_buffer_t            /* status_string */
 );
@@ -521,7 +540,7 @@ GSS_DLLIMP OM_uint32 gss_display_name(
 GSS_DLLIMP OM_uint32 gss_import_name(
         OM_uint32 *,            /* minor_status */
         gss_buffer_t,           /* input_name_buffer */
-        gss_OID,                /* input_name_type(used to be const) */
+        gss_const_OID,          /* input_name_type */
         gss_name_t *            /* output_name */
 );
 
@@ -634,8 +653,8 @@ GSS_DLLIMP OM_uint32 gss_add_oid_set_member(
 /* New for V2 */
 GSS_DLLIMP OM_uint32 gss_test_oid_set_member(
         OM_uint32 *,            /* minor_status */
-        gss_OID,                /* member */
-        gss_OID_set,            /* set */
+        gss_const_OID,          /* member */
+        gss_const_OID_set,      /* set */
         int *                   /* present */
 );
 
@@ -663,22 +682,22 @@ GSS_DLLIMP OM_uint32 gss_inquire_names_for_mech(
 /* New for V2 */
 GSS_DLLIMP OM_uint32 gss_export_name(
         OM_uint32  *,           /* minor_status */
-        const gss_name_t,       /* input_name */
+        gss_const_name_t,       /* input_name */
         gss_buffer_t            /* exported_name */
 );
 
 /* New for V2 */
 GSS_DLLIMP OM_uint32 gss_duplicate_name(
         OM_uint32  *,           /* minor_status */
-        const gss_name_t,       /* input_name */
+        gss_const_name_t,       /* input_name */
         gss_name_t *            /* dest_name */
 );
 
 /* New for V2 */
 GSS_DLLIMP OM_uint32 gss_canonicalize_name(
         OM_uint32  *,           /* minor_status */
-        const gss_name_t,       /* input_name */
-        const gss_OID,          /* mech_type */
+        gss_const_name_t,       /* input_name */
+        gss_const_OID,          /* mech_type */
         gss_name_t *            /* output_name */
 );
 
@@ -690,10 +709,10 @@ GSS_DLLIMP OM_uint32 gss_canonicalize_name(
 OM_uint32
 gss_add_cred_with_password(
         OM_uint32 *,            /* minor_status */
-        const gss_cred_id_t,    /* input_cred_handle */
-        const gss_name_t,       /* desired_name */
-        const gss_OID,          /* desired_mech */
-        const gss_buffer_t,     /* password */
+        gss_const_cred_id_t,    /* input_cred_handle */
+        gss_const_name_t,       /* desired_name */
+        gss_const_OID,          /* desired_mech */
+        gss_const_buffer_t,     /* password */
         gss_cred_usage_t,       /* cred_usage */
         OM_uint32,              /* initiator_time_req */
         OM_uint32,              /* acceptor_time_req */
@@ -707,7 +726,7 @@ gss_add_cred_with_password(
 OM_uint32
 gss_localname(
         OM_uint32 *,            /* minor_status */
-        const gss_name_t,       /* name */
+        gss_const_name_t,       /* name */
         gss_OID,                /* mech_type */
         gss_buffer_t            /* localname */
 );

@@ -641,13 +641,14 @@ Java_sun_security_jgss_wrapper_GSSLibStub_displayName(JNIEnv *env,
 /*
  * Class:     sun_security_jgss_wrapper_GSSLibStub
  * Method:    acquireCred
- * Signature: (JLjava/lang/String;II)J
+ * Signature: (JLjava/lang/String;[II)J
  */
 JNIEXPORT jlong JNICALL
 Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
                                                       jobject jobj,
                                                       jlong pName,
                                                       jstring jPassword,
+                                                      jarray jCredStore,
                                                       jint reqTime,
                                                       jint usage)
 {
@@ -663,6 +664,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
   TRACE0("[GSSLibStub_acquireCred]");
 
   mech = (gss_OID) jlong_to_ptr((*env)->GetLongField(env, jobj, FID_GSSLibStub_pMech));
+  mechs = makeGSSOIDSet(&singleton, mech);
   credUsage = (gss_cred_usage_t) usage;
   nameHdl = (gss_name_t) jlong_to_ptr(pName);
 
@@ -670,11 +672,10 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
 
   /* gss_acquire_cred(...) => GSS_S_BAD_MECH, GSS_S_BAD_NAMETYPE,
      GSS_S_BAD_NAME, GSS_S_CREDENTIALS_EXPIRED, GSS_S_NO_CRED */
-  if (jPassword == NULL) {
-    mechs = makeGSSOIDSet(&singleton, mech);
+  if (jPassword == NULL && jCredStore == NULL) {
     major = (*ftab->acquireCred)(&minor, nameHdl, reqTime, mechs, credUsage,
                                  &credHdl, NULL, NULL);
-  } else {
+  } else if (jPassword != NULL) {
     gss_buffer_desc password;
 
     if (ftab->acquireCredWithPassword == NULL) {
@@ -687,16 +688,98 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
     }
 
     initGSSBufferString(env, jPassword, &password);
-    mechs = makeGSSOIDSet(&singleton, mech);
+    if ((*env)->ExceptionCheck(env)) {
+      return jlong_zero;
+    }
     major = (*ftab->acquireCredWithPassword)(&minor, nameHdl, &password,
                                              reqTime, mechs, credUsage,
                                              &credHdl, NULL, NULL);
     resetGSSBufferString(env, jPassword, &password);
+  } else {
+    gss_key_value_set_desc credStore = {0, 0};
+
+    if (ftab->acquireCredFrom == NULL) {
+      const char *msg = "GSSLibStub_acquireCred from credential store not "
+          "supported by GSS provider";
+
+      TRACE0("[GSSLibStub_acquireCred] acquiring from a specific credential "
+             "store not supported by GSS provider");
+      checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0,
+                  "[GSSLibStub_acquireCred]");
+      return ptr_to_jlong(NULL);
+    }
+
+    initGSSCredStore(env, jCredStore, &credStore);
+    if ((*env)->ExceptionCheck(env)) {
+      return jlong_zero;
+    }
+    major = (*ftab->acquireCredFrom)(&minor, nameHdl, reqTime, mechs,
+                                     credUsage, &credStore, &credHdl,
+                                     NULL, NULL);
+    resetGSSCredStore(env, jCredStore, &credStore);
   }
 
   TRACE1("[GSSLibStub_acquireCred] pCred=%" PRIuPTR "", (uintptr_t) credHdl);
 
   checkStatus(env, jobj, major, minor, "[GSSLibStub_acquireCred]");
+  if ((*env)->ExceptionCheck(env)) {
+    return jlong_zero;
+  }
+  return ptr_to_jlong(credHdl);
+}
+
+/*
+ * Class:     sun_security_jgss_wrapper_GSSLibStub
+ * Method:    storeCred
+ * Signature: (JILorg/ietf/jgss/Oid;ZZ[)J
+ */
+JNIEXPORT jlong JNICALL
+Java_sun_security_jgss_wrapper_GSSLibStub_storeCred(JNIEnv *env,
+                                                    jobject jobj,
+                                                    jlong pCred,
+                                                    jint usage,
+                                                    jobject jmech,
+                                                    jboolean overwrite,
+                                                    jboolean defaultCred,
+                                                    jarray jCredStore)
+{
+  OM_uint32 minor, major;
+  gss_key_value_set_desc credStore;
+  gss_cred_usage_t credUsage;
+  gss_cred_id_t credHdl;
+  gss_OID mech;
+
+  TRACE0("[GSSLibStub_storeCred]");
+
+  credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
+  credUsage = (gss_cred_usage_t) usage;
+
+  mech = newGSSOID(env, jmech);
+  if ((*env)->ExceptionCheck(env)) {
+    return jlong_zero;
+  }
+
+  TRACE2("[GSSLibStub_storeCred] pCred=%ld, usage=%d", (long)pCred, usage);
+
+  if (ftab->storeCredInto == NULL) {
+    TRACE0("[GSSLibStub_storeCred] GSSLibStub_storeCred not supported by "
+           "GSS provider");
+    checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0, "[GSSLibStub_storeCred]");
+    return ptr_to_jlong(NULL);
+  }
+
+  initGSSCredStore(env, jCredStore, &credStore);
+  if ((*env)->ExceptionCheck(env)) {
+    return jlong_zero;
+  }
+  major = (*ftab->storeCredInto)(&minor, credHdl, credUsage, mech,
+                                 overwrite, defaultCred, &credStore,
+                                 NULL, NULL);
+  resetGSSCredStore(env, jCredStore, &credStore);
+
+  TRACE1("[GSSLibStub_storeCred] pCred=%" PRIuPTR "", (uintptr_t) credHdl);
+
+  checkStatus(env, jobj, major, minor, "[GSSLibStub_storeCred]");
   if ((*env)->ExceptionCheck(env)) {
     return jlong_zero;
   }
