@@ -1139,23 +1139,24 @@ HeapWord* GenCollectedHeap::allocate_new_tlab(size_t min_size,
   return result;
 }
 
-// Requires "*prev_ptr" to be non-NULL.  Deletes and a block of minimal size
-// from the list headed by "*prev_ptr".
-static ScratchBlock *removeSmallestScratch(ScratchBlock **prev_ptr) {
-  bool first = true;
-  size_t min_size = 0;   // "first" makes this conceptually infinite.
-  ScratchBlock **smallest_ptr, *smallest;
-  ScratchBlock  *cur = *prev_ptr;
-  while (cur) {
-    assert(*prev_ptr == cur, "just checking");
-    if (first || cur->num_words < min_size) {
-      smallest_ptr = prev_ptr;
-      smallest     = cur;
-      min_size     = smallest->num_words;
-      first        = false;
+// Requires "*next_ptr" to be non-NULL.  Deletes a block of minimal size
+// from the list headed by "*next_ptr".
+static ScratchBlock *removeSmallestScratch(ScratchBlock **next_ptr) {
+  ScratchBlock **smallest_ptr = next_ptr;
+  ScratchBlock  *cur = *next_ptr;
+  size_t min_size = cur->num_words;
+  ScratchBlock  *smallest;
+
+  // Initially, smallest_ptr is the list head, but when we find a smaller
+  // block, it is updated to the address of the "next" pointer leading to that
+  // block.  When we remove the smallest block from the list, this next pointer
+  // is updated to point to the block's successor.
+  //
+  while ((cur = *(next_ptr = &cur->next)) != NULL) {
+    if (cur->num_words < min_size) {
+      smallest_ptr = next_ptr;
+      min_size = cur->num_words;
     }
-    prev_ptr = &cur->next;
-    cur     =  cur->next;
   }
   smallest      = *smallest_ptr;
   *smallest_ptr = smallest->next;
