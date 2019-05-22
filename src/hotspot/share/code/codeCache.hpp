@@ -316,7 +316,7 @@ class CodeCache : AllStatic {
 // Iterator to iterate over nmethods in the CodeCache.
 template <class T, class Filter> class CodeBlobIterator : public StackObj {
  private:
-  CodeBlob* _code_blob;   // Current CodeBlob
+  CodeBlob* _code_blob = NULL; // Current CodeBlob
   GrowableArrayIterator<CodeHeap*> _heap;
   GrowableArrayIterator<CodeHeap*> _end;
 
