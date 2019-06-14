@@ -120,19 +120,19 @@ public class GSSUtil {
                                      GSSCredential creds) {
 
         HashSet<Object> privCredentials = null;
-        HashSet<Object> pubCredentials = new HashSet<Object>(); // empty Set
+        HashSet<Object> pubCredentials = new HashSet<>(); // empty Set
 
         Set<GSSCredentialSpi> gssCredentials = null;
 
-        Set<GSSName> names = new HashSet<GSSName>();
+        Set<GSSName> names = new HashSet<>();
         names.add(name);
 
         if (creds instanceof GSSCredentialImpl) {
             gssCredentials = ((GSSCredentialImpl) creds).getElements();
-            privCredentials = new HashSet<Object>(gssCredentials.size());
+            privCredentials = new HashSet<>(gssCredentials.size());
             populateCredentials(privCredentials, gssCredentials);
         } else {
-            privCredentials = new HashSet<Object>(); // empty Set
+            privCredentials = new HashSet<>(); // empty Set
         }
         debug("Created Subject with the following");
         debug("principals=" + names);
@@ -155,12 +155,7 @@ public class GSSUtil {
     private static void populateCredentials(Set<Object> credentials,
                                             Set<?> gssCredentials) {
 
-        Object cred;
-
-        Iterator<?> elements = gssCredentials.iterator();
-        while (elements.hasNext()) {
-
-            cred = elements.next();
+        for (Object cred : gssCredentials) {
 
             // Retrieve the internal cred out of SpNegoCredElement
             if (cred instanceof SpNegoCredElement) {
@@ -310,11 +305,8 @@ public class GSSUtil {
                         }
 
                         result = new Vector<T>();
-                        Iterator<GSSCredentialImpl> iterator =
-                            accSubj.getPrivateCredentials
-                            (GSSCredentialImpl.class).iterator();
-                        while (iterator.hasNext()) {
-                            GSSCredentialImpl cred = iterator.next();
+                        for (GSSCredentialImpl cred : accSubj.getPrivateCredentials
+                                                      (GSSCredentialImpl.class)) {
                             debug("...Found cred" + cred);
                             try {
                                 GSSCredentialSpi ce =
