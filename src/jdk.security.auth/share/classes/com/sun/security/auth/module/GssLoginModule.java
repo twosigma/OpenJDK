@@ -25,13 +25,21 @@
 
 package com.sun.security.auth.module;
 
-import java.io.*;
 import java.text.MessageFormat;
-import java.util.*;
-import javax.security.auth.*;
-import javax.security.auth.callback.*;
-import javax.security.auth.login.*;
-import javax.security.auth.spi.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import javax.security.auth.Subject;
+import javax.security.auth.SubjectDomainCombiner;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.LoginException;
+import javax.security.auth.spi.LoginModule;
 
 import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.GSSException;
@@ -223,9 +231,16 @@ public class GssLoginModule implements LoginModule {
     private static final String NAME = "javax.security.auth.login.name";
     private static final String PWD = "javax.security.auth.login.password";
 
-    private String getWithDefault(String key, String defval) {
+    private String getString(String key) {
+        return (String)options.get(key);
+    }
+    private boolean getBool(String key) {
         String value = (String)options.get(key);
-        return value != null ? value : defval;
+        return value != null ? Boolean.parseBoolean(value) : false;
+    }
+    private boolean getBoolWithDefault(String key, boolean defval) {
+        String value = (String)options.get(key);
+        return value != null ? Boolean.parseBoolean(value) : defval;
     }
 
     private void storeAddKeyValue(String key, String value) {
@@ -238,7 +253,7 @@ public class GssLoginModule implements LoginModule {
 
     private void storeAddOption(String optionName, String key) {
         if (options.containsKey(optionName)) {
-            storeAddKeyValue(key, (String)options.get(optionName));
+            storeAddKeyValue(key, getString(optionName));
         }
     }
 
@@ -307,8 +322,7 @@ public class GssLoginModule implements LoginModule {
          * (It has never been possible to express such a policy, so we lose
          * nothing by punting here when sun.security.jgss.native=false.)
          */
-        useNative = "true".equalsIgnoreCase(
-                System.getProperty("sun.security.jgss.native"));
+        useNative = Boolean.getBoolean("sun.security.jgss.native");
         if (!useNative)
             return;
 
@@ -316,11 +330,10 @@ public class GssLoginModule implements LoginModule {
 
         // initialize any configured options
 
-        debug = "true".equalsIgnoreCase((String)options.get("debug"));
-        doNotPrompt =
-            "true".equalsIgnoreCase(getWithDefault("doNotPrompt", "true"));
-        defName = (String)options.get("name");
-        nametype = (String)options.get("nametype");
+        debug = getBool("debug");
+        doNotPrompt = getBool("doNotPrompt");
+        defName = getString("name");
+        nametype = getString("nametype");
 
         if (defName == null)
             defName = System.getProperty("sun.security.gss.name");
@@ -349,26 +362,14 @@ public class GssLoginModule implements LoginModule {
         storeAddOption("ticketCache", "ccache");
         storeAddOption("replayCache", "rcache");
 
-        tryFirstPass =
-            "true".equalsIgnoreCase(getWithDefault("tryFirstPass", "true"));
-        useFirstPass =
-            "true".equalsIgnoreCase(
-                getWithDefault("useFirstPass",
-                    doNotPrompt ? "true" : "false"));
-        storePass =
-            "true".equalsIgnoreCase((String)options.get("storePass"));
-        clearPass =
-            "true".equalsIgnoreCase((String)options.get("clearPass"));
-        initiate =
-            "true".equalsIgnoreCase((String)options.get("initiate"));
-        accept =
-            "true".equalsIgnoreCase((String)options.get("accept"));
-        tryDefaultCreds =
-            "true".equalsIgnoreCase(getWithDefault("tryDefaultCreds", "true"));
-        useDefaultCreds =
-            "true".equalsIgnoreCase(
-                getWithDefault("useDefaultCreds",
-                    doNotPrompt ? "true" : "false"));
+        tryFirstPass = getBool("tryFirstPass");
+        useFirstPass = getBoolWithDefault("useFirstPass", doNotPrompt);
+        storePass = getBool("storePass");
+        clearPass = getBool("clearPass");
+        initiate = getBool("initiate");
+        accept = getBool("accept");
+        tryDefaultCreds = getBool("tryDefaultCreds");
+        useDefaultCreds = getBoolWithDefault("useDefaultCreds", doNotPrompt);
         if (!initiate && !accept)
             initiate = true;
         if (debug) {
@@ -582,14 +583,14 @@ public class GssLoginModule implements LoginModule {
         try {
             String defUsername = System.getProperty("user.name");
 
-            Callback[] callbacks = new Callback[1];
             MessageFormat form = new MessageFormat(
                                    getAuthResourceString(
                                    "GSS.name.defName."));
             Object[] source =  {defUsername};
-            callbacks[0] = new NameCallback(form.format(source));
+            Callback[] callbacks = {new NameCallback(form.format(source))};
             callbackHandler.handle(callbacks);
-            name = ((NameCallback)callbacks[0]).getName();
+            NameCallback callback = (NameCallback)callbacks[0];
+            name = callback.getName();
             if (name != null && name.length() == 0)
                 name = null;
             if (name == null && defUsername != null &&
@@ -627,7 +628,7 @@ public class GssLoginModule implements LoginModule {
             return;
         }
         if (doNotPrompt)
-            throw new LoginException("Unable to prompt for password\n");
+            throw new LoginException("Unable to prompt for password");
 
         if (callbackHandler == null) {
             throw new LoginException("No CallbackHandler "
@@ -651,8 +652,7 @@ public class GssLoginModule implements LoginModule {
             ((PasswordCallback)callbacks[0]).clearPassword();
 
             // clear tmpPassword
-            for (int i = 0; i < tmpPassword.length; i++)
-                tmpPassword[i] = ' ';
+            Arrays.fill(tmpPassword, ' ');
         } catch (java.io.IOException ioe) {
             throw new LoginException(ioe.getMessage());
         } catch (UnsupportedCallbackException uce) {
