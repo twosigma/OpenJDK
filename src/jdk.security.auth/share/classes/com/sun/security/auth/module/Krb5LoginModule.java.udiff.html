@@ -1,0 +1,718 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Udiff src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Krb5LoginModule cleanup
+Add commentary about native in Krb5LoginModule</pre>
+        <pre>
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -25,10 +25,11 @@</span>
+ 
+ 
+ package com.sun.security.auth.module;
+ 
+ import java.io.*;
+<span class="new">+import java.security.Principal;</span>
+ import java.text.MessageFormat;
+ import java.util.*;
+ 
+ import javax.security.auth.*;
+ import javax.security.auth.kerberos.KerberosTicket;
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -407,11 +408,10 @@</span>
+     KeyTab ktab = null;
+ 
+     private Credentials cred = null;
+ 
+     private PrincipalName principal = null;
+<span class="removed">-    private KerberosPrincipal kerbClientPrinc = null;</span>
+     private KerberosTicket kerbTicket = null;
+     private KerberosKey[] kerbKeys = null;
+     private StringBuffer krb5PrincName = null;
+     private boolean unboundServer = false;
+     private char[] password = null;
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -518,10 +518,20 @@</span>
+      * @exception LoginException if this {@code LoginModule}
+      *          is unable to perform the authentication.
+      */
+     public boolean login() throws LoginException {
+ 
+<span class="new">+        /*</span>
+<span class="new">+         * Perhaps we should wrap this in a method that returns false if this</span>
+<span class="new">+         * throws and sun.security.jgss.native=true.  Or perhaps the wrapper</span>
+<span class="new">+         * could see if it can acquire comparable GSS credentials and then</span>
+<span class="new">+         * store those in the subject in commit() in that case (and then</span>
+<span class="new">+         * GSSUtil/Krb5Util code could be changed to look for those).</span>
+<span class="new">+         *</span>
+<span class="new">+         * See related commentary in GssLoginModule.</span>
+<span class="new">+         */</span>
+<span class="new">+</span>
+         if (refreshKrb5Config) {
+             try {
+                 if (debug) {
+                     System.out.println("Refreshing Kerberos configuration");
+                 }
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -530,22 +540,34 @@</span>
+                 LoginException le = new LoginException(ke.getMessage());
+                 le.initCause(ke);
+                 throw le;
+             }
+         }
+<span class="new">+</span>
+<span class="new">+        // -Dsun.security.krb5.principal takes precedence over login module</span>
+<span class="new">+        // "principal" option</span>
+<span class="new">+        //</span>
+<span class="new">+        // XXX This seems misplaced.  This is configuration reading, and that</span>
+<span class="new">+        // clearly belongs in initialize().  It's not like it's very likely</span>
+<span class="new">+        // that this sequence of events takes place anywhere, much less that we</span>
+<span class="new">+        // should cater to it:</span>
+<span class="new">+        //</span>
+<span class="new">+        //  lc.initialize();</span>
+<span class="new">+        //  System.setProperty("sun.security.krb5.principal", ...);</span>
+<span class="new">+        //  lc.login();</span>
+         String principalProperty = System.getProperty
+             ("sun.security.krb5.principal");
+         if (principalProperty != null) {
+             krb5PrincName = new StringBuffer(principalProperty);
+<span class="removed">-        } else {</span>
+<span class="removed">-            if (princName != null) {</span>
+<span class="new">+        } else if (princName != null) {</span>
+                 krb5PrincName = new StringBuffer(princName);
+             }
+<span class="removed">-        }</span>
+ 
+<span class="new">+        // XXX This really belongs in initialize()</span>
+         validateConfiguration();
+ 
+<span class="new">+        // XXX This really belongs in validateConfiguration()</span>
+         if (krb5PrincName != null &amp;&amp; krb5PrincName.toString().equals("*")) {
+             unboundServer = true;
+         }
+ 
+         if (tryFirstPass) {
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -630,96 +652,46 @@</span>
+                 throw le;
+             }
+         }
+ 
+         try {
+<span class="new">+            // This means "from the traditional FILE ccache"</span>
+             if (useTicketCache) {
+<span class="removed">-                // ticketCacheName == null implies the default cache</span>
+                 if (debug)
+<span class="removed">-                    System.out.println("Acquire TGT from Cache");</span>
+<span class="removed">-                cred  = Credentials.acquireTGTFromCache</span>
+<span class="removed">-                    (principal, ticketCacheName);</span>
+<span class="removed">-</span>
+<span class="new">+                    System.out.println("Trying to acquire TGT from Cache");</span>
+<span class="new">+                cred = getCredsFromCCache(principal, renewTGT, ticketCacheName);</span>
+                 if (cred != null) {
+<span class="removed">-                    if (renewTGT &amp;&amp; isOld(cred)) {</span>
+<span class="removed">-                        // renew if ticket is old.</span>
+<span class="removed">-                        Credentials newCred = renewCredentials(cred);</span>
+<span class="removed">-                        if (newCred != null) {</span>
+<span class="removed">-                            newCred.setProxy(cred.getProxy());</span>
+<span class="removed">-                            cred = newCred;</span>
+<span class="removed">-                        }</span>
+<span class="removed">-                    }</span>
+<span class="new">+                    if (principal == null)</span>
+<span class="new">+                        principal = cred.getClient();</span>
+                     if (!isCurrent(cred)) {
+<span class="removed">-                        // credentials have expired</span>
+                         cred = null;
+                         if (debug)
+<span class="removed">-                            System.out.println("Credentials are" +</span>
+<span class="removed">-                                    " no longer valid");</span>
+<span class="removed">-                    }</span>
+<span class="removed">-                }</span>
+<span class="removed">-</span>
+<span class="removed">-                if (cred != null) {</span>
+<span class="removed">-                   // get the principal name from the ticket cache</span>
+<span class="removed">-                   if (principal == null) {</span>
+<span class="removed">-                        principal = cred.getClient();</span>
+<span class="removed">-                   }</span>
+<span class="removed">-                }</span>
+<span class="removed">-                if (debug) {</span>
+<span class="removed">-                    System.out.println("Principal is " + principal);</span>
+<span class="removed">-                    if (cred == null) {</span>
+<span class="removed">-                        System.out.println</span>
+<span class="removed">-                            ("null credentials from Ticket Cache");</span>
+<span class="new">+                            System.out.println("Found expired cached " +</span>
+<span class="new">+                                    "credentials for " + principal);</span>
+<span class="new">+                    } else if (debug) {</span>
+<span class="new">+                        System.out.println("Found cached credentials for "</span>
+<span class="new">+                                + principal);</span>
+                     }
+<span class="new">+                } else if (debug) {</span>
+<span class="new">+                    System.out.println("Could not find cached credentials");</span>
+                 }
+             }
+ 
+<span class="removed">-            // cred = null indicates that we didn't get the creds</span>
+<span class="removed">-            // from the cache or useTicketCache was false</span>
+<span class="removed">-</span>
+             if (cred == null) {
+<span class="removed">-                // We need the principal name whether we use keytab</span>
+<span class="removed">-                // or AS Exchange</span>
+<span class="new">+                // !useTicketCache || credentials not found || expired</span>
+<span class="new">+</span>
+                 if (principal == null) {
+                     promptForName(getPasswdFromSharedState);
+                     principal = new PrincipalName
+                         (krb5PrincName.toString(),
+                          PrincipalName.KRB_NT_PRINCIPAL);
+                 }
+ 
+<span class="removed">-                /*</span>
+<span class="removed">-                 * Before dynamic KeyTab support (6894072), here we check if</span>
+<span class="removed">-                 * the keytab contains keys for the principal. If no, keytab</span>
+<span class="removed">-                 * will not be used and password is prompted for.</span>
+<span class="removed">-                 *</span>
+<span class="removed">-                 * After 6894072, we normally don't check it, and expect the</span>
+<span class="removed">-                 * keys can be populated until a real connection is made. The</span>
+<span class="removed">-                 * check is still done when isInitiator == true, where the keys</span>
+<span class="removed">-                 * will be used right now.</span>
+<span class="removed">-                 *</span>
+<span class="removed">-                 * Probably tricky relations:</span>
+<span class="removed">-                 *</span>
+<span class="removed">-                 * useKeyTab is config flag, but when it's true but the ktab</span>
+<span class="removed">-                 * does not contains keys for principal, we would use password</span>
+<span class="removed">-                 * and keep the flag unchanged (for reuse?). In this method,</span>
+<span class="removed">-                 * we use (ktab != null) to check whether keytab is used.</span>
+<span class="removed">-                 * After this method (and when storeKey == true), we use</span>
+<span class="removed">-                 * (encKeys == null) to check.</span>
+<span class="removed">-                 */</span>
+                 if (useKeyTab) {
+<span class="removed">-                    if (!unboundServer) {</span>
+<span class="removed">-                        KerberosPrincipal kp =</span>
+<span class="removed">-                                new KerberosPrincipal(principal.getName());</span>
+<span class="removed">-                        ktab = (keyTabName == null)</span>
+<span class="removed">-                                ? KeyTab.getInstance(kp)</span>
+<span class="removed">-                                : KeyTab.getInstance(kp, new File(keyTabName));</span>
+<span class="removed">-                    } else {</span>
+<span class="removed">-                        ktab = (keyTabName == null)</span>
+<span class="removed">-                                ? KeyTab.getUnboundInstance()</span>
+<span class="removed">-                                : KeyTab.getUnboundInstance(new File(keyTabName));</span>
+<span class="removed">-                    }</span>
+<span class="removed">-                    if (isInitiator) {</span>
+<span class="removed">-                        if (Krb5Util.keysFromJavaxKeyTab(ktab, principal).length</span>
+<span class="new">+                    ktab = getKtab(keyTabName, principal, unboundServer);</span>
+<span class="new">+                    if (isInitiator &amp;&amp;</span>
+<span class="new">+                            Krb5Util.keysFromJavaxKeyTab(ktab, principal).length</span>
+                                 == 0) {
+                             ktab = null;
+                             if (debug) {
+                                 System.out.println
+                                     ("Key for the principal " +
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -728,28 +700,32 @@</span>
+                                      ((keyTabName == null) ?
+                                       "default key tab" : keyTabName));
+                             }
+                         }
+                     }
+<span class="removed">-                }</span>
+ 
+                 KrbAsReqBuilder builder;
+ 
+                 if (ktab == null) {
+                     promptForPass(getPasswdFromSharedState);
+                     builder = new KrbAsReqBuilder(principal, password);
+<span class="removed">-                    if (isInitiator) {</span>
+<span class="removed">-                        // XXX Even if isInitiator=false, it might be</span>
+<span class="removed">-                        // better to do an AS-REQ so that keys can be</span>
+<span class="removed">-                        // updated with PA info</span>
+<span class="new">+                    if (isInitiator || storeKey) {</span>
+<span class="new">+                        // Even if isInitiator=false, if we want to accept with</span>
+<span class="new">+                        // long-term key derived from the password, then in</span>
+<span class="new">+                        // principle (and decidedly for new enctypes) we need</span>
+<span class="new">+                        // to do an AS exchange to get the PA etype info for</span>
+<span class="new">+                        // the derivation.  (For older enctypes this is bad, as</span>
+<span class="new">+                        // we will attempt to talk the a KDC we might not be</span>
+<span class="new">+                        // able to reach, then timeout...  If this is not</span>
+<span class="new">+                        // desired, the user can reconfigure the module.)</span>
+                         cred = builder.action().getCreds();
+<span class="removed">-                    }</span>
+                     if (storeKey) {
+                         encKeys = builder.getKeys(isInitiator);
+                         // When encKeys is empty, the login actually fails.
+                         // For compatibility, exception is thrown in commit().
+                     }
+<span class="new">+                    }</span>
+                 } else {
+                     builder = new KrbAsReqBuilder(principal, ktab);
+                     if (isInitiator) {
+                         cred = builder.action().getCreds();
+                     }
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -761,19 +737,19 @@</span>
+                     HexDumpEncoder hd = new HexDumpEncoder();
+                     if (ktab != null) {
+                         System.out.println("Will use keytab");
+                     } else if (storeKey) {
+                         for (int i = 0; i &lt; encKeys.length; i++) {
+<span class="new">+                            // Printing keys here just because debug is a bad</span>
+<span class="new">+                            // idea: stdout might be a file that gets sent to</span>
+<span class="new">+                            // loggers, and...  yeah, no.</span>
+                             System.out.println("EncryptionKey: keyType=" +
+<span class="removed">-                                encKeys[i].getEType() +</span>
+<span class="removed">-                                " keyBytes (hex dump)=" +</span>
+<span class="removed">-                                hd.encodeBuffer(encKeys[i].getBytes()));</span>
+<span class="new">+                                encKeys[i].getEType());</span>
+                         }
+                     }
+                 }
+ 
+<span class="removed">-                // we should hava a non-null cred</span>
+                 if (isInitiator &amp;&amp; (cred == null)) {
+                     throw new LoginException
+                         ("TGT Can not be obtained from the KDC ");
+                 }
+ 
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -960,60 +936,96 @@</span>
+                     + " - principal cannot be * when isInitiator is true");
+             }
+         }
+     }
+ 
+<span class="new">+    private Credentials getCredsFromCCache(PrincipalName princ, boolean renewTGT, String ccacheName)</span>
+<span class="new">+        throws KrbException, IOException {</span>
+<span class="new">+        // ticketCacheName == null implies the default cache</span>
+<span class="new">+        // princ == null implies the cache's default princ(XXX?)</span>
+<span class="new">+        Credentials creds = Credentials.acquireTGTFromCache(princ, ccacheName);</span>
+<span class="new">+        if (creds == null)</span>
+<span class="new">+            return null;</span>
+<span class="new">+        if (renewTGT &amp;&amp; timeToRenew(creds))</span>
+<span class="new">+            creds = possiblyRenewCreds(creds);</span>
+<span class="new">+        // It's the caller's job to deal with expired creds</span>
+<span class="new">+        return creds;</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    private KeyTab getKtab(String keyTabName, PrincipalName principal,</span>
+<span class="new">+            boolean unboundServer)</span>
+<span class="new">+    {</span>
+<span class="new">+        KerberosPrincipal kp = unboundServer ? null :</span>
+<span class="new">+            new KerberosPrincipal(principal.getName());;</span>
+<span class="new">+        return (keyTabName == null)</span>
+<span class="new">+            ? KeyTab.getInstance(kp) // default keytab</span>
+<span class="new">+            : KeyTab.getInstance(kp, new File(keyTabName));</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+     private static boolean isCurrent(Credentials creds)
+     {
+         Date endTime = creds.getEndTime();
+         if (endTime != null) {
+             return (System.currentTimeMillis() &lt;= endTime.getTime());
+         }
+         return true;
+     }
+ 
+<span class="removed">-    private static boolean isOld(Credentials creds)</span>
+<span class="new">+    private static boolean timeToRenew(Credentials creds)</span>
+     {
+<span class="new">+        if (!creds.isRenewable())</span>
+<span class="new">+            return false;</span>
+<span class="new">+</span>
+         Date endTime = creds.getEndTime();
+<span class="removed">-        if (endTime != null) {</span>
+<span class="removed">-            Date authTime = creds.getAuthTime();</span>
+<span class="new">+</span>
+<span class="new">+        // endtime is required, so it can't be null.  We only have to check</span>
+<span class="new">+        // because it's Java and we could express that this can't be null.</span>
+<span class="new">+        // Strictly speaking we can leave out this test.</span>
+<span class="new">+        if (endTime == null)</span>
+<span class="new">+            return false;</span>
+<span class="new">+</span>
+<span class="new">+        // There's no point trying to renew a TGT we will be able to renew but</span>
+<span class="new">+        // with no additional lifetime.  And there's no point trying to renew</span>
+<span class="new">+        // non-renewable tickets.</span>
+<span class="new">+        Date renewTill = creds.getRenewTill();</span>
+<span class="new">+        if (renewTill == null || renewTill.getTime() &lt;= endTime.getTime())</span>
+<span class="new">+            return false;</span>
+<span class="new">+</span>
+<span class="new">+        // NOTE WELL: We must use the *start* time, not the auth time, because</span>
+<span class="new">+        //            the auth time refers to when the AS exchange was done,</span>
+<span class="new">+        //            not to when the TGS exchange was done.  For very</span>
+<span class="new">+        //            long-lived TGTs using authTime here means renewing all</span>
+<span class="new">+        //            the time!</span>
+<span class="new">+        Date startTime = creds.getStartTime();</span>
+             long now = System.currentTimeMillis();
+<span class="removed">-            if (authTime != null) {</span>
+<span class="removed">-                // pass the mid between auth and end</span>
+<span class="removed">-                return now - authTime.getTime() &gt; endTime.getTime() - now;</span>
+<span class="removed">-            } else {</span>
+<span class="removed">-                // will expire in less than 2 hours</span>
+<span class="new">+        // Start time can be null</span>
+<span class="new">+        if (startTime != null)</span>
+<span class="new">+            // past the mid between start and end</span>
+<span class="new">+            return now - startTime.getTime() &gt; endTime.getTime() - now;</span>
+<span class="new">+        // will it expire in less than 2 hours?</span>
+                 return now &lt;= endTime.getTime() - 1000*3600*2L;
+             }
+<span class="removed">-        }</span>
+<span class="removed">-        return false;</span>
+<span class="removed">-    }</span>
+ 
+<span class="removed">-    private Credentials renewCredentials(Credentials creds)</span>
+<span class="new">+    private Credentials possiblyRenewCreds(Credentials creds)</span>
+<span class="new">+        throws KrbException, IOException</span>
+     {
+<span class="removed">-        Credentials lcreds;</span>
+<span class="removed">-        try {</span>
+             if (!creds.isRenewable())
+<span class="removed">-                throw new RefreshFailedException("This ticket" +</span>
+<span class="removed">-                                " is not renewable");</span>
+<span class="removed">-            if (creds.getRenewTill() == null) {</span>
+<span class="removed">-                // Renewable ticket without renew-till. Illegal and ignored.</span>
+                 return creds;
+<span class="removed">-            }</span>
+<span class="new">+</span>
+             if (System.currentTimeMillis() &gt; cred.getRenewTill().getTime())
+<span class="removed">-                throw new RefreshFailedException("This ticket is past "</span>
+<span class="removed">-                                             + "its last renewal time.");</span>
+<span class="removed">-            lcreds = creds.renew();</span>
+<span class="new">+            return creds;</span>
+<span class="new">+</span>
+<span class="new">+        try {</span>
+<span class="new">+            creds = creds.renew();</span>
+             if (debug)
+                 System.out.println("Renewed Kerberos Ticket");
+         } catch (Exception e) {
+<span class="removed">-            lcreds = null;</span>
+             if (debug)
+                 System.out.println("Ticket could not be renewed : "
+                                 + e.getMessage());
+         }
+<span class="removed">-        return lcreds;</span>
+<span class="new">+        return creds;</span>
+     }
+ 
+     /**
+      * This method is called if the LoginContext's
+      * overall authentication succeeded
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -1035,115 +1047,121 @@</span>
+      * @return true if this LoginModule's own login and commit
+      *          attempts succeeded, or false otherwise.
+      */
+ 
+     public boolean commit() throws LoginException {
+<span class="removed">-</span>
+         /*
+          * Let us add the Krb5 Creds to the Subject's
+          * private credentials. The credentials are of type
+          * KerberosKey or KerberosTicket
+          */
+         if (succeeded == false) {
+<span class="new">+            cleanKerberosCred();</span>
+             return false;
+<span class="removed">-        } else {</span>
+<span class="new">+        }</span>
+ 
+             if (isInitiator &amp;&amp; (cred == null)) {
+<span class="new">+            cleanKerberosCred();</span>
+                 succeeded = false;
+                 throw new LoginException("Null Client Credential");
+             }
+ 
+             if (subject.isReadOnly()) {
+                 cleanKerberosCred();
+<span class="new">+            succeeded = false;</span>
+                 throw new LoginException("Subject is Readonly");
+             }
+ 
+<span class="removed">-            /*</span>
+<span class="removed">-             * Add the Principal (authenticated identity)</span>
+<span class="removed">-             * to the Subject's principal set and</span>
+<span class="removed">-             * add the credentials (TGT or Service key) to the</span>
+<span class="removed">-             * Subject's private credentials</span>
+<span class="new">+        try {</span>
+<span class="new">+            setupSubject(subject, unboundServer ? null : principal, ktab,</span>
+<span class="new">+                    storeKey &amp;&amp; encKeys != null ? encKeys : null);</span>
+<span class="new">+            if (debug)</span>
+<span class="new">+                System.out.println("Added Kerberos credentials to subject");</span>
+<span class="new">+            return true;</span>
+<span class="new">+        } catch (Exception e) {</span>
+<span class="new">+            cleanKerberosCred();</span>
+<span class="new">+            succeeded = false;</span>
+<span class="new">+            throw new LoginException(e.getMessage());</span>
+<span class="new">+        }</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    /**</span>
+<span class="new">+     * Store the given Kerberos crendentials in the given subject.</span>
+<span class="new">+     *</span>
+<span class="new">+     * @param subject the {@code Subject} to store the credentials into</span>
+<span class="new">+     *</span>
+<span class="new">+     * @param principal the {@code PrincipalName} for the credentials; use null to refer to all principals in the keytab</span>
+<span class="new">+     *</span>
+<span class="new">+     * @param ktab a {@code KeyTab} keytab to use for acting as a service (may be null)</span>
+<span class="new">+     *</span>
+<span class="new">+     * @param kerbTicket the TGT for the principal (if acting as a client)</span>
+<span class="new">+     *</span>
+<span class="new">+     * @param encKeys long-term secret keys for the principal (if acting as a server with the keys derived from a password)</span>
+<span class="new">+     *</span>
+              */
+<span class="new">+    private static void setupSubject(Subject subject, PrincipalName principal,</span>
+<span class="new">+            KeyTab ktab, KerberosTicket kerbTicket, EncryptionKey[] encKeys)</span>
+<span class="new">+        throws LoginException {</span>
+ 
+<span class="removed">-            Set&lt;Object&gt; privCredSet =  subject.getPrivateCredentials();</span>
+<span class="removed">-            Set&lt;java.security.Principal&gt; princSet  = subject.getPrincipals();</span>
+<span class="removed">-            kerbClientPrinc = new KerberosPrincipal(principal.getName());</span>
+<span class="new">+        KerberosTicket kerbTicket = null;</span>
+ 
+             // create Kerberos Ticket
+             if (isInitiator) {
+                 kerbTicket = Krb5Util.credsToTicket(cred);
+                 if (cred.getProxy() != null) {
+                     KerberosSecrets.getJavaxSecurityAuthKerberosAccess()
+                             .kerberosTicketSetProxy(kerbTicket,Krb5Util.credsToTicket(cred.getProxy()));
+                 }
+             }
+<span class="new">+        /*</span>
+<span class="new">+         * Add the Principal (authenticated identity)</span>
+<span class="new">+         * to the Subject's principal set and</span>
+<span class="new">+         * add the credentials (TGT or Service key) to the</span>
+<span class="new">+         * Subject's private credentials</span>
+<span class="new">+         */</span>
+ 
+<span class="removed">-            if (storeKey &amp;&amp; encKeys != null) {</span>
+<span class="removed">-                if (encKeys.length == 0) {</span>
+<span class="removed">-                    succeeded = false;</span>
+<span class="removed">-                    throw new LoginException("Null Server Key ");</span>
+<span class="new">+        if (kerbTicket == null &amp;&amp; encKeys == null &amp;&amp; ktab == null)</span>
+<span class="new">+            throw new LoginException("No Kerberos credentials provided to " +</span>
+<span class="new">+                    "store in subject");</span>
+<span class="new">+</span>
+<span class="new">+        Set&lt;Object&gt; privCredSet = subject.getPrivateCredentials();</span>
+<span class="new">+        Set&lt;Principal&gt; princSet = subject.getPrincipals();</span>
+<span class="new">+</span>
+<span class="new">+        KerberosPrincipal princ = null;</span>
+<span class="new">+        if (principal != null) {</span>
+<span class="new">+            princ = new KerberosPrincipal(principal.getName());</span>
+<span class="new">+            if (!princSet.contains(princ))</span>
+<span class="new">+                princSet.add(princ);</span>
+                 }
+ 
+<span class="removed">-                kerbKeys = new KerberosKey[encKeys.length];</span>
+<span class="new">+        if (kerbTicket != null &amp;&amp; !privCredSet.contains(kerbTicket))</span>
+<span class="new">+            privCredSet.add(kerbTicket);</span>
+<span class="new">+</span>
+<span class="new">+        if (ktab != null &amp;&amp; !privCredSet.contains(ktab))</span>
+<span class="new">+            privCredSet.add(ktab);</span>
+<span class="new">+</span>
+<span class="new">+        if (encKeys == null)</span>
+<span class="new">+            return;</span>
+<span class="new">+</span>
+<span class="new">+        if (encKeys.length == 0)</span>
+<span class="new">+            throw new LoginException("Cannot store empty long-term " +</span>
+<span class="new">+                    "keyset in Subject");</span>
+<span class="new">+</span>
+<span class="new">+        if (princ == null)</span>
+<span class="new">+            throw new LoginException("Cannot store Kerberos long-term keys " +</span>
+<span class="new">+                    "for wild-card principal in Subject");</span>
+<span class="new">+</span>
+                 for (int i = 0; i &lt; encKeys.length; i ++) {
+                     Integer temp = encKeys[i].getKeyVersionNumber();
+<span class="removed">-                    kerbKeys[i] = new KerberosKey(kerbClientPrinc,</span>
+<span class="new">+            KerberosKey kerbKey = new KerberosKey(princ,</span>
+                                           encKeys[i].getBytes(),
+                                           encKeys[i].getEType(),
+                                           (temp == null?
+                                           0: temp.intValue()));
+<span class="new">+            if (!privCredSet.contains(kerbKey))</span>
+<span class="new">+                privCredSet.add(kerbKey);</span>
+                 }
+<span class="removed">-</span>
+<span class="removed">-            }</span>
+<span class="removed">-            // Let us add the kerbClientPrinc,kerbTicket and KeyTab/KerbKey (if</span>
+<span class="removed">-            // storeKey is true)</span>
+<span class="removed">-</span>
+<span class="removed">-            // We won't add "*" as a KerberosPrincipal</span>
+<span class="removed">-            if (!unboundServer &amp;&amp;</span>
+<span class="removed">-                    !princSet.contains(kerbClientPrinc)) {</span>
+<span class="removed">-                princSet.add(kerbClientPrinc);</span>
+<span class="removed">-            }</span>
+<span class="removed">-</span>
+<span class="removed">-            // add the TGT</span>
+<span class="removed">-            if (kerbTicket != null) {</span>
+<span class="removed">-                if (!privCredSet.contains(kerbTicket))</span>
+<span class="removed">-                    privCredSet.add(kerbTicket);</span>
+<span class="removed">-            }</span>
+<span class="removed">-</span>
+<span class="removed">-            if (storeKey) {</span>
+<span class="removed">-                if (encKeys == null) {</span>
+<span class="removed">-                    if (ktab != null) {</span>
+<span class="removed">-                        if (!privCredSet.contains(ktab)) {</span>
+<span class="removed">-                            privCredSet.add(ktab);</span>
+<span class="removed">-                        }</span>
+<span class="removed">-                    } else {</span>
+<span class="removed">-                        succeeded = false;</span>
+<span class="removed">-                        throw new LoginException("No key to store");</span>
+<span class="removed">-                    }</span>
+<span class="removed">-                } else {</span>
+<span class="removed">-                    for (int i = 0; i &lt; kerbKeys.length; i ++) {</span>
+<span class="removed">-                        if (!privCredSet.contains(kerbKeys[i])) {</span>
+<span class="removed">-                            privCredSet.add(kerbKeys[i]);</span>
+<span class="removed">-                        }</span>
+<span class="removed">-                        encKeys[i].destroy();</span>
+<span class="removed">-                        encKeys[i] = null;</span>
+<span class="removed">-                        if (debug) {</span>
+<span class="removed">-                            System.out.println("Added server's key"</span>
+<span class="removed">-                                            + kerbKeys[i]);</span>
+<span class="removed">-                            System.out.println("\t\t[Krb5LoginModule] " +</span>
+<span class="removed">-                                           "added Krb5Principal  " +</span>
+<span class="removed">-                                           kerbClientPrinc.toString()</span>
+<span class="removed">-                                           + " to Subject");</span>
+<span class="removed">-                        }</span>
+<span class="removed">-                    }</span>
+<span class="removed">-                }</span>
+<span class="removed">-            }</span>
+<span class="removed">-        }</span>
+<span class="removed">-        commitSucceeded = true;</span>
+<span class="removed">-        if (debug)</span>
+<span class="removed">-            System.out.println("Commit Succeeded \n");</span>
+<span class="removed">-        return true;</span>
+     }
+ 
+     /**
+      * This method is called if the LoginContext's
+      * overall authentication failed.
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -1197,12 +1215,17 @@</span>
+         if (subject.isReadOnly()) {
+             cleanKerberosCred();
+             throw new LoginException("Subject is Readonly");
+         }
+ 
+<span class="removed">-        subject.getPrincipals().remove(kerbClientPrinc);</span>
+<span class="removed">-           // Let us remove all Kerberos credentials stored in the Subject</span>
+<span class="new">+        Iterator&lt;Principal&gt; itp = subject.getPrincipals().iterator();</span>
+<span class="new">+        while (itp.hasNext()) {</span>
+<span class="new">+            Object o = itp.next();</span>
+<span class="new">+            if (o instanceof KerberosPrincipal)</span>
+<span class="new">+                itp.remove();</span>
+<span class="new">+        }</span>
+<span class="new">+</span>
+         Iterator&lt;Object&gt; it = subject.getPrivateCredentials().iterator();
+         while (it.hasNext()) {
+             Object o = it.next();
+             if (o instanceof KerberosTicket ||
+                     o instanceof KerberosKey ||
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -1237,13 +1260,16 @@</span>
+             }
+         } catch (DestroyFailedException e) {
+             throw new LoginException
+                 ("Destroy Failed on Kerberos Private Credentials");
+         }
+<span class="new">+        for (int i = 0; i &lt; kerbKeys.length; i++) {</span>
+<span class="new">+            encKeys[i].destroy();</span>
+<span class="new">+            encKeys[i] = null;</span>
+<span class="new">+        }</span>
+         kerbTicket = null;
+         kerbKeys = null;
+<span class="removed">-        kerbClientPrinc = null;</span>
+     }
+ 
+     /**
+      * Clean out the state
+      */
+</pre></body></html>
+

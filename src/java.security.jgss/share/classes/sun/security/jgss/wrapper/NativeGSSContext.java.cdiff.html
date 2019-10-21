@@ -1,0 +1,427 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Cdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java</title>
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>JGSS: Simplify context permissions checks
+We were reacquiring the initiator/acceptor credential upon security
+context full establishment in order to indirectly perform a permission
+check on the srcName/targName once we find out what they are.  But this
+is just one more way to end up failing, which happens with Heimdal when
+using SPNEGO because we ask to acquire a Kerberos credentials using a
+SPNEGO MN and that fails.
+Also, there was a security bug here: if the permission check fails then
+we raise, but if the application already has a context handle, then it
+can use it anyways if it catches the exception!  The fix for this is to
+dispose() when the permission check fails.
+JGSS: Add comment about unnec. perm check
+Fix SpNego multi-round-trip bug
+There is only one token that we can extract an actual mechanism OID from
+in the SPNEGO case when the native GSS library doesn't provide that
+(though it should) in the API.  If the SPNEGO exchange ends up requiring
+more than two tokens, then the previous code failed to establish a
+security context.
+Also, never raise if we cannot get an actual mech OID from SPNEGO
+tokens.
+Add actual mechanism to native GSSNameElement state</pre>
+        <pre>
+<hr></hr><span class="oldmarker">*** 73,84 ****</span>
+      private GSSCredElement disposeDelegatedCred;
+      private int flags;
+      private int lifetime = GSSCredential.DEFAULT_LIFETIME;
+      private final GSSLibStub cStub;
+  
+<span class="changed">!     private boolean skipDelegPermCheck;</span>
+<span class="changed">!     private boolean skipServicePermCheck;</span>
+  
+      // Retrieve the (preferred) mech out of SPNEGO tokens, i.e.
+      // NegTokenInit &amp; NegTokenTarg
+      private static Oid getMechFromSpNegoToken(byte[] token,
+                                                boolean isInitiator)
+<span class="newmarker">--- 73,84 ----</span>
+      private GSSCredElement disposeDelegatedCred;
+      private int flags;
+      private int lifetime = GSSCredential.DEFAULT_LIFETIME;
+      private final GSSLibStub cStub;
+  
+<span class="changed">!     private boolean skipDelegPermCheck = false;</span>
+<span class="changed">!     private boolean skipServicePermCheck = false;</span>
+  
+      // Retrieve the (preferred) mech out of SPNEGO tokens, i.e.
+      // NegTokenInit &amp; NegTokenTarg
+      private static Oid getMechFromSpNegoToken(byte[] token,
+                                                boolean isInitiator)
+<hr></hr><span class="oldmarker">*** 109,145 ****</span>
+      }
+  
+      // Perform the Service permission check
+      private void doServicePermCheck() throws GSSException {
+          if (System.getSecurityManager() != null) {
+<span class="changed">!             String action = (isInitiator? "initiate" : "accept");</span>
+<span class="changed">!             // Need to check Service permission for accessing</span>
+<span class="changed">!             // initiator cred for SPNEGO during context establishment</span>
+<span class="changed">!             if (GSSUtil.isSpNegoMech(cStub.getMech()) &amp;&amp; isInitiator</span>
+<span class="changed">!                 &amp;&amp; !isEstablished) {</span>
+<span class="changed">!                 if (srcName == null) {</span>
+<span class="changed">!                     // Check by creating default initiator KRB5 cred</span>
+<span class="changed">!                     GSSCredElement tempCred =</span>
+<span class="changed">!                         new GSSCredElement(null, lifetime,</span>
+<span class="changed">!                                            GSSCredential.INITIATE_ONLY,</span>
+<span class="changed">!                                            GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID));</span>
+<span class="changed">!                     tempCred.dispose();</span>
+<span class="changed">!                 } else {</span>
+                      String tgsName = Krb5Util.getTGSName(srcName);
+<span class="changed">!                     Krb5Util.checkServicePermission(tgsName, action);</span>
+<span class="changed">!                 }</span>
+<span class="changed">!             }</span>
+              String targetStr = targetName.getKrbName();
+<span class="changed">!             Krb5Util.checkServicePermission(targetStr, action);</span>
+              skipServicePermCheck = true;
+          }
+      }
+  
+      // Perform the Delegation permission check
+      private void doDelegPermCheck() throws GSSException {
+          SecurityManager sm = System.getSecurityManager();
+          if (sm != null) {
+              String targetStr = targetName.getKrbName();
+              String tgsStr = Krb5Util.getTGSName(targetName);
+              StringBuilder sb = new StringBuilder("\"");
+              sb.append(targetStr).append("\" \"");
+              sb.append(tgsStr).append('\"');
+<span class="newmarker">--- 109,141 ----</span>
+      }
+  
+      // Perform the Service permission check
+      private void doServicePermCheck() throws GSSException {
+          if (System.getSecurityManager() != null) {
+<span class="changed">!             try {</span>
+<span class="changed">!                 if (isInitiator &amp;&amp; srcName != null) {</span>
+                      String tgsName = Krb5Util.getTGSName(srcName);
+<span class="changed">!                     Krb5Util.checkServicePermission(tgsName, "initiate");</span>
+<span class="changed">!                     skipServicePermCheck = true;</span>
+<span class="changed">!                 } else if (!isInitiator &amp;&amp; targetName != null) {</span>
+                      String targetStr = targetName.getKrbName();
+<span class="changed">!                     Krb5Util.checkServicePermission(targetStr, "accept");</span>
+                      skipServicePermCheck = true;
+                  }
+<span class="new">+             } catch (GSSException ge) {</span>
+<span class="new">+                 dispose();</span>
+<span class="new">+                 throw ge;</span>
+<span class="new">+             }</span>
+<span class="new">+         }</span>
+      }
+  
+      // Perform the Delegation permission check
+      private void doDelegPermCheck() throws GSSException {
+          SecurityManager sm = System.getSecurityManager();
+          if (sm != null) {
+<span class="new">+             if (targetName == null)</span>
+<span class="new">+                 return;</span>
+              String targetStr = targetName.getKrbName();
+              String tgsStr = Krb5Util.getTGSName(targetName);
+              StringBuilder sb = new StringBuilder("\"");
+              sb.append(targetStr).append("\" \"");
+              sb.append(tgsStr).append('\"');
+<hr></hr><span class="oldmarker">*** 198,214 ****</span>
+          targetName = peer;
+          isInitiator = true;
+          lifetime = time;
+  
+          if (GSSUtil.isKerberosMech(cStub.getMech())) {
+<span class="removed">-             doServicePermCheck();</span>
+              if (cred == null) {
+                  disposeCred = cred =
+                      new GSSCredElement(null, lifetime,
+                              GSSCredential.INITIATE_ONLY, cStub);
+              }
+              srcName = cred.getName();
+          }
+      }
+  
+      // Constructor for context acceptor
+      NativeGSSContext(GSSCredElement myCred, GSSLibStub stub)
+<span class="newmarker">--- 194,210 ----</span>
+          targetName = peer;
+          isInitiator = true;
+          lifetime = time;
+  
+          if (GSSUtil.isKerberosMech(cStub.getMech())) {
+              if (cred == null) {
+                  disposeCred = cred =
+                      new GSSCredElement(null, lifetime,
+                              GSSCredential.INITIATE_ONLY, cStub);
+              }
+              srcName = cred.getName();
+<span class="new">+             doServicePermCheck();</span>
+          }
+      }
+  
+      // Constructor for context acceptor
+      NativeGSSContext(GSSCredElement myCred, GSSLibStub stub)
+<hr></hr><span class="oldmarker">*** 239,257 ****</span>
+          // Set everything except cred, cb, delegatedCred
+          long[] info = cStub.inquireContext(pContext);
+          if (info.length != NUM_OF_INQUIRE_VALUES) {
+              throw new RuntimeException("Bug w/ GSSLibStub.inquireContext()");
+          }
+<span class="removed">-         srcName = new GSSNameElement(info[0], cStub);</span>
+<span class="removed">-         targetName = new GSSNameElement(info[1], cStub);</span>
+          isInitiator = (info[2] != 0);
+          isEstablished = (info[3] != 0);
+          flags = (int) info[4];
+          lifetime = (int) info[5];
+  
+          // Do Service Permission check when importing SPNEGO context
+<span class="changed">!         // just to be safe</span>
+          Oid mech = cStub.getMech();
+          if (GSSUtil.isSpNegoMech(mech) || GSSUtil.isKerberosMech(mech)) {
+              doServicePermCheck();
+          }
+      }
+<span class="newmarker">--- 235,260 ----</span>
+          // Set everything except cred, cb, delegatedCred
+          long[] info = cStub.inquireContext(pContext);
+          if (info.length != NUM_OF_INQUIRE_VALUES) {
+              throw new RuntimeException("Bug w/ GSSLibStub.inquireContext()");
+          }
+          isInitiator = (info[2] != 0);
+          isEstablished = (info[3] != 0);
+          flags = (int) info[4];
+          lifetime = (int) info[5];
+<span class="new">+         if (isEstablished) {</span>
+<span class="new">+             srcName = new GSSNameElement(info[0], actualMech, cStub);</span>
+<span class="new">+             targetName = new GSSNameElement(info[1], actualMech, cStub);</span>
+<span class="new">+         } else {</span>
+<span class="new">+             srcName = null;</span>
+<span class="new">+             targetName = null;</span>
+<span class="new">+         }</span>
+  
+          // Do Service Permission check when importing SPNEGO context
+<span class="changed">!         // just to be safe.  WAT, no.  If the caller has an exported sec</span>
+<span class="changed">!         // context token, it's because someone gave it to it, therefore there's</span>
+<span class="changed">!         // no need to do any further permission checking.  REMOVE!</span>
+          Oid mech = cStub.getMech();
+          if (GSSUtil.isSpNegoMech(mech) || GSSUtil.isKerberosMech(mech)) {
+              doServicePermCheck();
+          }
+      }
+<hr></hr><span class="oldmarker">*** 284,313 ****</span>
+              SunNativeProvider.debug("initSecContext=&gt; outToken len=" +
+                  (outToken == null ? 0 : outToken.length));
+  
+              // Only inspect the token when the permission check
+              // has not been performed
+<span class="changed">!             if (GSSUtil.isSpNegoMech(cStub.getMech()) &amp;&amp; outToken != null) {</span>
+                  // WORKAROUND for SEAM bug#6287358
+                  actualMech = getMechFromSpNegoToken(outToken, true);
+  
+<span class="changed">!                 if (GSSUtil.isKerberosMech(actualMech)) {</span>
+                      if (!skipServicePermCheck) doServicePermCheck();
+                      if (!skipDelegPermCheck) doDelegPermCheck();
+                  }
+<span class="removed">-             }</span>
+  
+              if (isEstablished) {
+                  if (srcName == null) {
+                      srcName = new GSSNameElement
+<span class="changed">!                         (cStub.getContextName(pContext, true), cStub);</span>
+<span class="changed">!                 }</span>
+<span class="changed">!                 if (cred == null) {</span>
+<span class="changed">!                     disposeCred = cred =</span>
+<span class="changed">!                         new GSSCredElement(srcName, lifetime,</span>
+<span class="changed">!                                 GSSCredential.INITIATE_ONLY, cStub);</span>
+                  }
+              }
+          }
+          return outToken;
+      }
+  
+<span class="newmarker">--- 287,330 ----</span>
+              SunNativeProvider.debug("initSecContext=&gt; outToken len=" +
+                  (outToken == null ? 0 : outToken.length));
+  
+              // Only inspect the token when the permission check
+              // has not been performed
+<span class="changed">!             if (!GSSUtil.isSpNegoMech(cStub.getMech())) {</span>
+<span class="changed">!                 actualMech = cStub.getMech();</span>
+<span class="changed">!             } else if (actualMech == null &amp;&amp; outToken != null) {</span>
+                  // WORKAROUND for SEAM bug#6287358
+<span class="new">+                 //</span>
+<span class="new">+                 // This is where some C GSS SPNEGO implementations fail to make</span>
+<span class="new">+                 // the real actual mechanism available.</span>
+<span class="new">+                 // getMechFromSpNegoToken() does the horrible, no good, very</span>
+<span class="new">+                 // bad thing its name says it does.  For now we retain this bit</span>
+<span class="new">+                 // of evil.</span>
+<span class="new">+                 //</span>
+<span class="new">+                 // XXX Time to remove this workaround.  It's been 20</span>
+<span class="new">+                 // years.</span>
+<span class="new">+                 try {</span>
+                      actualMech = getMechFromSpNegoToken(outToken, true);
+<span class="new">+                 } catch (GSSException e) { }</span>
+<span class="new">+             }</span>
+  
+<span class="changed">!             if (actualMech != null &amp;&amp; GSSUtil.isKerberosMech(actualMech)) {</span>
+                  if (!skipServicePermCheck) doServicePermCheck();
+                  if (!skipDelegPermCheck) doDelegPermCheck();
+              }
+  
+              if (isEstablished) {
+<span class="new">+                 // XXX We should attempt to get actualMech from the cStub here,</span>
+<span class="new">+                 // and take it even if we got a semblance of an actualMech from</span>
+<span class="new">+                 // the SPNEGO token, as long as the one returned by the cStub</span>
+<span class="new">+                 // isn't the SPNEGO OID.</span>
+                  if (srcName == null) {
+                      srcName = new GSSNameElement
+<span class="changed">!                         (cStub.getContextName(pContext, true), actualMech,</span>
+<span class="changed">!                          cStub);</span>
+                  }
+<span class="new">+                 if (!skipServicePermCheck) doServicePermCheck();</span>
+              }
+          }
+          return outToken;
+      }
+  
+<hr></hr><span class="oldmarker">*** 322,354 ****</span>
+              outToken = cStub.acceptContext(pCred, cb, inToken, this);
+              disposeDelegatedCred = delegatedCred;
+              SunNativeProvider.debug("acceptSecContext=&gt; outToken len=" +
+                                      (outToken == null? 0 : outToken.length));
+  
+<span class="changed">!             if (targetName == null) {</span>
+                  targetName = new GSSNameElement
+<span class="changed">!                     (cStub.getContextName(pContext, false), cStub);</span>
+<span class="changed">!                 // Replace the current default acceptor cred now that</span>
+<span class="changed">!                 // the context acceptor name is available</span>
+<span class="changed">!                 if (disposeCred != null) {</span>
+<span class="changed">!                     disposeCred.dispose();</span>
+                  }
+<span class="changed">!                 disposeCred = cred =</span>
+<span class="changed">!                     new GSSCredElement(targetName, lifetime,</span>
+<span class="changed">!                             GSSCredential.ACCEPT_ONLY, cStub);</span>
+              }
+<span class="changed">! </span>
+<span class="changed">!             // Only inspect token when the permission check has not</span>
+<span class="changed">!             // been performed</span>
+<span class="changed">!             if (GSSUtil.isSpNegoMech(cStub.getMech()) &amp;&amp;</span>
+<span class="changed">!                 (outToken != null) &amp;&amp; !skipServicePermCheck) {</span>
+<span class="changed">!                 if (GSSUtil.isKerberosMech(getMechFromSpNegoToken</span>
+<span class="changed">!                                            (outToken, false))) {</span>
+                      doServicePermCheck();
+                  }
+              }
+<span class="removed">-         }</span>
+          return outToken;
+      }
+  
+      public boolean isEstablished() {
+          return isEstablished;
+<span class="newmarker">--- 339,362 ----</span>
+              outToken = cStub.acceptContext(pCred, cb, inToken, this);
+              disposeDelegatedCred = delegatedCred;
+              SunNativeProvider.debug("acceptSecContext=&gt; outToken len=" +
+                                      (outToken == null? 0 : outToken.length));
+  
+<span class="changed">!             if (isEstablished &amp;&amp; targetName == null) {</span>
+                  targetName = new GSSNameElement
+<span class="changed">!                     (cStub.getContextName(pContext, false), actualMech, cStub);</span>
+              }
+<span class="changed">!             if (GSSUtil.isSpNegoMech(cStub.getMech()) &amp;&amp; outToken != null &amp;&amp;</span>
+<span class="changed">!                 actualMech == null) {</span>
+<span class="changed">!                 try {</span>
+<span class="changed">!                     actualMech = getMechFromSpNegoToken(outToken, true);</span>
+<span class="changed">!                 } catch (GSSException e) { }</span>
+              }
+<span class="changed">!             if (isEstablished &amp;&amp; targetName != null &amp;&amp; !skipServicePermCheck) {</span>
+                  doServicePermCheck();
+              }
+          }
+          return outToken;
+      }
+  
+      public boolean isEstablished() {
+          return isEstablished;
+</pre></body></html>
+

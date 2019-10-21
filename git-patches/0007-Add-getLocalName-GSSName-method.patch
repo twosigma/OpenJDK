@@ -1,0 +1,333 @@
+From 5b7c1bfad58ff6a6c09b93fe7a9928c4a9439290 Mon Sep 17 00:00:00 2001
+From: Nico Williams <nico@twosigma.com>
+Date: Tue, 1 Mar 2016 03:52:00 +0000
+Subject: [PATCH 07/24] Add getLocalName() GSSName method
+
+---
+ .../share/classes/org/ietf/jgss/GSSName.java  | 10 +++
+ .../sun/security/jgss/GSSNameImpl.java        | 37 ++++++++++-
+ .../security/jgss/krb5/Krb5NameElement.java   | 26 ++++++++
+ .../sun/security/jgss/spi/GSSNameSpi.java     | 17 +++++
+ .../sun/security/jgss/wrapper/GSSLibStub.java |  1 +
+ .../security/jgss/wrapper/GSSNameElement.java | 10 +++
+ .../share/native/libj2gss/GSSLibStub.c        | 63 +++++++++++++++++++
+ .../share/native/libj2gss/NativeFunc.c        |  7 +++
+ .../share/native/libj2gss/NativeFunc.h        |  7 +++
+ .../share/native/libj2gss/gssapi.h            |  9 +++
+ 10 files changed, 186 insertions(+), 1 deletion(-)
+
+diff --git a/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java b/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java
+index d55bd6abb4..f0bd258b55 100644
+--- a/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java
++++ b/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java
+@@ -261,6 +261,16 @@ public interface GSSName {
+      */
+     public byte[] export() throws GSSException;
+ 
++    /**
++     * Returns a local username form of a mechanism name, if available.
++     */
++    public String getLocalName() throws GSSException;
++
++    /**
++     * Returns a local username form of a mechanism name, if available.
++     */
++    public String getLocalName(Oid mech) throws GSSException;
++
+     /**
+      * Returns a textual representation of the <code>GSSName</code> object.  To retrieve
+      * the printed name format, which determines the syntax of the returned
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java b/src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java
+index e1e89059c5..97badb1e71 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java
+@@ -447,8 +447,43 @@ public class GSSNameImpl implements GSSName {
+     }
+ 
+     public String toString() {
+-         return printableName;
++        return printableName;
++    }
+ 
++    public String getLocalName() throws GSSException {
++        String lname = null;
++        Oid mech = null;
++        Oid mech2 = null;
++
++        for (GSSNameSpi v : elements.values()) {
++            String mname = v.getLocalName();
++            if (mname == null)
++                continue;
++            if (lname == null) {
++                mech = v.getMechanism();
++                lname = mname;
++                continue;
++            }
++            if (!lname.equals(mname)) {
++                mech2 = v.getMechanism();
++                break;
++            }
++        }
++        if (mech2 == null)
++            return lname;
++        throw new GSSExceptionImpl(GSSException.UNAVAILABLE,
++                "Localname conflict between mechanisms " +
++                mech + " and " + mech2);
++    }
++
++    public String getLocalName(Oid mech) throws GSSException {
++        GSSNameSpi element = elements.get(mech);
++        if (element == null) {
++            throw new GSSExceptionImpl(GSSException.UNAVAILABLE,
++                    "GSSName object does not have an element for the " +
++                    "given mechanism");
++        }
++        return element.getLocalName();
+     }
+ 
+     public Oid getStringNameType() throws GSSException {
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java b/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java
+index 461e2481e5..d6bb727e4a 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java
+@@ -316,6 +316,32 @@ public class Krb5NameElement
+         // For testing: return (super.toString());
+     }
+ 
++    /**
++     * Returns a local username (platform-specific) corresponding to the
++     * principal name, and may return null when no username is known for the
++     * principal name.
++     *
++     * @return username corresponding to this principal name, if any
++     */
++    public String getLocalName() throws GSSException {
++        throw new GSSException(GSSException.UNAVAILABLE, -1,
++                "Mapping Kerberos principal names to usernames is not " +
++                "currently supported");
++    }
++
++    /**
++     * Returns a local username (platform-specific) corresponding to the
++     * principal name, and may return null when no username is known for the
++     * principal name.
++     *
++     * @return username corresponding to this principal name, if any
++     */
++    public String getLocalName(Oid mech) throws GSSException {
++        throw new GSSException(GSSException.UNAVAILABLE, -1,
++                "Mapping Kerberos principal names to usernames is not " +
++                "currently supported");
++    }
++
+     /**
+      * Returns the name type oid.
+      */
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java b/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java
+index 24362d0074..bfb93f9371 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java
+@@ -100,6 +100,23 @@ public interface GSSNameSpi {
+      */
+     public String toString();
+ 
++    /**
++     * Returns a local username (platform-specific) corresponding to the
++     * principal name, and may return null when no username is known for the
++     * principal name.
++     *
++     * @return username corresponding to this name, if any
++     */
++    public String getLocalName() throws GSSException;
++
++    /**
++     * Returns a local username (platform-specific) corresponding to the
++     * principal name, and may return null when no username is known for the
++     * principal name.
++     *
++     * @return username corresponding to this name, if any
++     */
++    public String getLocalName(Oid mech) throws GSSException;
+ 
+     /**
+      * Returns the oid describing the format of the printable name.
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java
+index 900532459b..cbdf7a3b59 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java
+@@ -65,6 +65,7 @@ class GSSLibStub {
+     native boolean compareName(long pName1, long pName2);
+     native long canonicalizeName(long pName);
+     native byte[] exportName(long pName) throws GSSException;
++    native String localName(long pName, Oid mech) throws GSSException;
+     native Object[] displayName(long pName) throws GSSException;
+ 
+     // Credential related routines
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
+index 53c62b2a4b..9952ee12d1 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
+@@ -276,6 +276,16 @@ public class GSSNameElement implements GSSNameSpi {
+         return printableName;
+     }
+ 
++    public String getLocalName() throws GSSException {
++        return cStub.localName(pName, mech);
++    }
++
++    public String getLocalName(Oid mech) throws GSSException {
++        if (mech.equals(this.mech))
++            return cStub.localName(pName, mech);
++        throw new GSSException(GSSException.BAD_MECH);
++    }
++
+     public Oid getStringNameType() {
+         return printableType;
+     }
+diff --git a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+index 58bab7ecb8..d9185b81d7 100644
+--- a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
++++ b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+@@ -512,6 +512,69 @@ Java_sun_security_jgss_wrapper_GSSLibStub_exportName(JNIEnv *env,
+   return getJavaBuffer(env, &outBuf, JNI_TRUE);
+ }
+ 
++/*
++ * Class:     sun_security_jgss_wrapper_GSSLibStub
++ * Method:    localName
++ * Signature: (J)Ljava/lang/String;
++ */
++JNIEXPORT jstring JNICALL
++Java_sun_security_jgss_wrapper_GSSLibStub_localName(JNIEnv *env,
++                                                    jobject jobj,
++                                                    jlong pName,
++                                                    jobject jOid)
++{
++  OM_uint32 minor, major, dummy;
++  gss_name_t nameHdl, mnNameHdl;
++  gss_buffer_desc outBuf = GSS_C_EMPTY_BUFFER;
++  gss_OID mech;
++
++  nameHdl = (gss_name_t) jlong_to_ptr(pName);
++
++  if (ftab->localName == NULL) {
++    TRACE0("GSSLibStub_localName not supported by GSS provider");
++    checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0,
++                "[GSSLibStub_localName]");
++    return NULL;
++  }
++  mech = newGSSOID(env, jOid);
++
++  /* gss_localname(...) => GSS_S_NAME_NOT_MN, GSS_S_BAD_NAMETYPE,
++     GSS_S_BAD_NAME */
++  major = (*ftab->localName)(&minor, nameHdl, mech, &outBuf);
++  if (major == GSS_S_COMPLETE) {
++    deleteGSSOID(mech);
++    return getJavaString(env, &outBuf);
++  }
++  (*ftab->releaseBuffer)(&minor, &outBuf);
++
++  if (major != GSS_S_NAME_NOT_MN) {
++    checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
++    goto err;
++  }
++
++  /* canonicalize the internal name to MN and retry */
++  TRACE0("[GSSLibStub_localName] canonicalize and re-try");
++
++  major = (*ftab->canonicalizeName)(&minor, nameHdl, mech, &mnNameHdl);
++  checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
++  if ((*env)->ExceptionCheck(env))
++    goto err;
++
++  major = (*ftab->localName)(&minor, mnNameHdl, mech, &outBuf);
++  (void) (*ftab->releaseName)(&dummy, &mnNameHdl);
++
++  checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
++  if ((*env)->ExceptionCheck(env) == JNI_FALSE && major == GSS_S_COMPLETE) {
++    deleteGSSOID(mech);
++    return getJavaString(env, &outBuf);
++  }
++  (*ftab->releaseBuffer)(&minor, &outBuf);
++
++err:
++  deleteGSSOID(mech);
++  return NULL;
++}
++
+ /*
+  * Class:     sun_security_jgss_wrapper_GSSLibStub
+  * Method:    displayName
+diff --git a/src/java.security.jgss/share/native/libj2gss/NativeFunc.c b/src/java.security.jgss/share/native/libj2gss/NativeFunc.c
+index da7bc0445b..69b3b9cdfe 100644
+--- a/src/java.security.jgss/share/native/libj2gss/NativeFunc.c
++++ b/src/java.security.jgss/share/native/libj2gss/NativeFunc.c
+@@ -34,6 +34,7 @@ static const char COMPARE_NAME[]                = "gss_compare_name";
+ static const char CANONICALIZE_NAME[]           = "gss_canonicalize_name";
+ static const char EXPORT_NAME[]                 = "gss_export_name";
+ static const char DISPLAY_NAME[]                = "gss_display_name";
++static const char LOCAL_NAME[]                  = "gss_localname";
+ static const char ACQUIRE_CRED[]                = "gss_acquire_cred";
+ static const char RELEASE_CRED[]                = "gss_release_cred";
+ static const char INQUIRE_CRED[]                = "gss_inquire_cred";
+@@ -122,6 +123,12 @@ int loadNative(const char *libName) {
+         goto out;
+     }
+ 
++    /*
++     * This one may not be available for a given GSS library, as it's an
++     * extension, therefore we don't fail if it's missing.
++     */
++    ftab->localName = (LOCAL_NAME_FN_PTR)GETFUNC(gssLib, LOCAL_NAME);
++
+     ftab->acquireCred = (ACQUIRE_CRED_FN_PTR)GETFUNC(gssLib, ACQUIRE_CRED);
+     if (ftab->acquireCred == NULL) {
+         failed = TRUE;
+diff --git a/src/java.security.jgss/share/native/libj2gss/NativeFunc.h b/src/java.security.jgss/share/native/libj2gss/NativeFunc.h
+index 82914387c2..3c9d857482 100644
+--- a/src/java.security.jgss/share/native/libj2gss/NativeFunc.h
++++ b/src/java.security.jgss/share/native/libj2gss/NativeFunc.h
+@@ -84,6 +84,12 @@ typedef OM_uint32 (*DISPLAY_NAME_FN_PTR)
+                                 gss_buffer_t output_name_buffer,
+                                 gss_OID *output_name_type);
+ 
++typedef OM_uint32 (*LOCAL_NAME_FN_PTR)
++                                (OM_uint32 *minor_status,
++                                gss_name_t input_name,
++                                gss_OID mech,
++                                gss_buffer_t output_name_buffer);
++
+ typedef OM_uint32 (*ACQUIRE_CRED_FN_PTR)
+                                 (OM_uint32 *minor_status,
+                                 gss_const_name_t desired_name,
+@@ -249,6 +255,7 @@ typedef struct GSS_FUNCTION_TABLE {
+     CANONICALIZE_NAME_FN_PTR            canonicalizeName;
+     EXPORT_NAME_FN_PTR                  exportName;
+     DISPLAY_NAME_FN_PTR                 displayName;
++    LOCAL_NAME_FN_PTR                   localName;
+     ACQUIRE_CRED_FN_PTR                 acquireCred;
+     RELEASE_CRED_FN_PTR                 releaseCred;
+     INQUIRE_CRED_FN_PTR                 inquireCred;
+diff --git a/src/java.security.jgss/share/native/libj2gss/gssapi.h b/src/java.security.jgss/share/native/libj2gss/gssapi.h
+index 932742ca9f..885bdf8b0a 100644
+--- a/src/java.security.jgss/share/native/libj2gss/gssapi.h
++++ b/src/java.security.jgss/share/native/libj2gss/gssapi.h
+@@ -699,6 +699,15 @@ GSS_DLLIMP OM_uint32 gss_canonicalize_name(
+ #    pragma pack(pop)
+ #endif
+ 
++/* Common extension for aname2lname (NOT in RFC2744) */
++OM_uint32
++gss_localname(
++        OM_uint32 *,            /* minor_status */
++        const gss_name_t,       /* name */
++        gss_OID,                /* mech_type */
++        gss_buffer_t            /* localname */
++);
++
+ #ifdef __cplusplus
+ }
+ #endif
+-- 
+2.17.1
+

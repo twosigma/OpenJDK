@@ -1,0 +1,234 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws New src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 /*
+  27  * Machine Dependent implementation of the dynamic linking support
+  28  * for java.  This routine is Unix specific.
+  29  */
+  30 
+  31 #include &lt;stdio.h&gt;
+  32 #include &lt;dlfcn.h&gt;
+  33 #include &lt;unistd.h&gt;
+  34 #include &lt;stdlib.h&gt;
+  35 #include &lt;string.h&gt;
+  36 
+  37 #include "path_md.h"
+  38 
+  39 #ifdef __APPLE__
+  40 #define LIB_SUFFIX "dylib"
+  41 #else
+  42 #define LIB_SUFFIX "so"
+  43 #endif
+  44 
+  45 static void dll_build_name(char* buffer, size_t buflen,
+  46                            const char* paths, const char* fname) {
+  47     char *path, *paths_copy, *next_token;
+  48 
+  49     paths_copy = strdup(paths);
+  50     if (paths_copy == NULL) {
+  51         return;
+  52     }
+  53 
+  54     next_token = NULL;
+  55     path = strtok_r(paths_copy, PATH_SEPARATOR, &amp;next_token);
+  56 
+  57     while (path != NULL) {
+  58         snprintf(buffer, buflen, "%s/lib%s." LIB_SUFFIX, path, fname);
+  59         if (access(buffer, F_OK) == 0) {
+  60             break;
+  61         }
+  62         *buffer = '\0';
+  63         path = strtok_r(NULL, PATH_SEPARATOR, &amp;next_token);
+  64     }
+  65 
+  66     free(paths_copy);
+  67 }
+  68 
+  69 int
+  70 dbgsysGetLastErrorString(char *buf, int len)
+  71 {
+  72     const char *s = dlerror();
+  73     size_t n;
+  74     size_t l = (size_t)len;
+  75 
+  76     if (len &lt;= 0)
+  77         return 0;
+  78 
+  79     *buf = '\0';
+  80     if (s == NULL)
+  81         return 0;
+  82 
+  83     n = strlen(s);
+  84     if (n &gt;= l)
+  85         n = l - 1;
+  86     strncpy(buf, s, n);
+  87     buf[n] = '\0'; /* not actually needed */
+  88     return n;
+  89 }
+  90 
+  91 /*
+  92  * create a string for the JNI native function name by adding the
+  93  * appropriate decorations.
+  94  */
+  95 int
+  96 dbgsysBuildFunName(char *name, int nameLen, int args_size, int encodingIndex)
+  97 {
+  98     // On Unix, there is only one encoding method.
+  99     if (encodingIndex == 0)
+ 100         return 1;
+ 101     return 0;
+ 102 }
+ 103 
+ 104 /*
+ 105  * create a string for the dynamic lib open call by adding the
+ 106  * appropriate pre and extensions to a filename and the path
+ 107  */
+ 108 void
+ 109 dbgsysBuildLibName(char *holder, int holderlen, const char *pname,
+ 110                    const char *fname)
+ 111 {
+ 112     const int pnamelen = pname ? strlen(pname) : 0;
+ 113 
+ 114     *holder = '\0';
+ 115     // Quietly truncate on buffer overflow.  Should be an error.
+ 116     if (pnamelen + (int)strlen(fname) + 10 &gt; holderlen) {
+ 117         return;
+ 118     }
+ 119 
+ 120     if (pnamelen == 0) {
+ 121         (void)snprintf(holder, holderlen, "lib%s." LIB_SUFFIX, fname);
+ 122     } else {
+ 123       dll_build_name(holder, holderlen, pname, fname);
+ 124     }
+ 125 }
+ 126 
+ 127 void *
+ 128 dbgsysLoadLibrary(const char *name, char *err_buf, int err_buflen)
+ 129 {
+ 130     void * result;
+ 131     result = dlopen(name, RTLD_LAZY);
+ 132     if (result == NULL) {
+ 133         (void)strncpy(err_buf, dlerror(), err_buflen-2);
+ 134         err_buf[err_buflen-1] = '\0';
+ 135     }
+ 136     return result;
+ 137 }
+ 138 
+ 139 void dbgsysUnloadLibrary(void *handle)
+ 140 {
+ 141     (void)dlclose(handle);
+ 142 }
+ 143 
+ 144 void * dbgsysFindLibraryEntry(void *handle, const char *name)
+ 145 {
+ 146     return dlsym(handle, name);
+ 147 }
+</pre></body></html>

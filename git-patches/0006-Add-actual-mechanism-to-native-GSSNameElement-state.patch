@@ -1,0 +1,230 @@
+From 8c450b76c2cf3abf81b5806ef05578d97a2db760 Mon Sep 17 00:00:00 2001
+From: Viktor Dukhovni <viktor@twosigma.com>
+Date: Wed, 9 Dec 2015 23:56:26 +0000
+Subject: [PATCH 06/24] Add actual mechanism to native GSSNameElement state
+
+---
+ .../security/jgss/wrapper/GSSCredElement.java |  2 +-
+ .../security/jgss/wrapper/GSSNameElement.java | 10 +++---
+ .../jgss/wrapper/NativeGSSContext.java        |  9 +++---
+ .../share/native/libj2gss/GSSLibStub.c        | 31 ++++++++++---------
+ .../share/native/libj2gss/NativeUtil.c        |  4 +--
+ 5 files changed, 31 insertions(+), 25 deletions(-)
+
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java
+index 019fa6f805..6c9711e80b 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java
+@@ -80,7 +80,7 @@ public class GSSCredElement implements GSSCredentialSpi {
+             pCred = cStub.acquireCred(this.name.pName, lifetime, usage);
+         } else {
+             pCred = cStub.acquireCred(0, lifetime, usage);
+-            this.name = new GSSNameElement(cStub.getCredName(pCred), cStub);
++            this.name = new GSSNameElement(cStub.getCredName(pCred), cStub.getMech(), cStub);
+             doServicePermCheck();
+         }
+     }
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
+index 88274c1601..53c62b2a4b 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
+@@ -53,6 +53,7 @@ public class GSSNameElement implements GSSNameSpi {
+     long pName = 0; // Pointer to the gss_name_t structure
+     private String printableName;
+     private Oid printableType;
++    private Oid mech;
+     private GSSLibStub cStub;
+ 
+     static final GSSNameElement DEF_ACCEPTOR = new GSSNameElement();
+@@ -97,13 +98,14 @@ public class GSSNameElement implements GSSNameSpi {
+         printableName = "<DEFAULT ACCEPTOR>";
+     }
+ 
+-    GSSNameElement(long pNativeName, GSSLibStub stub) throws GSSException {
++    GSSNameElement(long pNativeName, Oid mech, GSSLibStub stub) throws GSSException {
+         assert(stub != null);
+         if (pNativeName == 0) {
+             throw new GSSException(GSSException.BAD_NAME);
+         }
+         // Note: pNativeName is assumed to be a MN.
+         pName = pNativeName;
++        this.mech = mech;
+         cStub = stub;
+         setPrintables();
+     }
+@@ -116,6 +118,7 @@ public class GSSNameElement implements GSSNameSpi {
+         }
+         cStub = stub;
+         byte[] name = nameBytes;
++        mech = cStub.getMech();
+ 
+         if (nameType != null) {
+             // Special handling the specified name type if
+@@ -128,7 +131,6 @@ public class GSSNameElement implements GSSNameSpi {
+                 // method) for "NT_EXPORT_NAME"
+                 byte[] mechBytes = null;
+                 DerOutputStream dout = new DerOutputStream();
+-                Oid mech = cStub.getMech();
+                 try {
+                     dout.putOID(new ObjectIdentifier(mech.toString()));
+                 } catch (IOException e) {
+@@ -195,7 +197,7 @@ public class GSSNameElement implements GSSNameSpi {
+     public String getKrbName() throws GSSException {
+         long mName = 0;
+         GSSLibStub stub = cStub;
+-        if (!GSSUtil.isKerberosMech(cStub.getMech())) {
++        if (!GSSUtil.isKerberosMech(mech)) {
+             stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
+         }
+         mName = stub.canonicalizeName(pName);
+@@ -267,7 +269,7 @@ public class GSSNameElement implements GSSNameSpi {
+     }
+ 
+     public Oid getMechanism() {
+-        return cStub.getMech();
++        return (mech != null) ? mech : cStub.getMech();
+     }
+ 
+     public String toString() {
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java
+index fa8e268b75..faef0b6779 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java
+@@ -241,8 +241,8 @@ class NativeGSSContext implements GSSContextSpi {
+         if (info.length != NUM_OF_INQUIRE_VALUES) {
+             throw new RuntimeException("Bug w/ GSSLibStub.inquireContext()");
+         }
+-        srcName = new GSSNameElement(info[0], cStub);
+-        targetName = new GSSNameElement(info[1], cStub);
++        srcName = new GSSNameElement(info[0], actualMech, cStub);
++        targetName = new GSSNameElement(info[1], actualMech, cStub);
+         isInitiator = (info[2] != 0);
+         isEstablished = (info[3] != 0);
+         flags = (int) info[4];
+@@ -299,7 +299,8 @@ class NativeGSSContext implements GSSContextSpi {
+             if (isEstablished) {
+                 if (srcName == null) {
+                     srcName = new GSSNameElement
+-                        (cStub.getContextName(pContext, true), cStub);
++                        (cStub.getContextName(pContext, true), actualMech,
++                         cStub);
+                 }
+                 if (cred == null) {
+                     disposeCred = cred =
+@@ -326,7 +327,7 @@ class NativeGSSContext implements GSSContextSpi {
+ 
+             if (targetName == null) {
+                 targetName = new GSSNameElement
+-                    (cStub.getContextName(pContext, false), cStub);
++                    (cStub.getContextName(pContext, false), actualMech, cStub);
+                 // Replace the current default acceptor cred now that
+                 // the context acceptor name is available
+                 if (disposeCred != null) {
+diff --git a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+index 91359f447d..58bab7ecb8 100644
+--- a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
++++ b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+@@ -854,10 +854,8 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
+   gss_channel_bindings_t cb;
+   gss_buffer_desc inToken;
+   gss_buffer_desc outToken = GSS_C_EMPTY_BUFFER;
+-/* UNCOMMENT after SEAM bug#6287358 is backported to S10
+   gss_OID aMech;
+   jobject jMech;
+-*/
+ 
+   TRACE0("[GSSLibStub_initContext]");
+ 
+@@ -891,7 +889,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
+      GSS_S_BAD_NAMETYPE, GSS_S_BAD_NAME(!), GSS_S_BAD_MECH */
+   major = (*ftab->initSecContext)(&minor, credHdl,
+                                  &contextHdl, targetName, mech,
+-                                 flags, time, cb, &inToken, NULL /*aMech*/,
++                                 flags, time, cb, &inToken, &aMech,
+                                  &outToken, &aFlags, &aTime);
+ 
+   TRACE2("[GSSLibStub_initContext] after: pContext=%" PRIuPTR ", outToken len=%ld",
+@@ -920,11 +918,9 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
+                               FID_NativeGSSContext_isEstablished,
+                               JNI_TRUE);
+ 
+-/* UNCOMMENT after SEAM bug#6287358 is backported to S10
+       jMech = getJavaOID(env, aMech);
+       (*env)->SetObjectField(env, jcontextSpi,
+                              FID_NativeGSSContext_actualMech, jMech);
+-*/
+     } else if (major & GSS_S_CONTINUE_NEEDED) {
+       TRACE0("[GSSLibStub_initContext] context not established");
+       major &= ~GSS_S_CONTINUE_NEEDED;
+@@ -1024,7 +1020,20 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
+ 
+   if (GSS_ERROR(major) == GSS_S_COMPLETE) {
+     /* update member values if needed */
+-    // WORKAROUND for an old Heimdal bug
++
++    if (aMech != GSS_C_NO_OID) {
++      jMech = getJavaOID(env, aMech);
++      if ((*env)->ExceptionCheck(env)) {
++        goto error;
++      }
++      (*env)->SetObjectField(env, jcontextSpi,
++                             FID_NativeGSSContext_actualMech, jMech);
++      if ((*env)->ExceptionCheck(env)) {
++        goto error;
++      }
++    }
++
++    /* WORKAROUND for an old Heimdal bug */
+     if (delCred == GSS_C_NO_CREDENTIAL) {
+         aFlags &= ~GSS_C_DELEG_FLAG;
+     }
+@@ -1043,7 +1052,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
+ 
+       jtargetName = (*env)->NewObject(env, CLS_GSSNameElement,
+                                 MID_GSSNameElement_ctor,
+-                                ptr_to_jlong(targetName), jobj);
++                                ptr_to_jlong(targetName), jMech, jobj);
+       if ((*env)->ExceptionCheck(env)) {
+         goto error;
+       }
+@@ -1061,7 +1070,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
+     if (srcName != GSS_C_NO_NAME) {
+       jsrcName = (*env)->NewObject(env, CLS_GSSNameElement,
+                                    MID_GSSNameElement_ctor,
+-                                   ptr_to_jlong(srcName), jobj);
++                                   ptr_to_jlong(srcName), jMech, jobj);
+       if ((*env)->ExceptionCheck(env)) {
+         goto error;
+       }
+@@ -1083,12 +1092,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
+       (*env)->SetBooleanField(env, jcontextSpi,
+                               FID_NativeGSSContext_isEstablished,
+                               JNI_TRUE);
+-      jMech = getJavaOID(env, aMech);
+-      if ((*env)->ExceptionCheck(env)) {
+-        goto error;
+-      }
+-      (*env)->SetObjectField(env, jcontextSpi,
+-                             FID_NativeGSSContext_actualMech, jMech);
+       if ((*env)->ExceptionCheck(env)) {
+         goto error;
+       }
+diff --git a/src/java.security.jgss/share/native/libj2gss/NativeUtil.c b/src/java.security.jgss/share/native/libj2gss/NativeUtil.c
+index 274e706497..0ca04a9b99 100644
+--- a/src/java.security.jgss/share/native/libj2gss/NativeUtil.c
++++ b/src/java.security.jgss/share/native/libj2gss/NativeUtil.c
+@@ -271,9 +271,9 @@ DEF_JNI_OnLoad(JavaVM *jvm, void *reserved) {
+   }
+   MID_GSSNameElement_ctor =
+     (*env)->GetMethodID(env, CLS_GSSNameElement,
+-                        "<init>", "(JLsun/security/jgss/wrapper/GSSLibStub;)V");
++                        "<init>", "(JLorg/ietf/jgss/Oid;Lsun/security/jgss/wrapper/GSSLibStub;)V");
+   if (MID_GSSNameElement_ctor == NULL) {
+-    printf("Couldn't find GSSNameElement(long, GSSLibStub) constructor\n");
++    printf("Couldn't find GSSNameElement(long, Oid, GSSLibStub) constructor\n");
+     return JNI_ERR;
+   }
+   MID_GSSCredElement_ctor =
+-- 
+2.17.1
+

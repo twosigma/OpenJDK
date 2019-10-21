@@ -1,0 +1,501 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method</pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 #ifndef NATIVE_FUNC_H
+  27 #define NATIVE_FUNC_H
+  28 
+  29 #include "gssapi.h"
+  30 
+  31 #ifdef WIN32
+  32 #include &lt;windows.h&gt;
+  33 #define GETLIB(libName) LoadLibrary(libName)
+  34 #define GETFUNC(lib,name) GetProcAddress(lib,name)
+  35 #define CLOSELIB(lib) CloseHandle(lib)
+  36 #else
+  37 #include &lt;dlfcn.h&gt;
+  38 #define GETLIB(libName) dlopen(libName, RTLD_NOW)
+  39 #define GETFUNC(lib,name) dlsym(lib,name)
+  40 #define CLOSELIB(lib) dlclose(lib)
+  41 #endif
+  42 
+  43 #ifndef TRUE
+  44 #define TRUE    1
+  45 #endif
+  46 
+  47 #ifndef FALSE
+  48 #define FALSE   0
+  49 #endif
+  50 
+  51 int loadNative(const char *libName);
+  52 
+  53 /* function pointer definitions */
+  54 typedef OM_uint32 (*RELEASE_NAME_FN_PTR)
+  55                                 (OM_uint32 *minor_status,
+  56                                 gss_name_t *name);
+  57 
+  58 typedef OM_uint32 (*IMPORT_NAME_FN_PTR)
+  59                                 (OM_uint32 *minor_status,
+  60                                 gss_const_buffer_t input_name_buffer,
+  61                                 gss_const_OID input_name_type,
+  62                                 gss_name_t *output_name);
+  63 
+  64 typedef OM_uint32 (*COMPARE_NAME_FN_PTR)
+  65                                 (OM_uint32 *minor_status,
+  66                                 gss_const_name_t name1,
+  67                                 gss_const_name_t name2,
+  68                                 int *name_equal);
+  69 
+  70 typedef OM_uint32 (*CANONICALIZE_NAME_FN_PTR)
+  71                                 (OM_uint32 *minor_status,
+  72                                 gss_const_name_t input_name,
+  73                                 gss_const_OID mech_type,
+  74                                 gss_name_t *output_name);
+  75 
+  76 typedef OM_uint32 (*EXPORT_NAME_FN_PTR)
+  77                                 (OM_uint32 *minor_status,
+  78                                 gss_const_name_t input_name,
+  79                                 gss_buffer_t exported_name);
+  80 
+  81 typedef OM_uint32 (*DISPLAY_NAME_FN_PTR)
+  82                                 (OM_uint32 *minor_status,
+  83                                 gss_const_name_t input_name,
+  84                                 gss_buffer_t output_name_buffer,
+  85                                 gss_OID *output_name_type);
+  86 
+<a name="1" id="anc1"></a><span class="new">  87 typedef OM_uint32 (*LOCAL_NAME_FN_PTR)</span>
+<span class="new">  88                                 (OM_uint32 *minor_status,</span>
+<span class="new">  89                                 gss_name_t input_name,</span>
+<span class="new">  90                                 gss_OID mech,</span>
+<span class="new">  91                                 gss_buffer_t output_name_buffer);</span>
+<span class="new">  92 </span>
+  93 typedef OM_uint32 (*ACQUIRE_CRED_FN_PTR)
+  94                                 (OM_uint32 *minor_status,
+  95                                 gss_const_name_t desired_name,
+  96                                 OM_uint32 time_req,
+  97                                 gss_const_OID_set desired_mech,
+  98                                 gss_cred_usage_t cred_usage,
+  99                                 gss_cred_id_t *output_cred_handle,
+ 100                                 gss_OID_set *actual_mechs,
+ 101                                 OM_uint32 *time_rec);
+ 102 
+<a name="2" id="anc2"></a><span class="new"> 103 typedef OM_uint32 (*ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)</span>
+<span class="new"> 104                                 (OM_uint32 *minor_status,</span>
+<span class="new"> 105                                 gss_name_t desired_name,</span>
+<span class="new"> 106                                 gss_buffer_t password,</span>
+<span class="new"> 107                                 OM_uint32 time_req,</span>
+<span class="new"> 108                                 gss_OID_set desired_mech,</span>
+<span class="new"> 109                                 gss_cred_usage_t cred_usage,</span>
+<span class="new"> 110                                 gss_cred_id_t *output_cred_handle,</span>
+<span class="new"> 111                                 gss_OID_set *actual_mechs,</span>
+<span class="new"> 112                                 OM_uint32 *time_rec);</span>
+<span class="new"> 113 </span>
+<span class="new"> 114 typedef OM_uint32 (*ACQUIRE_CRED_FROM_FN_PTR)</span>
+<span class="new"> 115                                 (OM_uint32 *minor_status,</span>
+<span class="new"> 116                                  gss_const_name_t desired_name,</span>
+<span class="new"> 117                                  OM_uint32 time_req,</span>
+<span class="new"> 118                                  const gss_OID_set desired_mechs,</span>
+<span class="new"> 119                                  gss_cred_usage_t cred_usage,</span>
+<span class="new"> 120                                  gss_const_key_value_set_t cred_store,</span>
+<span class="new"> 121                                  gss_cred_id_t * output_cred_handle,</span>
+<span class="new"> 122                                  gss_OID_set * actual_mechs,</span>
+<span class="new"> 123                                  OM_uint32 * time_rec);</span>
+<span class="new"> 124 </span>
+<span class="new"> 125 typedef OM_uint32 (*STORE_CRED_INTO_FN_PTR)</span>
+<span class="new"> 126                                 (OM_uint32 *minor_status,</span>
+<span class="new"> 127                                  gss_const_cred_id_t input_cred_handle,</span>
+<span class="new"> 128                                  gss_cred_usage_t input_usage,</span>
+<span class="new"> 129                                  const gss_OID desired_mech,</span>
+<span class="new"> 130                                  OM_uint32 overwrite_cred,</span>
+<span class="new"> 131                                  OM_uint32 default_cred,</span>
+<span class="new"> 132                                  gss_const_key_value_set_t cred_store,</span>
+<span class="new"> 133                                  gss_OID_set * elements_stored,</span>
+<span class="new"> 134                                  gss_cred_usage_t * cred_usage_stored);</span>
+<span class="new"> 135 </span>
+ 136 typedef OM_uint32 (*RELEASE_CRED_FN_PTR)
+ 137                                 (OM_uint32 *minor_status,
+ 138                                 gss_cred_id_t *cred_handle);
+ 139 
+ 140 typedef OM_uint32 (*INQUIRE_CRED_FN_PTR)
+ 141                                 (OM_uint32 *minor_status,
+ 142                                 gss_const_cred_id_t cred_handle,
+ 143                                 gss_name_t *name,
+ 144                                 OM_uint32 *lifetime,
+ 145                                 gss_cred_usage_t *cred_usage,
+ 146                                 gss_OID_set *mechanisms);
+ 147 
+ 148 typedef OM_uint32 (*IMPORT_SEC_CONTEXT_FN_PTR)
+ 149                                 (OM_uint32 *minor_status,
+ 150                                 gss_const_buffer_t interprocess_token,
+ 151                                 gss_ctx_id_t *context_handle);
+ 152 
+ 153 typedef OM_uint32 (*INIT_SEC_CONTEXT_FN_PTR)
+ 154                                 (OM_uint32 *minor_status,
+ 155                                 gss_const_cred_id_t initiator_cred_handle,
+ 156                                 gss_ctx_id_t *context_handle,
+ 157                                 gss_const_name_t target_name,
+ 158                                 gss_const_OID mech_type,
+ 159                                 OM_uint32 req_flags,
+ 160                                 OM_uint32 time_req,
+ 161                                 gss_const_channel_bindings_t input_chan_bindings,
+ 162                                 gss_const_buffer_t input_token,
+ 163                                 gss_OID *actual_mech_type,
+ 164                                 gss_buffer_t output_token,
+ 165                                 OM_uint32 *ret_flags,
+ 166                                 OM_uint32 *time_rec);
+ 167 
+ 168 typedef OM_uint32 (*ACCEPT_SEC_CONTEXT_FN_PTR)
+ 169                                 (OM_uint32 *minor_status,
+ 170                                 gss_ctx_id_t *context_handle,
+ 171                                 gss_const_cred_id_t acceptor_cred_handle,
+ 172                                 gss_const_buffer_t input_token,
+ 173                                 gss_const_channel_bindings_t input_chan_bindings,
+ 174                                 gss_name_t *src_name,
+ 175                                 gss_OID *mech_type,
+ 176                                 gss_buffer_t output_token,
+ 177                                 OM_uint32 *ret_flags,
+ 178                                 OM_uint32 *time_rec,
+ 179                                 gss_cred_id_t *delegated_cred_handle);
+ 180 
+ 181 typedef OM_uint32 (*INQUIRE_CONTEXT_FN_PTR)
+ 182                                 (OM_uint32 *minor_status,
+ 183                                 gss_const_ctx_id_t context_handle,
+ 184                                 gss_name_t *src_name,
+ 185                                 gss_name_t *targ_name,
+ 186                                 OM_uint32 *lifetime_rec,
+ 187                                 gss_OID *mech_type,
+ 188                                 OM_uint32 *ctx_flags,
+ 189                                 int *locally_initiated,
+ 190                                 int *open);
+ 191 
+ 192 typedef OM_uint32 (*DELETE_SEC_CONTEXT_FN_PTR)
+ 193                                 (OM_uint32 *minor_status,
+ 194                                 gss_ctx_id_t *context_handle,
+ 195                                 gss_buffer_t output_token);
+ 196 
+ 197 typedef OM_uint32 (*CONTEXT_TIME_FN_PTR)
+ 198                                 (OM_uint32 *minor_status,
+ 199                                 gss_const_ctx_id_t context_handle,
+ 200                                 OM_uint32 *time_rec);
+ 201 
+ 202 typedef OM_uint32 (*WRAP_SIZE_LIMIT_FN_PTR)
+ 203                                 (OM_uint32 *minor_status,
+ 204                                 gss_const_ctx_id_t context_handle,
+ 205                                 int conf_req_flag,
+ 206                                 gss_qop_t qop_req,
+ 207                                 OM_uint32 req_output_size,
+ 208                                 OM_uint32 *max_input_size);
+ 209 
+ 210 typedef OM_uint32 (*EXPORT_SEC_CONTEXT_FN_PTR)
+ 211                                 (OM_uint32 *minor_status,
+ 212                                 gss_ctx_id_t *context_handle,
+ 213                                 gss_buffer_t interprocess_token);
+ 214 
+ 215 typedef OM_uint32 (*GET_MIC_FN_PTR)
+ 216                                 (OM_uint32 *minor_status,
+ 217                                 gss_const_ctx_id_t context_handle,
+ 218                                 gss_qop_t qop_req,
+ 219                                 gss_const_buffer_t message_buffer,
+ 220                                 gss_buffer_t msg_token);
+ 221 
+ 222 typedef OM_uint32 (*VERIFY_MIC_FN_PTR)
+ 223                                 (OM_uint32 *minor_status,
+ 224                                 gss_const_ctx_id_t context_handle,
+ 225                                 gss_const_buffer_t message_buffer,
+ 226                                 gss_const_buffer_t token_buffer,
+ 227                                 gss_qop_t *qop_state);
+ 228 
+ 229 typedef OM_uint32 (*WRAP_FN_PTR)
+ 230                                 (OM_uint32 *minor_status,
+ 231                                 gss_const_ctx_id_t context_handle,
+ 232                                 int conf_req_flag,
+ 233                                 gss_qop_t qop_req,
+ 234                                 gss_const_buffer_t input_message_buffer,
+ 235                                 int *conf_state,
+ 236                                 gss_buffer_t output_message_buffer);
+ 237 
+ 238 typedef OM_uint32 (*UNWRAP_FN_PTR)
+ 239                                 (OM_uint32 *minor_status,
+ 240                                 gss_const_ctx_id_t context_handle,
+ 241                                 gss_const_buffer_t input_message_buffer,
+ 242                                 gss_buffer_t output_message_buffer,
+ 243                                 int *conf_state,
+ 244                                 gss_qop_t *qop_state);
+ 245 
+ 246 typedef OM_uint32 (*INDICATE_MECHS_FN_PTR)
+ 247                                 (OM_uint32 *minor_status,
+ 248                                 gss_OID_set *mech_set);
+ 249 
+ 250 typedef OM_uint32 (*INQUIRE_NAMES_FOR_MECH_FN_PTR)
+ 251                                 (OM_uint32 *minor_status,
+ 252                                 gss_const_OID mechanism,
+ 253                                 gss_OID_set *name_types);
+ 254 
+ 255 typedef OM_uint32 (*ADD_OID_SET_MEMBER_FN_PTR)
+ 256                                 (OM_uint32 *minor_status,
+ 257                                 gss_const_OID member_oid,
+ 258                                 gss_OID_set *oid_set);
+ 259 
+ 260 typedef OM_uint32 (*DISPLAY_STATUS_FN_PTR)
+ 261                                 (OM_uint32 *minor_status,
+ 262                                 OM_uint32 status_value,
+ 263                                 int status_type,
+ 264                                 gss_const_OID mech_type,
+ 265                                 OM_uint32 *message_context,
+ 266                                 gss_buffer_t status_string);
+ 267 
+ 268 typedef OM_uint32 (*CREATE_EMPTY_OID_SET_FN_PTR)
+ 269                                 (OM_uint32 *minor_status,
+ 270                                 gss_OID_set *oid_set);
+ 271 
+ 272 typedef OM_uint32 (*RELEASE_OID_SET_FN_PTR)
+ 273                                 (OM_uint32 *minor_status,
+ 274                                 gss_OID_set *set);
+ 275 
+ 276 typedef OM_uint32 (*RELEASE_BUFFER_FN_PTR)
+ 277                                 (OM_uint32 *minor_status,
+ 278                                 gss_buffer_t buffer);
+ 279 
+ 280 
+ 281 /* dynamically resolved functions from gss library */
+ 282 
+ 283 typedef struct GSS_FUNCTION_TABLE {
+ 284     gss_OID_set                         mechs;
+ 285     RELEASE_NAME_FN_PTR                 releaseName;
+ 286     IMPORT_NAME_FN_PTR                  importName;
+ 287     COMPARE_NAME_FN_PTR                 compareName;
+ 288     CANONICALIZE_NAME_FN_PTR            canonicalizeName;
+ 289     EXPORT_NAME_FN_PTR                  exportName;
+ 290     DISPLAY_NAME_FN_PTR                 displayName;
+<a name="3" id="anc3"></a><span class="new"> 291     LOCAL_NAME_FN_PTR                   localName;</span>
+ 292     ACQUIRE_CRED_FN_PTR                 acquireCred;
+<a name="4" id="anc4"></a><span class="new"> 293     ACQUIRE_CRED_WITH_PASSWORD_FN_PTR   acquireCredWithPassword;</span>
+<span class="new"> 294     ACQUIRE_CRED_FROM_FN_PTR            acquireCredFrom;</span>
+<span class="new"> 295     STORE_CRED_INTO_FN_PTR              storeCredInto;</span>
+ 296     RELEASE_CRED_FN_PTR                 releaseCred;
+ 297     INQUIRE_CRED_FN_PTR                 inquireCred;
+ 298     IMPORT_SEC_CONTEXT_FN_PTR           importSecContext;
+ 299     INIT_SEC_CONTEXT_FN_PTR             initSecContext;
+ 300     ACCEPT_SEC_CONTEXT_FN_PTR           acceptSecContext;
+ 301     INQUIRE_CONTEXT_FN_PTR              inquireContext;
+ 302     DELETE_SEC_CONTEXT_FN_PTR           deleteSecContext;
+ 303     CONTEXT_TIME_FN_PTR                 contextTime;
+ 304     WRAP_SIZE_LIMIT_FN_PTR              wrapSizeLimit;
+ 305     EXPORT_SEC_CONTEXT_FN_PTR           exportSecContext;
+ 306     GET_MIC_FN_PTR                      getMic;
+ 307     VERIFY_MIC_FN_PTR                   verifyMic;
+ 308     WRAP_FN_PTR                         wrap;
+ 309     UNWRAP_FN_PTR                       unwrap;
+ 310     INDICATE_MECHS_FN_PTR               indicateMechs;
+ 311     INQUIRE_NAMES_FOR_MECH_FN_PTR       inquireNamesForMech;
+ 312     ADD_OID_SET_MEMBER_FN_PTR           addOidSetMember;
+ 313     DISPLAY_STATUS_FN_PTR               displayStatus;
+ 314     CREATE_EMPTY_OID_SET_FN_PTR         createEmptyOidSet;
+ 315     RELEASE_OID_SET_FN_PTR              releaseOidSet;
+ 316     RELEASE_BUFFER_FN_PTR               releaseBuffer;
+ 317 
+ 318 } GSS_FUNCTION_TABLE;
+ 319 
+ 320 typedef GSS_FUNCTION_TABLE *GSS_FUNCTION_TABLE_PTR;
+ 321 
+ 322 /* global GSS function table */
+ 323 GSS_FUNCTION_TABLE_PTR ftab;
+ 324 
+ 325 #endif
+<a name="5" id="anc5"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="5" type="hidden"></input></form></body></html>

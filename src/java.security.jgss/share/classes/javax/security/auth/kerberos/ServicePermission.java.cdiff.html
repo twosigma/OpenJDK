@@ -1,0 +1,169 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Cdiff src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java</title>
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>ServicePermission empty realm support
+Also use empty realm as wildcard for krbtgt names</pre>
+        <pre>
+<hr></hr><span class="oldmarker">*** 212,225 ****</span>
+              impliesIgnoreMask(that);
+      }
+  
+  
+      boolean impliesIgnoreMask(ServicePermission p) {
+<span class="changed">!         return ((this.getName().equals("*")) ||</span>
+                  this.getName().equals(p.getName()) ||
+<span class="changed">!                 (p.getName().startsWith("@") &amp;&amp;</span>
+<span class="changed">!                         this.getName().endsWith(p.getName())));</span>
+      }
+  
+      /**
+       * Checks two ServicePermission objects for equality.
+       *
+<span class="newmarker">--- 212,272 ----</span>
+              impliesIgnoreMask(that);
+      }
+  
+  
+      boolean impliesIgnoreMask(ServicePermission p) {
+<span class="changed">!         String pName = p.getName();</span>
+<span class="changed">! </span>
+<span class="changed">!         if ((this.getName().equals("*")) ||</span>
+               this.getName().equals(p.getName()) ||
+<span class="changed">!              (pName.startsWith("@") &amp;&amp;</span>
+<span class="changed">!                      this.getName().endsWith(pName)))</span>
+<span class="changed">!             return true;</span>
+<span class="changed">! </span>
+<span class="changed">!         /*</span>
+<span class="changed">!          * Empty realm in this or p is a wild-card.  This is needed to support</span>
+<span class="changed">!          * non-Kerberos ServicePermissions for GSS (a band-aid until we can</span>
+<span class="changed">!          * implement a proper GssAcceptorPermission class), but also because</span>
+<span class="changed">!          * users may not know and might not care what realm the service is in,</span>
+<span class="changed">!          * especially when they are using a keytab.</span>
+<span class="changed">!          *</span>
+<span class="changed">!          * If the user is using a password, then the realm matters more.  An</span>
+<span class="changed">!          * untrusted actor could cause KDCs for a realm they control to see</span>
+<span class="changed">!          * material they could attack offline, but that was already the case</span>
+<span class="changed">!          * anyways, and the answer is the same in all cases: use stronger</span>
+<span class="changed">!          * passwords, use randomized keys in a keytab, or let us implement</span>
+<span class="changed">!          * SPAKE or similar alternatives to the venerable PA-ENC-TIMESTAMP.</span>
+<span class="changed">!          */</span>
+<span class="changed">!         if ((this.getName().equals("krbtgt/@") &amp;&amp;</span>
+<span class="changed">!              pName.startsWith("krbtgt/")) ||</span>
+<span class="changed">!             (pName.equals("krbtgt/@") &amp;&amp;</span>
+<span class="changed">!              this.getName().startsWith("krbtgt/")))</span>
+<span class="changed">!             return true;</span>
+<span class="changed">! </span>
+<span class="changed">!         String s = this.getName();</span>
+<span class="changed">!         int n = s.length();</span>
+<span class="changed">!         int i;</span>
+<span class="changed">!         for (i = 0; i &lt; n; i++) {</span>
+<span class="changed">!             if (s.charAt(i) == '\\') {</span>
+<span class="changed">!                 i++;</span>
+<span class="changed">!                 continue;</span>
+<span class="changed">!             }</span>
+<span class="changed">!             if (s.charAt(i) == '@') {</span>
+<span class="changed">!                 /*</span>
+<span class="changed">!                  * This is the same as:</span>
+<span class="changed">!                  *</span>
+<span class="changed">!                  *  String s = s.substring(0, i);</span>
+<span class="changed">!                  *  return (p.getName().startsWith(s) &amp;&amp;</span>
+<span class="changed">!                  *      (p.getName().equals(s) || this.getName().equals(s)));</span>
+<span class="changed">!                  */</span>
+<span class="changed">!                 return (pName.regionMatches(0, s, 0, i + 1) &amp;&amp;</span>
+<span class="changed">!                     (pName.length() == i + 1 || s.length() == i + 1));</span>
+<span class="changed">!             }</span>
+<span class="changed">!         }</span>
+<span class="changed">! </span>
+<span class="changed">!         // No realm, not even empty -&gt; fail</span>
+<span class="changed">!         return false;</span>
+      }
+  
+      /**
+       * Checks two ServicePermission objects for equality.
+       *
+</pre></body></html>
+

@@ -1,0 +1,933 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws New src/jdk.security.auth/share/classes/com/sun/security/auth/module/GssLoginModule.java</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 2000, 2017-2018 Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package com.sun.security.auth.module;
+  27 
+  28 import java.text.MessageFormat;
+  29 import java.util.Map;
+  30 import java.util.Set;
+  31 import java.util.Arrays;
+  32 import java.util.HashMap;
+  33 import java.util.Iterator;
+  34 import javax.security.auth.Subject;
+  35 import javax.security.auth.SubjectDomainCombiner;
+  36 import javax.security.auth.callback.Callback;
+  37 import javax.security.auth.callback.NameCallback;
+  38 import javax.security.auth.callback.CallbackHandler;
+  39 import javax.security.auth.callback.PasswordCallback;
+  40 import javax.security.auth.callback.UnsupportedCallbackException;
+  41 import javax.security.auth.login.LoginException;
+  42 import javax.security.auth.spi.LoginModule;
+  43 
+  44 import org.ietf.jgss.GSSManager;
+  45 import org.ietf.jgss.GSSException;
+  46 import org.ietf.jgss.GSSContext;
+  47 import org.ietf.jgss.GSSCredential;
+  48 import org.ietf.jgss.GSSName;
+  49 import org.ietf.jgss.Oid;
+  50 
+  51 import static sun.security.util.ResourcesMgr.getAuthResourceString;
+  52 
+  53 /**
+  54  * &lt;p&gt;This {@code LoginModule} authenticates users using a GSS-API
+  55  * mechanism.&lt;/p&gt;
+  56  *
+  57  * &lt;p&gt; The configuration entry for {@code GssLoginModule} has
+  58  * several options that control the authentication process and
+  59  * additions to the {@code Subject}'s private credential
+  60  * set. Irrespective of these options, the {@code Subject}'s
+  61  * principal set and private credentials set are updated only when
+  62  * {@code commit} is called.
+  63  * When {@code commit} is called, the {@code GSSName} is added to the
+  64  * {@code Subject}'s principal set. If {@code initiate} is true, the
+  65  * initiator credential will be added to the {@code Subject}'s private
+  66  * credentials.&lt;/p&gt;
+  67  *
+  68  * &lt;p&gt; If the configuration entry for {@code GssLoginModule}
+  69  * has the option {@code accept} set to true, then acceptor credential
+  70  * will be added to the subject's private credentials.&lt;/p&gt;
+  71  *
+  72  * &lt;p&gt; This {@code LoginModule} recognizes the {@code doNotPrompt}
+  73  * option. If set to true the user will not be prompted for their password.&lt;/p&gt;
+  74  *
+  75  * &lt;p&gt; When using the GSS-API Kerberos mechanism, the user can specify
+  76  * the location of the ticket cache by using the option
+  77  * {@code ticketCache} in the configuration entry. Similarly, a keytab
+  78  * can be specified using the option {@code keyTab} in the
+  79  * configuration entry.&lt;/p&gt;
+  80  *
+  81  * &lt;p&gt; Other credential store options can be specified as
+  82  * {@code credStoreKeyValue_KEY}, where {@code KEY} is the name of a
+  83  * credential store key supported by the GSS-API mechanism provider.
+  84  * When using platform native GSS-API providers, consult their
+  85  * documentation (for example, look for the {@code gss_acquire_cred_from()}
+  86  * and {@code gss_store_cred_into()} functions).&lt;/p&gt;
+  87  *
+  88  * &lt;p&gt; The principal name can be specified in the configuration entry
+  89  * by using the option {@code name} and {@code nameType}. The principal name
+  90  * can either be a simple user name, a service name such as
+  91  * {@code host@mission.eng.sun.com}. The principal can also
+  92  * be set using the system property
+  93  * {@systemProperty sun.security.gss.name}, and its name-type can be set
+  94  * with {@systemProperty sun.security.gss.nametype}.
+  95  * These properties are checked during login if the name and name-type
+  96  * are not set in the configuration.  In the case where the principal
+  97  * property is not set and the principal entry also does not exist, the
+  98  * user is prompted for the name.&lt;/p&gt;
+  99  *
+ 100  * &lt;p&gt; The following is a list of configuration options supported
+ 101  * for {@code GssLoginModule}:
+ 102  * &lt;blockquote&gt;&lt;dl&gt;
+ 103  * &lt;dt&gt;{@code doNotPrompt}:&lt;/dt&gt;
+ 104  * &lt;dd&gt;Set this to true if you do not want to be
+ 105  * prompted for the password
+ 106  * if credentials can not be obtained from the cache, the keytab,
+ 107  * or through shared state.(Default is false)
+ 108  * If set to true, credential must be obtained through cache, keytab,
+ 109  * or shared state. Otherwise, authentication will fail.&lt;/dd&gt;
+ 110  * &lt;dt&gt;{@code ticketCache}:&lt;/dt&gt;
+ 111  * &lt;dd&gt;Set this to the name of the ticket cache file that contains
+ 112  * user's TGT.&lt;/dd&gt;
+ 113  * &lt;dt&gt;{@code keyTab}:&lt;/dt&gt;
+ 114  * &lt;dd&gt;Set this to the file name of the keytab to get principal's secret
+ 115  * key(s).&lt;/dd&gt;
+ 116  * &lt;dt&gt;{@code name}:&lt;/dt&gt;
+ 117  * &lt;dd&gt;The name of the principal that should be used. The principal can
+ 118  * be a simple username such as "{@code testuser}" or a service name
+ 119  * such as "{@code host@testhost.eng.sun.com}". You can use the
+ 120  * {@code principal} option to set the principal when there are
+ 121  * credentials for multiple principals in the {@code keyTab} or when you
+ 122  * want a specific ticket cache only. The principal can also be set
+ 123  * using the system property {@code sun.security.gss.name}. The value
+ 124  * from the configuration takes precedence.&lt;/dd&gt;
+ 125  * &lt;dt&gt;{@code nametype}:&lt;/dt&gt;
+ 126  * &lt;dd&gt;This is the type of the name. This can be "{@code username}",
+ 127  * "{@code hostbased}", or an OID, and defaults to "{@code username}".&lt;/dd&gt;
+ 128  * &lt;dt&gt;{@code initiate}:&lt;/dt&gt;
+ 129  * &lt;dd&gt;Set this to true, if you need to acquire initiator
+ 130  * credentials.&lt;/dd&gt;
+ 131  * &lt;dt&gt;{@code accept}:&lt;/dt&gt;
+ 132  * &lt;dd&gt;Set this to true, if you need to acquire acceptor
+ 133  * credentials. Either or both of {@code initiate} and {@code accept}
+ 134  * may be set to true. If both are false then {@code initiate} will be
+ 135  * treated as true.&lt;/dd&gt;
+ 136  * &lt;/dl&gt;&lt;/blockquote&gt;&lt;/p&gt;
+ 137  *
+ 138  * &lt;p&gt; This {@code LoginModule} also recognizes the following additional
+ 139  * {@code Configuration}
+ 140  * options that enable you to share username and passwords across different
+ 141  * authentication modules:
+ 142  * &lt;blockquote&gt;&lt;dl&gt;
+ 143  *
+ 144  *    &lt;dt&gt;{@code useFirstPass}:&lt;/dt&gt;
+ 145  *                   &lt;dd&gt;if, true, this LoginModule retrieves the
+ 146  *                   username and password from the module's shared state,
+ 147  *                   using "javax.security.auth.login.name" and
+ 148  *                   "javax.security.auth.login.password" as the respective
+ 149  *                   keys. The retrieved values are used for authentication.
+ 150  *                   If authentication fails, no attempt for a retry
+ 151  *                   is made, and the failure is reported back to the
+ 152  *                   calling application.&lt;/dd&gt;
+ 153  *
+ 154  *    &lt;dt&gt;{@code tryFirstPass}:&lt;/dt&gt;
+ 155  *                   &lt;dd&gt;if, true, this LoginModule retrieves the
+ 156  *                   the username and password from the module's shared
+ 157  *                   state using "javax.security.auth.login.name" and
+ 158  *                   "javax.security.auth.login.password" as the respective
+ 159  *                   keys.  The retrieved values are used for
+ 160  *                   authentication.
+ 161  *                   If authentication fails, the module uses the
+ 162  *                   CallbackHandler to retrieve a new username
+ 163  *                   and password, and another attempt to authenticate
+ 164  *                   is made. If the authentication fails,
+ 165  *                   the failure is reported back to the calling application&lt;/dd&gt;
+ 166  *
+ 167  *    &lt;dt&gt;{@code storePass}:&lt;/dt&gt;
+ 168  *                   &lt;dd&gt;if, true, this LoginModule stores the username and
+ 169  *                   password obtained from the CallbackHandler in the
+ 170  *                   modules shared state, using
+ 171  *                   "javax.security.auth.login.name" and
+ 172  *                   "javax.security.auth.login.password" as the respective
+ 173  *                   keys.  This is not performed if existing values already
+ 174  *                   exist for the username and password in the shared
+ 175  *                   state, or if authentication fails.&lt;/dd&gt;
+ 176  *
+ 177  *    &lt;dt&gt;{@code clearPass}:&lt;/dt&gt;
+ 178  *                   &lt;dd&gt;if, true, this LoginModule clears the
+ 179  *                   username and password stored in the module's shared
+ 180  *                   state  after both phases of authentication
+ 181  *                   (login and commit) have completed.&lt;/dd&gt;
+ 182  * &lt;/dl&gt;&lt;/blockquote&gt;&lt;/p&gt;
+ 183  * &lt;p&gt;If the principal system property or key is already provided, the value of
+ 184  * "javax.security.auth.login.name" in the shared state is ignored.&lt;/p&gt;
+ 185  *
+ 186  * &lt;p&gt;Note that if any step fails, it will fallback to the next step.
+ 187  * There's only one exception, if the shared state step fails and
+ 188  * {@code useFirstPass = true}, no user prompt is made.&lt;/p&gt;
+ 189  */
+ 190 
+ 191 
+ 192 public class GssLoginModule implements LoginModule {
+ 193 
+ 194     // From initialize
+ 195     private Subject subject;
+ 196     private CallbackHandler callbackHandler;
+ 197     private Map&lt;String, Object&gt; sharedState;
+ 198     private Map&lt;String, ?&gt; options;
+ 199 
+ 200     // Configuration option
+ 201     private boolean debug;
+ 202     private boolean doNotPrompt;
+ 203     private String defName;
+ 204     private String name;
+ 205     private String nametype; // username, hostbased, unspecified
+ 206     private Oid nametypeOid;
+ 207 
+ 208     private GSSManager manager;
+ 209     private GSSName gssName;
+ 210     private GSSCredential gssICred;
+ 211     private GSSCredential gssACred;
+ 212 
+ 213     private boolean useNative; // sun.security.jgss.native property
+ 214 
+ 215     private boolean useFirstPass;
+ 216     private boolean tryFirstPass;
+ 217     private boolean storePass;
+ 218     private boolean clearPass;
+ 219     private boolean initiate;
+ 220     private boolean accept;
+ 221     private boolean tryDefaultCreds;
+ 222     private boolean useDefaultCreds;
+ 223 
+ 224     // Module state
+ 225     private boolean succeeded;
+ 226     private boolean commitSucceeded;
+ 227 
+ 228     private String password = null;
+ 229     private Map&lt;String,String&gt; store = null;
+ 230 
+ 231     private static final String NAME = "javax.security.auth.login.name";
+ 232     private static final String PWD = "javax.security.auth.login.password";
+ 233 
+ 234     private String getString(String key) {
+ 235         return (String)options.get(key);
+ 236     }
+ 237     private boolean getBool(String key) {
+ 238         String value = (String)options.get(key);
+ 239         return value != null ? Boolean.parseBoolean(value) : false;
+ 240     }
+ 241     private boolean getBoolWithDefault(String key, boolean defval) {
+ 242         String value = (String)options.get(key);
+ 243         return value != null ? Boolean.parseBoolean(value) : defval;
+ 244     }
+ 245 
+ 246     private void storeAddKeyValue(String key, String value) {
+ 247         if (store == null) {
+ 248             store = new HashMap&lt;String,String&gt;(){{put(key, value);}};
+ 249         } else {
+ 250             store.put(key, value);
+ 251         }
+ 252     }
+ 253 
+ 254     private void storeAddOption(String optionName, String key) {
+ 255         if (options.containsKey(optionName)) {
+ 256             storeAddKeyValue(key, getString(optionName));
+ 257         }
+ 258     }
+ 259 
+ 260     private void storeAddOptions() {
+ 261         for (String key : options.keySet()) {
+ 262             if (!key.startsWith("credStoreKeyValue_"))
+ 263                 continue;
+ 264             storeAddOption(key, key.substring("credStoreKeyValue_".length()));
+ 265         }
+ 266     }
+ 267 
+ 268     /**
+ 269      * Initialize this &lt;code&gt;LoginModule&lt;/code&gt;.
+ 270      *
+ 271      * &lt;p&gt;
+ 272      * @param subject the &lt;code&gt;Subject&lt;/code&gt; to be authenticated.&lt;/p&gt;
+ 273      *
+ 274      * &lt;p&gt;
+ 275      * @param callbackHandler a &lt;code&gt;CallbackHandler&lt;/code&gt; for
+ 276      *                  communication with the end user (prompting for
+ 277      *                  usernames and passwords, for example).&lt;/p&gt;
+ 278      *
+ 279      * &lt;p&gt;
+ 280      * @param sharedState shared &lt;code&gt;LoginModule&lt;/code&gt; state.&lt;/p&gt;
+ 281      *
+ 282      * &lt;p&gt;
+ 283      * @param options options specified in the login
+ 284      *                  &lt;code&gt;Configuration&lt;/code&gt; for this particular
+ 285      *                  &lt;code&gt;LoginModule&lt;/code&gt;.&lt;/p&gt;
+ 286      */
+ 287     // Unchecked warning from (Map&lt;String, Object&gt;)sharedState is safe
+ 288     // since javax.security.auth.login.LoginContext passes a raw HashMap.
+ 289     // Unchecked warnings from options.get(String) are safe since we are
+ 290     // passing known keys.
+ 291     @SuppressWarnings("unchecked")
+ 292     public void initialize(Subject subject,
+ 293                            CallbackHandler callbackHandler,
+ 294                            Map&lt;String, ?&gt; sharedState,
+ 295                            Map&lt;String, ?&gt; options) {
+ 296 
+ 297         this.subject = subject;
+ 298         this.callbackHandler = callbackHandler;
+ 299         this.sharedState = (Map&lt;String, Object&gt;)sharedState;
+ 300         this.options = options;
+ 301 
+ 302         /*
+ 303          * When sun.security.jgss.native=false (i.e., not using the system's
+ 304          * native C/ELF/DLL GSS implementation) then there's nothing for this
+ 305          * login module to do.  Otherwise we'd get into an infinite recursion
+ 306          * problem due to re-entering GssLoginModule like this:
+ 307          *
+ 308          * Application -&gt; LoginContext -&gt; GssLoginModule -&gt; Krb5 -&gt;
+ 309          *      GSSUtil.login -&gt; LoginContext -&gt; GssLoginModule -&gt; ...
+ 310          *
+ 311          * It stands to reason that when sun.security.jgss.native=false the
+ 312          * login modules corresponding to the actual GSS mechanisms coded in
+ 313          * Java are the ones that should be acquiring their corresponding
+ 314          * credentials.
+ 315          *
+ 316          * A policy like "let the application use GSS credentials but not the
+ 317          * raw, underlying Krb5 credentials" when
+ 318          * sun.security.jgss.native=false" could be expressible by adding a
+ 319          * module option to Krb5LoginModule that causes it to add only GSS
+ 320          * credentials to the Subject, not Krb5 credentials.
+ 321          *
+ 322          * (It has never been possible to express such a policy, so we lose
+ 323          * nothing by punting here when sun.security.jgss.native=false.)
+ 324          */
+ 325         useNative = Boolean.getBoolean("sun.security.jgss.native");
+ 326         if (!useNative)
+ 327             return;
+ 328 
+ 329         manager = GSSManager.getInstance();
+ 330 
+ 331         // initialize any configured options
+ 332 
+ 333         debug = getBool("debug");
+ 334         doNotPrompt = getBool("doNotPrompt");
+ 335         defName = getString("name");
+ 336         nametype = getString("nametype");
+ 337 
+ 338         if (defName == null)
+ 339             defName = System.getProperty("sun.security.gss.name");
+ 340         if (nametype == null)
+ 341             nametype = System.getProperty("sun.security.gss.nametype");
+ 342         if (nametype == null || nametype.equals("username")) {
+ 343             nametypeOid = GSSName.NT_USER_NAME;
+ 344         } else if (nametype.equals("hostbased")) {
+ 345             nametypeOid = GSSName.NT_HOSTBASED_SERVICE;
+ 346         } else if (!nametype.equals("")) {
+ 347             try {
+ 348                 nametypeOid = new Oid(nametype);
+ 349             } catch (GSSException e) {
+ 350                 if (debug)
+ 351                     System.out.print("Unknown name type OID " + nametype);
+ 352                 nametypeOid = null;
+ 353             }
+ 354         } else {
+ 355             nametype = "&lt;default: username&gt;";
+ 356             nametypeOid = GSSName.NT_USER_NAME;
+ 357         }
+ 358 
+ 359         storeAddOptions();
+ 360         storeAddOption("keyTab", "keytab");
+ 361         storeAddOption("clientKeyTab", "client_keytab");
+ 362         storeAddOption("ticketCache", "ccache");
+ 363         storeAddOption("replayCache", "rcache");
+ 364 
+ 365         tryFirstPass = getBool("tryFirstPass");
+ 366         useFirstPass = getBoolWithDefault("useFirstPass", doNotPrompt);
+ 367         storePass = getBool("storePass");
+ 368         clearPass = getBool("clearPass");
+ 369         initiate = getBool("initiate");
+ 370         accept = getBool("accept");
+ 371         tryDefaultCreds = getBool("tryDefaultCreds");
+ 372         useDefaultCreds = getBoolWithDefault("useDefaultCreds", doNotPrompt);
+ 373         if (!initiate &amp;&amp; !accept)
+ 374             initiate = true;
+ 375         if (debug) {
+ 376             System.out.print("Debug is  " + debug
+ 377                              + " doNotPrompt " + doNotPrompt
+ 378                              + " defName is " + defName
+ 379                              + " nametype is " + nametype
+ 380                              + " tryFirstPass is " + tryFirstPass
+ 381                              + " useFirstPass is " + useFirstPass
+ 382                              + " storePass is " + storePass
+ 383                              + " clearPass is " + clearPass
+ 384                              + " initiate is " + initiate
+ 385                              + " accept is " + accept
+ 386                              + " tryDefaultCreds is " + tryDefaultCreds
+ 387                              + " useDefaultCreds is " + useDefaultCreds + "\n");
+ 388             System.out.print("Credential store options are:");
+ 389             if (store.size() == 0) {
+ 390                 System.out.print(" &lt;none&gt;");
+ 391             } else {
+ 392                 for (var e : store.entrySet()) {
+ 393                     System.out.print(" " + e.getKey() + "=" + e.getValue() + ";");
+ 394                 }
+ 395             }
+ 396             System.out.println("");
+ 397         }
+ 398     }
+ 399 
+ 400 
+ 401     /**
+ 402      * Authenticate the user
+ 403      *
+ 404      * &lt;p&gt;
+ 405      *
+ 406      * @return true in all cases since this &lt;code&gt;LoginModule&lt;/code&gt;
+ 407      *          should not be ignored.&lt;/p&gt;
+ 408      *
+ 409      * &lt;p&gt;
+ 410      * @exception FailedLoginException if the authentication fails.&lt;/p&gt;
+ 411      *
+ 412      * &lt;p&gt;
+ 413      * @exception LoginException if this &lt;code&gt;LoginModule&lt;/code&gt;
+ 414      *          is unable to perform the authentication.&lt;/p&gt;
+ 415      */
+ 416     public boolean login() throws LoginException {
+ 417         succeeded = false;
+ 418 
+ 419         /*
+ 420          * See commentary in initialize().  By returning false we cause
+ 421          * LoginContext to ignore this module.
+ 422          */
+ 423         if (!useNative)
+ 424             return false;
+ 425         try {
+ 426             if (tryFirstPass || useFirstPass) {
+ 427                 attemptAuthentication(true);
+ 428                 if (debug)
+ 429                     System.out.println("\t\t[GssLoginModule] " +
+ 430                                        "authentication succeeded");
+ 431                 succeeded = true;
+ 432                 cleanState();
+ 433                 return true;
+ 434             }
+ 435         } catch (LoginException le) {
+ 436             // authentication failed -- try again below by prompting
+ 437             cleanState();
+ 438             if (debug) {
+ 439                 System.out.println("\t\t[GssLoginModule] " +
+ 440                                    (tryFirstPass ? "tryFirstPass " : "") +
+ 441                                    "authentication failed with:" +
+ 442                                    le.getMessage());
+ 443             }
+ 444             if (useFirstPass)
+ 445                 throw le;
+ 446         }
+ 447 
+ 448         // The first password didn't work or we didn't try it, try prompting
+ 449         try {
+ 450             attemptAuthentication(false);
+ 451             if (debug)
+ 452                 System.out.println("\t\t[GssLoginModule] " +
+ 453                                    "authentication succeeded");
+ 454             succeeded = true;
+ 455             cleanState();
+ 456             return true;
+ 457         } catch (LoginException le2) {
+ 458             cleanState();
+ 459             if (debug) {
+ 460                 System.out.println("\t\t[GssLoginModule] " +
+ 461                                    (tryFirstPass ? "tryFirstPass " : "") +
+ 462                                    "authentication failed with:" +
+ 463                                    le2.getMessage());
+ 464             }
+ 465             throw le2;
+ 466         }
+ 467     }
+ 468 
+ 469     private void getcreds() throws GSSException {
+ 470         if (initiate) {
+ 471             if (password == null &amp;&amp; store == null) {
+ 472                 if (debug)
+ 473                     System.out.println("\t\t[GssLoginModule] acquiring" +
+ 474                         ((gssName == null) ? " default" : "") +
+ 475                         " initiator credentials...");
+ 476                 gssICred = manager.createCredential(gssName,
+ 477                         GSSCredential.DEFAULT_LIFETIME, (Oid[])null,
+ 478                         GSSCredential.INITIATE_ONLY);
+ 479             } else if (password != null) {
+ 480                 if (debug)
+ 481                     System.out.println("\t\t[GssLoginModule] acquiring" +
+ 482                         " initiator credentials using a password...");
+ 483                 gssICred = manager.createCredential(gssName, password,
+ 484                         GSSCredential.DEFAULT_LIFETIME, (Oid[])null,
+ 485                         GSSCredential.INITIATE_ONLY);
+ 486             } else {
+ 487                 if (debug)
+ 488                     System.out.println("\t\t[GssLoginModule] acquiring" +
+ 489                         ((gssName == null) ? " default" : "") +
+ 490                         " initiator credentials using a specified" +
+ 491                         " credential store...");
+ 492                 gssICred = manager.createCredential(gssName, store,
+ 493                         GSSCredential.DEFAULT_LIFETIME, (Oid[])null,
+ 494                         GSSCredential.INITIATE_ONLY);
+ 495             }
+ 496             if (debug)
+ 497                 System.out.println("\t\t[GssLoginModule] acquired" +
+ 498                     " initiator credentials: " + gssName);
+ 499         }
+ 500         if (accept) {
+ 501             if (debug)
+ 502                 System.out.println("\t\t[GssLoginModule] acquiring" +
+ 503                     ((gssName == null) ? " default" : "") +
+ 504                     " acceptor credentials...");
+ 505             gssACred = manager.createCredential(gssName, password,
+ 506                     GSSCredential.DEFAULT_LIFETIME, (Oid[])null,
+ 507                     GSSCredential.ACCEPT_ONLY);
+ 508             // Default acceptor credentials retain a null name
+ 509             if (debug)
+ 510                 System.out.println("\t\t[GssLoginModule] acquired" +
+ 511                     " acceptor credentials");
+ 512         }
+ 513         if (gssName == null &amp;&amp; gssICred != null)
+ 514             gssName = gssICred.getName();
+ 515         if (gssName == null &amp;&amp; gssACred != null)
+ 516             gssName = gssACred.getName();
+ 517     }
+ 518 
+ 519     private void attemptAuthentication(boolean getPasswdFromSharedState)
+ 520         throws LoginException {
+ 521 
+ 522         // Get a name, maybe
+ 523         if (name == null) {
+ 524             if (useDefaultCreds) {
+ 525                 try {
+ 526                     getcreds();
+ 527                     return;
+ 528                 } catch (GSSException e) {
+ 529                     throw new LoginException(e.getMessage());
+ 530                 }
+ 531             }
+ 532             if (tryDefaultCreds) {
+ 533                 try {
+ 534                     getcreds();
+ 535                     return;
+ 536                 } catch (GSSException e) { }
+ 537             }
+ 538 
+ 539             promptForName(getPasswdFromSharedState);
+ 540             if (name == null)
+ 541                 throw new LoginException ("Unable to determine a GSS name");
+ 542         }
+ 543 
+ 544         try {
+ 545             gssName = manager.createName(name, nametypeOid);
+ 546         } catch (GSSException e) {
+ 547             throw new LoginException ("Unable to import GSS name");
+ 548         }
+ 549 
+ 550         promptForPass(getPasswdFromSharedState);
+ 551 
+ 552         try {
+ 553             getcreds();
+ 554         } catch (GSSException e) {
+ 555             throw new LoginException(e.getMessage());
+ 556         }
+ 557     }
+ 558 
+ 559     private void promptForName(boolean getPasswdFromSharedState)
+ 560         throws LoginException {
+ 561         if (getPasswdFromSharedState) {
+ 562             // use the name saved by a module earlier in the stack
+ 563             name = (String)sharedState.get(NAME);
+ 564             if (name == null || name.length() == 0)
+ 565                 name = defName;
+ 566             if (debug) {
+ 567                 System.out.println("\t\t[GssLoginModule] username from" +
+ 568                     " shared state is " + name);
+ 569             }
+ 570             if (name != null &amp;&amp; name.length() &gt; 0)
+ 571                 return;
+ 572         }
+ 573 
+ 574         if (doNotPrompt)
+ 575             return; // name may be null
+ 576 
+ 577         if (callbackHandler == null)
+ 578             throw new LoginException("No CallbackHandler "
+ 579                                      + "available "
+ 580                                      + "to prompt for authentication "
+ 581                                      + "information from the user");
+ 582 
+ 583         try {
+ 584             String defUsername = System.getProperty("user.name");
+ 585 
+ 586             MessageFormat form = new MessageFormat(
+ 587                                    getAuthResourceString(
+ 588                                    "GSS.name.defName."));
+ 589             Object[] source =  {defUsername};
+ 590             Callback[] callbacks = {new NameCallback(form.format(source))};
+ 591             callbackHandler.handle(callbacks);
+ 592             NameCallback callback = (NameCallback)callbacks[0];
+ 593             name = callback.getName();
+ 594             if (name != null &amp;&amp; name.length() == 0)
+ 595                 name = null;
+ 596             if (name == null &amp;&amp; defUsername != null &amp;&amp;
+ 597                     defUsername.length() != 0)
+ 598                 name = defUsername;
+ 599         } catch (java.io.IOException ioe) {
+ 600             throw new LoginException(ioe.getMessage());
+ 601         } catch (UnsupportedCallbackException uce) {
+ 602             throw new LoginException
+ 603                 (uce.getMessage()
+ 604                  +" not available to garner "
+ 605                  +" authentication information "
+ 606                  +" from the user");
+ 607         }
+ 608         // name may still be null, which we take to mean "use default
+ 609         // credentials"
+ 610     }
+ 611 
+ 612     private void promptForPass(boolean getPasswdFromSharedState)
+ 613         throws LoginException {
+ 614 
+ 615         char[] pw;
+ 616 
+ 617         if (getPasswdFromSharedState) {
+ 618             // use the password saved by the first module in the stack
+ 619             pw = (char[])sharedState.get(PWD);
+ 620             if (pw == null) {
+ 621                 if (debug)
+ 622                     System.out.println("\t\t[GssLoginModule] password from" +
+ 623                         " shared state is null");
+ 624                 throw new LoginException
+ 625                     ("Password can not be obtained from sharedstate ");
+ 626             }
+ 627             password = new String(pw);
+ 628             return;
+ 629         }
+ 630         if (doNotPrompt)
+ 631             throw new LoginException("Unable to prompt for password");
+ 632 
+ 633         if (callbackHandler == null) {
+ 634             throw new LoginException("No CallbackHandler "
+ 635                                      + "available "
+ 636                                      + "to garner authentication "
+ 637                                      + "information from the user");
+ 638         }
+ 639         try {
+ 640             Callback[] callbacks = new Callback[1];
+ 641             MessageFormat form = new MessageFormat(
+ 642                                      getAuthResourceString(
+ 643                                      "Kerberos.password.for.username."));
+ 644             Object[] source = {name};
+ 645             callbacks[0] = new PasswordCallback(form.format(source), false);
+ 646             callbackHandler.handle(callbacks);
+ 647             char[] tmpPassword = ((PasswordCallback)
+ 648                                   callbacks[0]).getPassword();
+ 649             if (tmpPassword == null)
+ 650                 throw new LoginException("No password provided");
+ 651             password = new String(tmpPassword);
+ 652             ((PasswordCallback)callbacks[0]).clearPassword();
+ 653 
+ 654             // clear tmpPassword
+ 655             Arrays.fill(tmpPassword, ' ');
+ 656         } catch (java.io.IOException ioe) {
+ 657             throw new LoginException(ioe.getMessage());
+ 658         } catch (UnsupportedCallbackException uce) {
+ 659             throw new LoginException(uce.getMessage()
+ 660                                      +" not available to garner "
+ 661                                      +" authentication information "
+ 662                                      + "from the user");
+ 663         }
+ 664     }
+ 665 
+ 666     /**
+ 667      * &lt;p&gt; This method is called if the LoginContext's
+ 668      * overall authentication succeeded
+ 669      * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL
+ 670      * LoginModules succeeded).&lt;/p&gt;
+ 671      *
+ 672      * &lt;p&gt; If this LoginModule's own authentication attempt
+ 673      * succeeded (checked by retrieving the private state saved by the
+ 674      * &lt;code&gt;login&lt;/code&gt; method), then this method associates a
+ 675      * &lt;code&gt;GSSName&lt;/code&gt;
+ 676      * with the &lt;code&gt;Subject&lt;/code&gt; located in the
+ 677      * &lt;code&gt;LoginModule&lt;/code&gt;. It adds GSS Credentials to the
+ 678      * the Subject's private credentials set. If this LoginModule's own
+ 679      * authentication attempted failed, then this method removes
+ 680      * any state that was originally saved.&lt;/p&gt;
+ 681      *
+ 682      * &lt;p&gt;
+ 683      *
+ 684      * @exception LoginException if the commit fails.&lt;/p&gt;
+ 685      *
+ 686      * &lt;p&gt;
+ 687      * @return true if this LoginModule's own login and commit
+ 688      *          attempts succeeded, or false otherwise.&lt;/p&gt;
+ 689      */
+ 690 
+ 691     public boolean commit() throws LoginException {
+ 692         if (succeeded == false)
+ 693             return false;
+ 694 
+ 695         if (!useNative)
+ 696             return false;
+ 697 
+ 698         succeeded = false;
+ 699         if (initiate &amp;&amp; (gssICred == null)) {
+ 700             gssName = null;
+ 701             gssICred = null;
+ 702             gssACred = null;
+ 703             throw new LoginException("Null Initiator Credential");
+ 704         }
+ 705         if (accept &amp;&amp; (gssACred == null)) {
+ 706             gssName = null;
+ 707             gssICred = null;
+ 708             gssACred = null;
+ 709             throw new LoginException("Null Acceptor Credential");
+ 710         }
+ 711         if (subject.isReadOnly()) {
+ 712             gssName = null;
+ 713             gssICred = null;
+ 714             gssACred = null;
+ 715             throw new LoginException("Subject is Readonly");
+ 716         }
+ 717 
+ 718         try {
+ 719             if (initiate &amp;&amp; gssName == null)
+ 720                 gssName = gssICred.getName();
+ 721         } catch (GSSException e) {}
+ 722         try {
+ 723             if (accept &amp;&amp; gssName == null)
+ 724                 gssName = gssACred.getName();
+ 725         } catch (GSSException e) {}
+ 726 
+ 727         Set&lt;Object&gt; privCredSet = subject.getPrivateCredentials();
+ 728         Set&lt;java.security.Principal&gt; princSet = subject.getPrincipals();
+ 729 
+ 730         if (gssName != null &amp;&amp; !princSet.contains(gssName))
+ 731             princSet.add(gssName);
+ 732         if (gssICred != null &amp;&amp; !privCredSet.contains(gssICred))
+ 733             privCredSet.add(gssICred);
+ 734         if (gssACred != null &amp;&amp; !privCredSet.contains(gssACred))
+ 735             privCredSet.add(gssACred);
+ 736 
+ 737         succeeded = true;
+ 738         commitSucceeded = true;
+ 739         if (debug)
+ 740             System.out.println("\t\t[GssLoginModule] commit Succeeded");
+ 741         return true;
+ 742     }
+ 743 
+ 744     /**
+ 745      * &lt;p&gt; This method is called if the LoginContext's
+ 746      * overall authentication failed.
+ 747      * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL
+ 748      * LoginModules did not succeed).&lt;/p&gt;
+ 749      *
+ 750      * &lt;p&gt; If this LoginModule's own authentication attempt
+ 751      * succeeded (checked by retrieving the private state saved by the
+ 752      * &lt;code&gt;login&lt;/code&gt; and &lt;code&gt;commit&lt;/code&gt; methods),
+ 753      * then this method cleans up any state that was originally
+ 754      * saved.&lt;/p&gt;
+ 755      *
+ 756      * &lt;p&gt;
+ 757      *
+ 758      * @exception LoginException if the abort fails.&lt;/p&gt;
+ 759      *
+ 760      * &lt;p&gt;
+ 761      * @return false if this LoginModule's own login and/or commit attempts
+ 762      *          failed, and true otherwise.&lt;/p&gt;
+ 763      */
+ 764 
+ 765     public boolean abort() throws LoginException {
+ 766         if (succeeded == false) {
+ 767             return false;
+ 768         } else if (succeeded == true &amp;&amp; commitSucceeded == false) {
+ 769             // login succeeded but overall authentication failed
+ 770             succeeded = false;
+ 771         } else {
+ 772             // overall authentication succeeded and commit succeeded,
+ 773             // but someone else's commit failed
+ 774             logout();
+ 775         }
+ 776         return true;
+ 777     }
+ 778 
+ 779     /**
+ 780      * &lt;p&gt;Logout the user.&lt;/p&gt;
+ 781      *
+ 782      * &lt;p&gt;This method removes the &lt;code&gt;GSSName&lt;/code&gt; and
+ 783      * &lt;code&gt;GSSCredential&lt;/code&gt; added by the &lt;code&gt;commit&lt;/code&gt; method.&lt;/p&gt;
+ 784      *
+ 785      * &lt;p&gt;
+ 786      *
+ 787      * @exception LoginException if the logout fails.&lt;/p&gt;
+ 788      *
+ 789      * &lt;p&gt;
+ 790      * @return true in all cases since this &lt;code&gt;LoginModule&lt;/code&gt;
+ 791      *          should not be ignored.&lt;/p&gt;
+ 792      */
+ 793     public boolean logout() throws LoginException {
+ 794         /*
+ 795          * See commentary in initialize().  By returning false we cause
+ 796          * LoginContext to ignore this module.
+ 797          */
+ 798         if (!useNative)
+ 799             return false;
+ 800 
+ 801         if (subject.isReadOnly())
+ 802             throw new LoginException("Subject is Readonly");
+ 803 
+ 804         subject.getPrincipals().remove(gssName);
+ 805         Iterator&lt;Object&gt; it = subject.getPrivateCredentials().iterator();
+ 806         while (it.hasNext()) {
+ 807             Object o = it.next();
+ 808             if (o instanceof GSSCredential)
+ 809                 it.remove();
+ 810         }
+ 811 
+ 812         succeeded = false;
+ 813         commitSucceeded = false;
+ 814         if (debug)
+ 815             System.out.println("\t\t[GSSLoginModule]: logged out Subject");
+ 816         return true;
+ 817     }
+ 818 
+ 819     /**
+ 820      * Clean out the state
+ 821      */
+ 822     private void cleanState() {
+ 823 
+ 824         // save input as shared state only if
+ 825         // authentication succeeded
+ 826         if (succeeded) {
+ 827             if (storePass &amp;&amp;
+ 828                 !sharedState.containsKey(NAME) &amp;&amp;
+ 829                 !sharedState.containsKey(PWD)) {
+ 830                 sharedState.put(NAME, name);
+ 831                 sharedState.put(PWD, password);
+ 832             }
+ 833         } else {
+ 834             // remove temp results for the next try
+ 835             gssName = null;
+ 836             gssICred = null;
+ 837             gssACred = null;
+ 838         }
+ 839         name = null;
+ 840         password = null;
+ 841         if (clearPass) {
+ 842             sharedState.remove(NAME);
+ 843             sharedState.remove(PWD);
+ 844         }
+ 845     }
+ 846 }
+</pre></body></html>

@@ -1,0 +1,995 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>JGSS Improvements</title>
+</head>
+<body id="SUNWwebrev">
+<div class="summary">
+<h2>Code Review for JGSS Improvements</h2>
+<table>
+<tr><th>Prepared by:</th><td>Nico Williams on 2019-Oct-21 14:15 -0500 CDT</td></tr>
+<tr><th>Workspace:</th><td>/home/nico/jails/jdk-build-bionic-ts-jgss-jdk13udev/tmp/ws (explicit head at 3242b395dfbe)
+</td></tr>
+<tr><th>Compare against:</th><td>
+jdk13u/dev (https://github.com/AdoptOpenJDK/openjdk-jdk13u at 85683f60526b)
+</td></tr>
+<tr><th>Summary of changes:</th><td>
+3287 lines changed: 2668 ins; 234 del; 385 mod; 12929 unchg
+</td></tr>
+<tr><th>Patch of changes:</th><td>
+<a href="patch">patch</a></td></tr>
+<tr><th>Git patches::</th><td>
+<a href="git-patches">git-patches</a></td></tr>
+</table>
+</div>
+<p>
+<a href="src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java">Raw</a>
+<b>src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java</b>
+</p>
+<blockquote><pre>
+ServicePermission empty realm support
+Also use empty realm as wildcard for krbtgt names
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/javax/security/auth/kerberos/ServicePermission.java here -->
+<span class="lineschanged">
+51 lines changed: 47 ins; 0 del; 4 mod; 655 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java">Raw</a>
+<b>src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java here -->
+<span class="lineschanged">
+22 lines changed: 22 ins; 0 del; 0 mod; 370 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java">Raw</a>
+<b>src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java here -->
+<span class="lineschanged">
+233 lines changed: 233 ins; 0 del; 0 mod; 729 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java">Raw</a>
+<b>src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java</b>
+</p>
+<blockquote><pre>
+Make GSSName implement Principal (add getName())
+Add getLocalName() GSSName method
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java here -->
+<span class="lineschanged">
+32 lines changed: 31 ins; 0 del; 1 mod; 303 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java here -->
+<span class="lineschanged">
+144 lines changed: 131 ins; 0 del; 13 mod; 689 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java here -->
+<span class="lineschanged">
+53 lines changed: 53 ins; 0 del; 0 mod; 257 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java</b>
+</p>
+<blockquote><pre>
+Make GSSName implement Principal (add getName())
+Add getLocalName() GSSName method
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java here -->
+<span class="lineschanged">
+50 lines changed: 49 ins; 0 del; 1 mod; 507 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java</b>
+</p>
+<blockquote><pre>
+Modernize GSSUtil.java
+Based on code review commentary by Peter Burka.
+Make GSSName implement Principal (add getName())
+JGSS: Prefer default cred handles if possible
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java here -->
+<span class="lineschanged">
+63 lines changed: 12 ins; 23 del; 28 mod; 307 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java</b>
+</p>
+<blockquote><pre>
+Engage GssLoginModule (only) when native=true
+Also don't force same name for acceptor and initiator.
+Add GssLoginModule
+This module is to be used for GSS applications in preference to
+Krb5LoginModule, especially when using the native GSS provider.
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java here -->
+<span class="lineschanged">
+37 lines changed: 22 ins; 0 del; 15 mod; 185 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java</b>
+</p>
+<blockquote><pre>
+Add isDefaultCredential() method to GSSCredentialSpi
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5AcceptCredential.java here -->
+<span class="lineschanged">
+12 lines changed: 12 ins; 0 del; 0 mod; 197 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java</b>
+</p>
+<blockquote><pre>
+Add isDefaultCredential() method to GSSCredentialSpi
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5InitCredential.java here -->
+<span class="lineschanged">
+14 lines changed: 13 ins; 0 del; 1 mod; 404 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java here -->
+<span class="lineschanged">
+67 lines changed: 65 ins; 0 del; 2 mod; 236 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java</b>
+</p>
+<blockquote><pre>
+Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java here -->
+<span class="lineschanged">
+30 lines changed: 30 ins; 0 del; 0 mod; 348 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java</b>
+</p>
+<blockquote><pre>
+Add isDefaultCredential() method to GSSCredentialSpi
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5ProxyCredential.java here -->
+<span class="lineschanged">
+5 lines changed: 5 ins; 0 del; 0 mod; 142 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add isDefaultCredential() method to GSSCredentialSpi
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java here -->
+<span class="lineschanged">
+28 lines changed: 28 ins; 0 del; 0 mod; 108 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java</b>
+</p>
+<blockquote><pre>
+Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java here -->
+<span class="lineschanged">
+23 lines changed: 23 ins; 0 del; 0 mod; 115 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java here -->
+<span class="lineschanged">
+130 lines changed: 130 ins; 0 del; 0 mod; 214 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java</b>
+</p>
+<blockquote><pre>
+Add isDefaultCredential() method to GSSCredentialSpi
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java here -->
+<span class="lineschanged">
+4 lines changed: 4 ins; 0 del; 0 mod; 94 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+FIXME commentary
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java here -->
+<span class="lineschanged">
+46 lines changed: 46 ins; 0 del; 0 mod; 197 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+FIXME commentary
+Add isDefaultCredential() method to GSSCredentialSpi
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add actual mechanism to native GSSNameElement state
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java here -->
+<span class="lineschanged">
+44 lines changed: 39 ins; 0 del; 5 mod; 138 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java here -->
+<span class="lineschanged">
+29 lines changed: 27 ins; 0 del; 2 mod; 124 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java</b>
+</p>
+<blockquote><pre>
+Add commentary about permissions checks
+Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method
+Add actual mechanism to native GSSNameElement state
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java here -->
+<span class="lineschanged">
+42 lines changed: 38 ins; 1 del; 3 mod; 292 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java</b>
+</p>
+<blockquote><pre>
+JGSS: Simplify context permissions checks
+We were reacquiring the initiator/acceptor credential upon security
+context full establishment in order to indirectly perform a permission
+check on the srcName/targName once we find out what they are.  But this
+is just one more way to end up failing, which happens with Heimdal when
+using SPNEGO because we ask to acquire a Kerberos credentials using a
+SPNEGO MN and that fails.
+Also, there was a security bug here: if the permission check fails then
+we raise, but if the application already has a context handle, then it
+can use it anyways if it catches the exception!  The fix for this is to
+dispose() when the permission check fails.
+JGSS: Add comment about unnec. perm check
+Fix SpNego multi-round-trip bug
+There is only one token that we can extract an actual mechanism OID from
+in the SPNEGO case when the native GSS library doesn't provide that
+(though it should) in the API.  If the SPNEGO exchange ends up requiring
+more than two tokens, then the previous code failed to establish a
+security context.
+Also, never raise if we cannot get an actual mech OID from SPNEGO
+tokens.
+Add actual mechanism to native GSSNameElement state
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java here -->
+<span class="lineschanged">
+93 lines changed: 39 ins; 31 del; 23 mod; 593 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java here -->
+<span class="lineschanged">
+79 lines changed: 75 ins; 0 del; 4 mod; 179 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java</b>
+</p>
+<blockquote><pre>
+FIXME commentary
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java here -->
+<span class="lineschanged">
+8 lines changed: 7 ins; 0 del; 1 mod; 135 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java-.html">Old</a>
+<a href="src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java.html">New</a>
+<a href="src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java">Raw</a>
+<b>src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java</b>
+</p>
+<blockquote><pre>
+Krb5LoginModule cleanup
+Add commentary about native in Krb5LoginModule
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java here -->
+<span class="lineschanged">
+3 lines changed: 3 ins; 0 del; 0 mod; 487 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/native/libj2gss/GSSLibStub.c.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/GSSLibStub.c.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/GSSLibStub.c.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/GSSLibStub.c.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/GSSLibStub.c.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/native/libj2gss/GSSLibStub.c-.html">Old</a>
+<a href="src/java.security.jgss/share/native/libj2gss/GSSLibStub.c.html">New</a>
+<a href="src/java.security.jgss/share/native/libj2gss/GSSLibStub.c.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c">Raw</a>
+<b>src/java.security.jgss/share/native/libj2gss/GSSLibStub.c</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+fixup SEAM bug uncomments
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method
+Add actual mechanism to native GSSNameElement state
+Fix loss of GSS_S_FAILURE major status in importContext
+Revert initGSSBuffer to JDK7 non-copy behaviour
+Fix error handling in GSSLibStub
+Also improve object size handling in NativeUtil.
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/native/libj2gss/GSSLibStub.c here -->
+<span class="lineschanged">
+380 lines changed: 232 ins; 49 del; 99 mod; 1539 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.c.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.c.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.c.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.c.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.c.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.c-.html">Old</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.c.html">New</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.c.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/native/libj2gss/NativeFunc.c">Raw</a>
+<b>src/java.security.jgss/share/native/libj2gss/NativeFunc.c</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/native/libj2gss/NativeFunc.c here -->
+<span class="lineschanged">
+21 lines changed: 21 ins; 0 del; 0 mod; 284 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.h.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.h.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.h.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.h.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.h.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.h-.html">Old</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.h.html">New</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeFunc.h.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/native/libj2gss/NativeFunc.h">Raw</a>
+<b>src/java.security.jgss/share/native/libj2gss/NativeFunc.h</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/native/libj2gss/NativeFunc.h here -->
+<span class="lineschanged">
+43 lines changed: 43 ins; 0 del; 0 mod; 282 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.c.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.c.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.c.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.c.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.c.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.c-.html">Old</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.c.html">New</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.c.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/native/libj2gss/NativeUtil.c">Raw</a>
+<b>src/java.security.jgss/share/native/libj2gss/NativeUtil.c</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add actual mechanism to native GSSNameElement state
+Revert initGSSBuffer to JDK7 non-copy behaviour
+Implement String to gss_buffer_t import
+Fix error handling in GSSLibStub
+Also improve object size handling in NativeUtil.
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/native/libj2gss/NativeUtil.c here -->
+<span class="lineschanged">
+255 lines changed: 160 ins; 43 del; 52 mod; 716 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.h.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.h.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.h.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.h.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.h.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.h-.html">Old</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.h.html">New</a>
+<a href="src/java.security.jgss/share/native/libj2gss/NativeUtil.h.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/native/libj2gss/NativeUtil.h">Raw</a>
+<b>src/java.security.jgss/share/native/libj2gss/NativeUtil.h</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Revert initGSSBuffer to JDK7 non-copy behaviour
+Implement String to gss_buffer_t import
+Fix error handling in GSSLibStub
+Also improve object size handling in NativeUtil.
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/native/libj2gss/NativeUtil.h here -->
+<span class="lineschanged">
+10 lines changed: 4 ins; 1 del; 5 mod; 89 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/java.security.jgss/share/native/libj2gss/gssapi.h.cdiff.html">Cdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/gssapi.h.udiff.html">Udiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/gssapi.h.wdiff.html">Wdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/gssapi.h.sdiff.html">Sdiffs</a>
+<a href="src/java.security.jgss/share/native/libj2gss/gssapi.h.frames.html">Frames</a>
+<a href="src/java.security.jgss/share/native/libj2gss/gssapi.h-.html">Old</a>
+<a href="src/java.security.jgss/share/native/libj2gss/gssapi.h.html">New</a>
+<a href="src/java.security.jgss/share/native/libj2gss/gssapi.h.patch">Patch</a>
+<a href="raw_files/new/src/java.security.jgss/share/native/libj2gss/gssapi.h">Raw</a>
+<b>src/java.security.jgss/share/native/libj2gss/gssapi.h</b>
+</p>
+<blockquote><pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method
+</pre>
+<!-- Add comments to explain changes in src/java.security.jgss/share/native/libj2gss/gssapi.h here -->
+<span class="lineschanged">
+39 lines changed: 39 ins; 0 del; 0 mod; 706 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h.cdiff.html">Cdiffs</a>
+<a href="src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h.udiff.html">Udiffs</a>
+<a href="src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h.wdiff.html">Wdiffs</a>
+<a href="src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h.sdiff.html">Sdiffs</a>
+<a href="src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h.frames.html">Frames</a>
+<a href="src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h-.html">Old</a>
+<a href="src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h.html">New</a>
+<a href="src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h.patch">Patch</a>
+<a href="raw_files/new/src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h">Raw</a>
+<b>src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h</b>
+</p>
+<blockquote><pre>
+Add missing dbgsysGetLastErrorString()
+</pre>
+<!-- Add comments to explain changes in src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h here -->
+<span class="lineschanged">
+1 line changed: 1 ins; 0 del; 0 mod; 48 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c.cdiff.html">Cdiffs</a>
+<a href="src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c.udiff.html">Udiffs</a>
+<a href="src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c.wdiff.html">Wdiffs</a>
+<a href="src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c.sdiff.html">Sdiffs</a>
+<a href="src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c.frames.html">Frames</a>
+<a href="src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c-.html">Old</a>
+<a href="src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c.html">New</a>
+<a href="src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c.patch">Patch</a>
+<a href="raw_files/new/src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c">Raw</a>
+<b>src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c</b>
+</p>
+<blockquote><pre>
+Add missing dbgsysGetLastErrorString()
+</pre>
+<!-- Add comments to explain changes in src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c here -->
+<span class="lineschanged">
+22 lines changed: 22 ins; 0 del; 0 mod; 125 unchg
+</span>
+</blockquote>
+<p>
+ ------ ------
+ ------
+ ------ ------
+ ---
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/GssLoginModule.java.html">New</a>
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/GssLoginModule.java.patch">Patch</a>
+<a href="raw_files/new/src/jdk.security.auth/share/classes/com/sun/security/auth/module/GssLoginModule.java">Raw</a>
+<b>src/jdk.security.auth/share/classes/com/sun/security/auth/module/GssLoginModule.java</b>
+</p>
+<blockquote><pre>
+GssLoginModule: code review
+Code review comments by Peter Burka.
+Add GssLoginModule
+This module is to be used for GSS applications in preference to
+Krb5LoginModule, especially when using the native GSS provider.
+</pre>
+<!-- Add comments to explain changes in src/jdk.security.auth/share/classes/com/sun/security/auth/module/GssLoginModule.java here -->
+<span class="lineschanged">
+846 lines changed: 846 ins; 0 del; 0 mod; 0 unchg
+</span>
+</blockquote>
+<p>
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java.cdiff.html">Cdiffs</a>
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java.udiff.html">Udiffs</a>
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java.wdiff.html">Wdiffs</a>
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java.sdiff.html">Sdiffs</a>
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java.frames.html">Frames</a>
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java-.html">Old</a>
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java.html">New</a>
+<a href="src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java.patch">Patch</a>
+<a href="raw_files/new/src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java">Raw</a>
+<b>src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java</b>
+</p>
+<blockquote><pre>
+Krb5LoginModule cleanup
+Add commentary about native in Krb5LoginModule
+</pre>
+<!-- Add comments to explain changes in src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java here -->
+<span class="lineschanged">
+324 lines changed: 112 ins; 86 del; 126 mod; 1065 unchg
+</span>
+</blockquote>
+<p>
+<a href="test/jdk/sun/security/jgss/DefaultGssConfig.java.cdiff.html">Cdiffs</a>
+<a href="test/jdk/sun/security/jgss/DefaultGssConfig.java.udiff.html">Udiffs</a>
+<a href="test/jdk/sun/security/jgss/DefaultGssConfig.java.wdiff.html">Wdiffs</a>
+<a href="test/jdk/sun/security/jgss/DefaultGssConfig.java.sdiff.html">Sdiffs</a>
+<a href="test/jdk/sun/security/jgss/DefaultGssConfig.java.frames.html">Frames</a>
+<a href="test/jdk/sun/security/jgss/DefaultGssConfig.java-.html">Old</a>
+<a href="test/jdk/sun/security/jgss/DefaultGssConfig.java.html">New</a>
+<a href="test/jdk/sun/security/jgss/DefaultGssConfig.java.patch">Patch</a>
+<a href="raw_files/new/test/jdk/sun/security/jgss/DefaultGssConfig.java">Raw</a>
+<b>test/jdk/sun/security/jgss/DefaultGssConfig.java</b>
+</p>
+<blockquote><pre>
+Add GssLoginModule
+This module is to be used for GSS applications in preference to
+Krb5LoginModule, especially when using the native GSS provider.
+</pre>
+<!-- Add comments to explain changes in test/jdk/sun/security/jgss/DefaultGssConfig.java here -->
+<span class="lineschanged">
+4 lines changed: 4 ins; 0 del; 0 mod; 70 unchg
+</span>
+</blockquote>
+
+
+<hr></hr>
+<p style="font-size: small">
+This code review page was prepared using <b>/home/nico/ws/webrev-git/bin/webrev</b>.
+Webrev is maintained by the <a href="http://www.illumos.org">
+illumos</a> project.  The latest version may be obtained
+<a href="http://src.illumos.org/source/xref/illumos-gate/usr/src/tools/scripts/webrev.sh">here</a>.</p>
+</body>
+</html>

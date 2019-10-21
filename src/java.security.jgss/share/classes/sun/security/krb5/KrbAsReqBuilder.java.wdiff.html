@@ -1,0 +1,685 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Krb5LoginModule cleanup
+Add commentary about native in Krb5LoginModule
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2010, 2019, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package sun.security.krb5;
+  27   27  
+  28   28  import java.io.IOException;
+  29   29  import java.util.Arrays;
+  30   30  import javax.security.auth.kerberos.KeyTab;
+  31   31  import sun.security.jgss.krb5.Krb5Util;
+  32   32  import sun.security.krb5.internal.HostAddresses;
+  33   33  import sun.security.krb5.internal.KDCOptions;
+  34   34  import sun.security.krb5.internal.KRBError;
+  35   35  import sun.security.krb5.internal.KerberosTime;
+  36   36  import sun.security.krb5.internal.Krb5;
+  37   37  import sun.security.krb5.internal.PAData;
+  38   38  import sun.security.krb5.internal.crypto.EType;
+  39   39  
+  40   40  /**
+  41   41   * A manager class for AS-REQ communications.
+  42   42   *
+  43   43   * This class does:
+  44   44   * 1. Gather information to create AS-REQ
+  45   45   * 2. Create and send AS-REQ
+  46   46   * 3. Receive AS-REP and KRB-ERROR (-KRB_ERR_RESPONSE_TOO_BIG) and parse them
+  47   47   * 4. Emit credentials and secret keys (for JAAS storeKey=true with password)
+  48   48   *
+  49   49   * This class does not:
+  50   50   * 1. Deal with real communications (KdcComm does it, and TGS-REQ)
+  51   51   *    a. Name of KDCs for a realm
+  52   52   *    b. Server availability, timeout, UDP or TCP
+  53   53   *    d. KRB_ERR_RESPONSE_TOO_BIG
+  54   54   * 2. Stores its own copy of password, this means:
+  55   55   *    a. Do not change/wipe it before Builder finish
+  56   56   *    b. Builder will not wipe it for you
+  57   57   *
+  58   58   * With this class:
+  59   59   * 1. KrbAsReq has only one constructor
+  60   60   * 2. Krb5LoginModule and Kinit call a single builder
+  61   61   * 3. Better handling of sensitive info
+  62   62   *
+  63   63   * @since 1.7
+  64   64   */
+  65   65  
+  66   66  public final class KrbAsReqBuilder {
+  67   67  
+  68   68      // Common data for AS-REQ fields
+  69   69      private KDCOptions options;
+  70   70      private PrincipalName cname;
+  71   71      private PrincipalName refCname; // May be changed by referrals
+  72   72      private PrincipalName sname;
+  73   73      private KerberosTime from;
+  74   74      private KerberosTime till;
+  75   75      private KerberosTime rtime;
+  76   76      private HostAddresses addresses;
+  77   77  
+  78   78      // Secret source: can't be changed once assigned, only one (of the two
+  79   79      // sources) can be set to non-null
+  80   80      private final char[] password;
+  81   81      private final KeyTab ktab;
+  82   82  
+  83   83      // Used to create a ENC-TIMESTAMP in the 2nd AS-REQ
+  84   84      private PAData[] paList;        // PA-DATA from both KRB-ERROR and AS-REP.
+  85   85                                      // Used by getKeys() only.
+  86   86                                      // Only AS-REP should be enough per RFC,
+  87   87                                      // combined in case etypes are different.
+  88   88  
+  89   89      // The generated and received:
+  90   90      private KrbAsReq req;
+  91   91      private KrbAsRep rep;
+  92   92  
+  93   93      private static enum State {
+  94   94          INIT,       // Initialized, can still add more initialization info
+  95   95          REQ_OK,     // AS-REQ performed
+  96   96          DESTROYED,  // Destroyed, not usable anymore
+  97   97      }
+  98   98      private State state;
+  99   99  
+ 100  100      // Called by other constructors
+ 101  101      private void init(PrincipalName cname)
+ 102  102              throws KrbException {
+ 103  103          this.cname = cname;
+ 104  104          this.refCname = cname;
+ 105  105          state = State.INIT;
+ 106  106      }
+ 107  107  
+ 108  108      /**
+ 109  109       * Creates a builder to be used by {@code cname} with existing keys.
+ 110  110       *
+ 111  111       * @param cname the client of the AS-REQ. Must not be null. Might have no
+ 112  112       * realm, where default realm will be used. This realm will be the target
+ 113  113       * realm for AS-REQ. I believe a client should only get initial TGT from
+ 114  114       * its own realm.
+ 115  115       * @param ktab must not be null. If empty, might be quite useless.
+ 116  116       * This argument will neither be modified nor stored by the method.
+ 117  117       * @throws KrbException
+ 118  118       */
+ 119  119      public KrbAsReqBuilder(PrincipalName cname, KeyTab ktab)
+ 120  120              throws KrbException {
+ 121  121          init(cname);
+ 122  122          this.ktab = ktab;
+ 123  123          this.password = null;
+ 124  124      }
+ 125  125  
+ 126  126      /**
+ 127  127       * Creates a builder to be used by {@code cname} with a known password.
+ 128  128       *
+ 129  129       * @param cname the client of the AS-REQ. Must not be null. Might have no
+ 130  130       * realm, where default realm will be used. This realm will be the target
+ 131  131       * realm for AS-REQ. I believe a client should only get initial TGT from
+ 132  132       * its own realm.
+ 133  133       * @param pass must not be null. This argument will neither be modified
+ 134  134       * nor stored by the method.
+ 135  135       * @throws KrbException
+ 136  136       */
+ 137  137      public KrbAsReqBuilder(PrincipalName cname, char[] pass)
+ 138  138              throws KrbException {
+ 139  139          init(cname);
+ 140  140          this.password = pass.clone();
+ 141  141          this.ktab = null;
+ 142  142      }
+ 143  143  
+ 144  144      /**
+ 145  145       * Retrieves an array of secret keys for the client. This is used when
+ 146  146       * the client supplies password but need keys to act as an acceptor. For
+ 147  147       * an initiator, it must be called after AS-REQ is performed (state is OK).
+ 148  148       * For an acceptor, it can be called when this KrbAsReqBuilder object is
+ 149  149       * constructed (state is INIT).
+ 150  150       * @param isInitiator if the caller is an initiator
+ 151  151       * @return generated keys from password. PA-DATA from server might be used.
+ 152  152       * All "default_tkt_enctypes" keys will be generated, Never null.
+ 153  153       * @throws IllegalStateException if not constructed from a password
+ 154  154       * @throws KrbException
+ 155  155       */
+ 156  156      public EncryptionKey[] getKeys(boolean isInitiator) throws KrbException {
+ 157  157          checkState(isInitiator?State.REQ_OK:State.INIT, "Cannot get keys");
+ 158  158          if (password != null) {
+ 159  159              int[] eTypes = EType.getDefaults("default_tkt_enctypes");
+ 160  160              EncryptionKey[] result = new EncryptionKey[eTypes.length];
+ 161  161  
+ 162  162              /*
+ 163  163               * Returns an array of keys. Before KrbAsReqBuilder, all etypes
+ 164  164               * use the same salt which is either the default one or a new salt
+ 165  165               * coming from PA-DATA. After KrbAsReqBuilder, each etype uses its
+ 166  166               * own new salt from PA-DATA. For an etype with no PA-DATA new salt
+ 167  167               * at all, what salt should it use?
+ 168  168               *
+ 169  169               * Commonly, the stored keys are only to be used by an acceptor to
+ 170  170               * decrypt service ticket in AP-REQ. Most impls only allow keys
+ 171  171               * from a keytab on acceptor, but unfortunately (?) Java supports
+ 172  172               * acceptor using password. In this case, if the service ticket is
+ 173  173               * encrypted using an etype which we don't have PA-DATA new salt,
+ 174  174               * using the default salt might be wrong (say, case-insensitive
+ 175  175               * user name). Instead, we would use the new salt of another etype.
+ 176  176               */
+ 177  177  
+ 178  178              String salt = null;     // the saved new salt
+ 179  179              try {
+ 180  180                  for (int i=0; i&lt;eTypes.length; i++) {
+ 181  181                      // First round, only calculate those have a PA entry
+ 182  182                      PAData.SaltAndParams snp =
+ 183  183                              PAData.getSaltAndParams(eTypes[i], paList);
+ 184  184                      if (snp != null) {
+ 185  185                          // Never uses a salt for rc4-hmac, it does not use
+ 186  186                          // a salt at all
+ 187  187                          if (eTypes[i] != EncryptedData.ETYPE_ARCFOUR_HMAC &amp;&amp;
+ 188  188                                  snp.salt != null) {
+ 189  189                              salt = snp.salt;
+ 190  190                          }
+ 191  191                          result[i] = EncryptionKey.acquireSecretKey(cname,
+ 192  192                                  password,
+ 193  193                                  eTypes[i],
+ 194  194                                  snp);
+ 195  195                      }
+ 196  196                  }
+ 197  197                  // No new salt from PA, maybe empty, maybe only rc4-hmac
+ 198  198                  if (salt == null) salt = cname.getSalt();
+ 199  199                  for (int i=0; i&lt;eTypes.length; i++) {
+ 200  200                      // Second round, calculate those with no PA entry
+ 201  201                      if (result[i] == null) {
+ 202  202                          result[i] = EncryptionKey.acquireSecretKey(password,
+ 203  203                                  salt,
+ 204  204                                  eTypes[i],
+ 205  205                                  null);
+ 206  206                      }
+ 207  207                  }
+ 208  208              } catch (IOException ioe) {
+ 209  209                  KrbException ke = new KrbException(Krb5.ASN1_PARSE_ERROR);
+ 210  210                  ke.initCause(ioe);
+ 211  211                  throw ke;
+ 212  212              }
+ 213  213              return result;
+ 214  214          } else {
+ 215  215              throw new IllegalStateException("Required password not provided");
+ 216  216          }
+ 217  217      }
+ 218  218  
+ 219  219      /**
+ 220  220       * Sets or clears options. If cleared, default options will be used
+ 221  221       * at creation time.
+ 222  222       * @param options
+ 223  223       */
+ 224  224      public void setOptions(KDCOptions options) {
+ 225  225          checkState(State.INIT, "Cannot specify options");
+ 226  226          this.options = options;
+ 227  227      }
+ 228  228  
+ 229  229      public void setTill(KerberosTime till) {
+ 230  230          checkState(State.INIT, "Cannot specify till");
+ 231  231          this.till = till;
+ 232  232      }
+ 233  233  
+ 234  234      public void setRTime(KerberosTime rtime) {
+ 235  235          checkState(State.INIT, "Cannot specify rtime");
+ 236  236          this.rtime = rtime;
+ 237  237      }
+ 238  238  
+ 239  239      /**
+ 240  240       * Sets or clears target. If cleared, KrbAsReq might choose krbtgt
+ 241  241       * for cname realm
+ 242  242       * @param sname
+ 243  243       */
+ 244  244      public void setTarget(PrincipalName sname) {
+ 245  245          checkState(State.INIT, "Cannot specify target");
+ 246  246          this.sname = sname;
+ 247  247      }
+ 248  248  
+ 249  249      /**
+ 250  250       * Adds or clears addresses. KrbAsReq might add some if empty
+ 251  251       * field not allowed
+ 252  252       * @param addresses
+ 253  253       */
+ 254  254      public void setAddresses(HostAddresses addresses) {
+ 255  255          checkState(State.INIT, "Cannot specify addresses");
+ 256  256          this.addresses = addresses;
+ 257  257      }
+ 258  258  
+ 259  259      /**
+ 260  260       * Build a KrbAsReq object from all info fed above. Normally this method
+ 261  261       * will be called twice: initial AS-REQ and second with pakey
+ 262  262       * @param key null (initial AS-REQ) or pakey (with preauth)
+ 263  263       * @return the KrbAsReq object
+ 264  264       * @throws KrbException
+ 265  265       * @throws IOException
+ 266  266       */
+ 267  267      private KrbAsReq build(EncryptionKey key, ReferralsState referralsState)
+ 268  268              throws KrbException, IOException {
+ 269  269          PAData[] extraPAs = null;
+ 270  270          int[] eTypes;
+ 271  271          if (password != null) {
+ 272  272              eTypes = EType.getDefaults("default_tkt_enctypes");
+ 273  273          } else {
+ 274  274              EncryptionKey[] ks = Krb5Util.keysFromJavaxKeyTab(ktab, cname);
+ 275  275              eTypes = EType.getDefaults("default_tkt_enctypes",
+ 276  276                      ks);
+ 277  277              for (EncryptionKey k: ks) k.destroy();
+ 278  278          }
+ 279  279          options = (options == null) ? new KDCOptions() : options;
+ 280  280          if (referralsState.isEnabled()) {
+ 281  281              options.set(KDCOptions.CANONICALIZE, true);
+ 282  282              extraPAs = new PAData[]{ new PAData(Krb5.PA_REQ_ENC_PA_REP,
+ 283  283                      new byte[]{}) };
+ 284  284          } else {
+ 285  285              options.set(KDCOptions.CANONICALIZE, false);
+ 286  286          }
+ 287  287          return new KrbAsReq(key,
+ 288  288              options,
+ 289  289              refCname,
+ 290  290              sname,
+ 291  291              from,
+ 292  292              till,
+ 293  293              rtime,
+ 294  294              eTypes,
+ 295  295              addresses,
+ 296  296              extraPAs);
+ 297  297      }
+ 298  298  
+ 299  299      /**
+ 300  300       * Parses AS-REP, decrypts enc-part, retrieves ticket and session key
+ 301  301       * @throws KrbException
+ 302  302       * @throws Asn1Exception
+ 303  303       * @throws IOException
+ 304  304       */
+ 305  305      private KrbAsReqBuilder resolve()
+ 306  306              throws KrbException, Asn1Exception, IOException {
+ 307  307          if (ktab != null) {
+ 308  308              rep.decryptUsingKeyTab(ktab, req, cname);
+ 309  309          } else {
+ 310  310              rep.decryptUsingPassword(password, req, cname);
+ 311  311          }
+ 312  312          if (rep.getPA() != null) {
+ 313  313              if (paList == null || paList.length == 0) {
+ 314  314                  paList = rep.getPA();
+ 315  315              } else {
+ 316  316                  int extraLen = rep.getPA().length;
+ 317  317                  if (extraLen &gt; 0) {
+ 318  318                      int oldLen = paList.length;
+ 319  319                      paList = Arrays.copyOf(paList, paList.length + extraLen);
+ 320  320                      System.arraycopy(rep.getPA(), 0, paList, oldLen, extraLen);
+ 321  321                  }
+ 322  322              }
+ 323  323          }
+ 324  324          return this;
+ 325  325      }
+ 326  326  
+ 327  327      /**
+ 328  328       * Communication until AS-REP or non preauth-related KRB-ERROR received
+ 329  329       * @throws KrbException
+ 330  330       * @throws IOException
+ 331  331       */
+ 332  332      private KrbAsReqBuilder send() throws KrbException, IOException {
+ 333  333          boolean preAuthFailedOnce = false;
+ 334  334          KdcComm comm = null;
+ 335  335          EncryptionKey pakey = null;
+ 336  336          ReferralsState referralsState = new ReferralsState();
+ 337  337          while (true) {
+ 338  338              if (referralsState.refreshComm()) {
+ 339  339                  comm = new KdcComm(refCname.getRealmAsString());
+ 340  340              }
+ 341  341              try {
+ 342  342                  req = build(pakey, referralsState);
+ 343  343                  rep = new KrbAsRep(comm.send(req.encoding()));
+ 344  344                  return this;
+ 345  345              } catch (KrbException ke) {
+ 346  346                  if (!preAuthFailedOnce &amp;&amp; (
+ 347  347                          ke.returnCode() == Krb5.KDC_ERR_PREAUTH_FAILED ||
+ 348  348                          ke.returnCode() == Krb5.KDC_ERR_PREAUTH_REQUIRED)) {
+ 349  349                      if (Krb5.DEBUG) {
+ 350  350                          System.out.println("KrbAsReqBuilder: " +
+ 351  351                                  "PREAUTH FAILED/REQ, re-send AS-REQ");
+ 352  352                      }
+ 353  353                      preAuthFailedOnce = true;
+ 354  354                      KRBError kerr = ke.getError();
+ 355  355                      int paEType = PAData.getPreferredEType(kerr.getPA(),
+ 356  356                              EType.getDefaults("default_tkt_enctypes")[0]);
+ 357  357                      if (password == null) {
+ 358  358                          EncryptionKey[] ks = Krb5Util.keysFromJavaxKeyTab(ktab, cname);
+ 359  359                          pakey = EncryptionKey.findKey(paEType, ks);
+ 360  360                          if (pakey != null) pakey = (EncryptionKey)pakey.clone();
+ 361  361                          for (EncryptionKey k: ks) k.destroy();
+ 362  362                      } else {
+ 363  363                          pakey = EncryptionKey.acquireSecretKey(cname,
+ 364  364                                  password,
+ 365  365                                  paEType,
+ 366  366                                  PAData.getSaltAndParams(
+ 367  367                                      paEType, kerr.getPA()));
+ 368  368                      }
+ 369  369                      paList = kerr.getPA();  // Update current paList
+ 370  370                  } else {
+ 371  371                      if (referralsState.handleError(ke)) {
+ 372  372                          pakey = null;
+ 373  373                          preAuthFailedOnce = false;
+ 374  374                          continue;
+ 375  375                      }
+ 376  376                      throw ke;
+ 377  377                  }
+ 378  378              }
+ 379  379          }
+ 380  380      }
+ 381  381  
+ 382  382      private final class ReferralsState {
+ 383  383          private boolean enabled;
+ 384  384          private int count;
+ 385  385          private boolean refreshComm;
+ 386  386  
+ 387  387          ReferralsState() throws KrbException {
+ 388  388              if (Config.DISABLE_REFERRALS) {
+ 389  389                  if (refCname.getNameType() == PrincipalName.KRB_NT_ENTERPRISE) {
+ 390  390                      throw new KrbException("NT-ENTERPRISE principals only allowed" +
+ 391  391                              " when referrals are enabled.");
+ 392  392                  }
+ 393  393                  enabled = false;
+ 394  394              } else {
+ 395  395                  enabled = true;
+ 396  396              }
+ 397  397              refreshComm = true;
+ 398  398          }
+ 399  399  
+ 400  400          boolean handleError(KrbException ke) throws RealmException {
+ 401  401              if (enabled) {
+ 402  402                  if (ke.returnCode() == Krb5.KRB_ERR_WRONG_REALM) {
+ 403  403                      Realm referredRealm = ke.getError().getClientRealm();
+ 404  404                      if (req.getMessage().reqBody.kdcOptions.get(KDCOptions.CANONICALIZE) &amp;&amp;
+ 405  405                              referredRealm != null &amp;&amp; referredRealm.toString().length() &gt; 0 &amp;&amp;
+ 406  406                              count &lt; Config.MAX_REFERRALS) {
+ 407  407                          refCname = new PrincipalName(refCname.getNameType(),
+ 408  408                                  refCname.getNameStrings(), referredRealm);
+ 409  409                          refreshComm = true;
+ 410  410                          count++;
+ 411  411                          return true;
+ 412  412                      }
+ 413  413                  }
+ 414  414                  if (count &lt; Config.MAX_REFERRALS &amp;&amp;
+ 415  415                          refCname.getNameType() != PrincipalName.KRB_NT_ENTERPRISE) {
+ 416  416                      // Server may raise an error if CANONICALIZE is true.
+ 417  417                      // Try CANONICALIZE false.
+ 418  418                      enabled = false;
+ 419  419                      return true;
+ 420  420                  }
+ 421  421              }
+ 422  422              return false;
+ 423  423          }
+ 424  424  
+ 425  425          boolean refreshComm() {
+ 426  426              boolean retRefreshComm = refreshComm;
+ 427  427              refreshComm = false;
+ 428  428              return retRefreshComm;
+ 429  429          }
+ 430  430  
+ 431  431          boolean isEnabled() {
+ 432  432              return enabled;
+ 433  433          }
+ 434  434      }
+ 435  435  
+ 436  436      /**
+ 437  437       * Performs AS-REQ send and AS-REP receive.
+ 438  438       * Maybe a state is needed here, to divide prepare process and getCreds.
+ 439  439       * @throws KrbException
+ 440  440       * @throws Asn1Exception
+ 441  441       * @throws IOException
+ 442  442       */
+ 443  443      public KrbAsReqBuilder action()
+ 444  444              throws KrbException, Asn1Exception, IOException {
+ 445  445          checkState(State.INIT, "Cannot call action");
+ 446  446          state = State.REQ_OK;
+ 447  447          return send().resolve();
+ 448  448      }
+ 449  449  
+ 450  450      /**
+ 451  451       * Gets Credentials object after action
+ 452  452       */
+ 453  453      public Credentials getCreds() {
+ 454  454          checkState(State.REQ_OK, "Cannot retrieve creds");
+ 455  455          return rep.getCreds();
+ 456  456      }
+ 457  457  
+ 458  458      /**
+ 459  459       * Gets another type of Credentials after action
+ 460  460       */
+ 461  461      public sun.security.krb5.internal.ccache.Credentials getCCreds() {
+ 462  462          checkState(State.REQ_OK, "Cannot retrieve CCreds");
+ 463  463          return rep.getCCreds();
+ 464  464      }
+ 465  465  
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">465 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 466  466      /**
+ 467  467       * Destroys the object and clears keys and password info.
+ 468  468       */
+ 469  469      public void destroy() {
+ 470  470          state = State.DESTROYED;
+ 471  471          if (password != null) {
+ 472  472              Arrays.fill(password, (char)0);
+ 473  473          }
+ 474  474      }
+ 475  475  
+<span class='added'>      476 +    // XXX It'd be nice to implement AutoCloseable with a close() that calls
+      477 +    // destroy()
+      478 +
+</span> 476  479      /**
+ 477  480       * Checks if the current state is the specified one.
+ 478  481       * @param st the expected state
+ 479  482       * @param msg error message if state is not correct
+ 480  483       * @throws IllegalStateException if state is not correct
+ 481  484       */
+ 482  485      private void checkState(State st, String msg) {
+ 483  486          if (state != st) {
+ 484  487              throw new IllegalStateException(msg + " at " + st + " state");
+ 485  488          }
+ 486  489      }
+ 487  490  }
+    </pre>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 1; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 1; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

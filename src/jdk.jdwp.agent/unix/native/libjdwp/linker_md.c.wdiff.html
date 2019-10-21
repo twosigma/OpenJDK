@@ -1,0 +1,353 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add missing dbgsysGetLastErrorString()
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c
+</span><span class='added'>          +++ new/src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  /*
+  27   27   * Machine Dependent implementation of the dynamic linking support
+  28   28   * for java.  This routine is Unix specific.
+  29   29   */
+  30   30  
+  31   31  #include &lt;stdio.h&gt;
+  32   32  #include &lt;dlfcn.h&gt;
+  33   33  #include &lt;unistd.h&gt;
+  34   34  #include &lt;stdlib.h&gt;
+  35   35  #include &lt;string.h&gt;
+  36   36  
+  37   37  #include "path_md.h"
+  38   38  
+  39   39  #ifdef __APPLE__
+  40   40  #define LIB_SUFFIX "dylib"
+  41   41  #else
+  42   42  #define LIB_SUFFIX "so"
+  43   43  #endif
+  44   44  
+  45   45  static void dll_build_name(char* buffer, size_t buflen,
+  46   46                             const char* paths, const char* fname) {
+  47   47      char *path, *paths_copy, *next_token;
+  48   48  
+  49   49      paths_copy = strdup(paths);
+  50   50      if (paths_copy == NULL) {
+  51   51          return;
+  52   52      }
+  53   53  
+  54   54      next_token = NULL;
+  55   55      path = strtok_r(paths_copy, PATH_SEPARATOR, &amp;next_token);
+  56   56  
+  57   57      while (path != NULL) {
+  58   58          snprintf(buffer, buflen, "%s/lib%s." LIB_SUFFIX, path, fname);
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">58 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  59   59          if (access(buffer, F_OK) == 0) {
+  60   60              break;
+  61   61          }
+  62   62          *buffer = '\0';
+  63   63          path = strtok_r(NULL, PATH_SEPARATOR, &amp;next_token);
+  64   64      }
+  65   65  
+  66   66      free(paths_copy);
+  67   67  }
+  68   68  
+<span class='added'>       69 +int
+       70 +dbgsysGetLastErrorString(char *buf, int len)
+       71 +{
+       72 +    const char *s = dlerror();
+       73 +    size_t n;
+       74 +    size_t l = (size_t)len;
+       75 +
+       76 +    if (len &lt;= 0)
+       77 +        return 0;
+       78 +
+       79 +    *buf = '\0';
+       80 +    if (s == NULL)
+       81 +        return 0;
+       82 +
+       83 +    n = strlen(s);
+       84 +    if (n &gt;= l)
+       85 +        n = l - 1;
+       86 +    strncpy(buf, s, n);
+       87 +    buf[n] = '\0'; /* not actually needed */
+       88 +    return n;
+       89 +}
+       90 +
+</span>  69   91  /*
+  70   92   * create a string for the JNI native function name by adding the
+  71   93   * appropriate decorations.
+  72   94   */
+  73   95  int
+  74   96  dbgsysBuildFunName(char *name, int nameLen, int args_size, int encodingIndex)
+  75   97  {
+  76   98      // On Unix, there is only one encoding method.
+  77   99      if (encodingIndex == 0)
+  78  100          return 1;
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  79  101      return 0;
+  80  102  }
+  81  103  
+  82  104  /*
+  83  105   * create a string for the dynamic lib open call by adding the
+  84  106   * appropriate pre and extensions to a filename and the path
+  85  107   */
+  86  108  void
+  87  109  dbgsysBuildLibName(char *holder, int holderlen, const char *pname,
+  88  110                     const char *fname)
+  89  111  {
+  90  112      const int pnamelen = pname ? strlen(pname) : 0;
+  91  113  
+  92  114      *holder = '\0';
+  93  115      // Quietly truncate on buffer overflow.  Should be an error.
+  94  116      if (pnamelen + (int)strlen(fname) + 10 &gt; holderlen) {
+  95  117          return;
+  96  118      }
+  97  119  
+  98  120      if (pnamelen == 0) {
+  99  121          (void)snprintf(holder, holderlen, "lib%s." LIB_SUFFIX, fname);
+ 100  122      } else {
+ 101  123        dll_build_name(holder, holderlen, pname, fname);
+ 102  124      }
+ 103  125  }
+ 104  126  
+ 105  127  void *
+ 106  128  dbgsysLoadLibrary(const char *name, char *err_buf, int err_buflen)
+ 107  129  {
+ 108  130      void * result;
+ 109  131      result = dlopen(name, RTLD_LAZY);
+ 110  132      if (result == NULL) {
+ 111  133          (void)strncpy(err_buf, dlerror(), err_buflen-2);
+ 112  134          err_buf[err_buflen-1] = '\0';
+ 113  135      }
+ 114  136      return result;
+ 115  137  }
+ 116  138  
+ 117  139  void dbgsysUnloadLibrary(void *handle)
+ 118  140  {
+ 119  141      (void)dlclose(handle);
+ 120  142  }
+ 121  143  
+ 122  144  void * dbgsysFindLibraryEntry(void *handle, const char *name)
+ 123  145  {
+ 124  146      return dlsym(handle, name);
+ 125  147  }
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">47 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 2; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 2; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

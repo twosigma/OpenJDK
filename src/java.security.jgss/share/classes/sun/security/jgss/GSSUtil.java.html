@@ -1,0 +1,434 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws New src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package sun.security.jgss;
+  27 
+  28 import javax.security.auth.Subject;
+  29 import javax.security.auth.kerberos.KerberosPrincipal;
+  30 import javax.security.auth.kerberos.KerberosTicket;
+  31 import javax.security.auth.kerberos.KerberosKey;
+  32 import org.ietf.jgss.*;
+  33 import sun.security.jgss.spi.GSSNameSpi;
+  34 import sun.security.jgss.spi.GSSCredentialSpi;
+  35 import sun.security.action.GetPropertyAction;
+  36 import sun.security.jgss.krb5.Krb5NameElement;
+  37 import sun.security.jgss.spnego.SpNegoCredElement;
+  38 import java.util.Set;
+  39 import java.util.HashSet;
+  40 import java.util.Vector;
+  41 import java.util.Iterator;
+  42 import java.security.AccessController;
+  43 import java.security.AccessControlContext;
+  44 import java.security.PrivilegedExceptionAction;
+  45 import java.security.PrivilegedActionException;
+  46 import javax.security.auth.callback.CallbackHandler;
+  47 import javax.security.auth.login.LoginContext;
+  48 import javax.security.auth.login.LoginException;
+  49 import sun.security.action.GetBooleanAction;
+  50 import sun.security.util.ConsoleCallbackHandler;
+  51 
+  52 /**
+  53  * The GSSUtilImplementation that knows how to work with the internals of
+  54  * the GSS-API.
+  55  */
+  56 public class GSSUtil {
+  57 
+  58     public static final Oid GSS_KRB5_MECH_OID =
+  59                 GSSUtil.createOid("1.2.840.113554.1.2.2");
+  60     public static final Oid GSS_KRB5_MECH_OID2 =
+  61                 GSSUtil.createOid("1.3.5.1.5.2");
+  62     public static final Oid GSS_KRB5_MECH_OID_MS =
+  63                 GSSUtil.createOid("1.2.840.48018.1.2.2");
+  64 
+  65     public static final Oid GSS_SPNEGO_MECH_OID =
+  66                 GSSUtil.createOid("1.3.6.1.5.5.2");
+  67 
+  68     public static final Oid NT_GSS_KRB5_PRINCIPAL =
+  69                 GSSUtil.createOid("1.2.840.113554.1.2.2.1");
+  70 
+  71     static final boolean DEBUG =
+  72             GetBooleanAction.privilegedGetProperty("sun.security.jgss.debug");
+  73 
+  74     static void debug(String message) {
+  75         if (DEBUG) {
+  76             assert(message != null);
+  77             System.out.println(message);
+  78         }
+  79     }
+  80 
+  81     // NOTE: this method is only for creating Oid objects with
+  82     // known to be valid &lt;code&gt;oidStr&lt;/code&gt; given it ignores
+  83     // the GSSException
+  84     public static Oid createOid(String oidStr) {
+  85         try {
+  86             return new Oid(oidStr);
+  87         } catch (GSSException e) {
+  88             debug("Ignored invalid OID: " + oidStr);
+  89             return null;
+  90         }
+  91     }
+  92 
+  93     public static boolean isSpNegoMech(Oid oid) {
+  94         return (GSS_SPNEGO_MECH_OID.equals(oid));
+  95     }
+  96 
+  97     public static boolean isKerberosMech(Oid oid) {
+  98         return (GSS_KRB5_MECH_OID.equals(oid) ||
+  99                 GSS_KRB5_MECH_OID2.equals(oid) ||
+ 100                 GSS_KRB5_MECH_OID_MS.equals(oid));
+ 101 
+ 102     }
+ 103 
+ 104     public static String getMechStr(Oid oid) {
+ 105         if (isSpNegoMech(oid)) {
+ 106             return "SPNEGO";
+ 107         } else if (isKerberosMech(oid)) {
+ 108             return "Kerberos V5";
+ 109         } else {
+ 110             return oid.toString();
+ 111         }
+ 112     }
+ 113 
+ 114     /**
+ 115      * Note: The current impl only works with Sun's impl of
+ 116      * GSSName and GSSCredential since it depends on package
+ 117      * private APIs.
+ 118      */
+ 119     public static Subject getSubject(GSSName name,
+ 120                                      GSSCredential creds) {
+ 121 
+ 122         HashSet&lt;Object&gt; privCredentials = null;
+ 123         HashSet&lt;Object&gt; pubCredentials = new HashSet&lt;&gt;(); // empty Set
+ 124 
+ 125         Set&lt;GSSCredentialSpi&gt; gssCredentials = null;
+ 126 
+ 127         Set&lt;GSSName&gt; names = new HashSet&lt;&gt;();
+ 128         names.add(name);
+ 129 
+ 130         if (creds instanceof GSSCredentialImpl) {
+ 131             gssCredentials = ((GSSCredentialImpl) creds).getElements();
+ 132             privCredentials = new HashSet&lt;&gt;(gssCredentials.size());
+ 133             populateCredentials(privCredentials, gssCredentials);
+ 134         } else {
+ 135             privCredentials = new HashSet&lt;&gt;(); // empty Set
+ 136         }
+ 137         debug("Created Subject with the following");
+ 138         debug("principals=" + names);
+ 139         debug("public creds=" + pubCredentials);
+ 140         debug("private creds=" + privCredentials);
+ 141 
+ 142         return new Subject(false, names, pubCredentials, privCredentials);
+ 143 
+ 144     }
+ 145 
+ 146     /**
+ 147      * Populates the set credentials with elements from gssCredentials. At
+ 148      * the same time, it converts any subclasses of KerberosTicket
+ 149      * into KerberosTicket instances and any subclasses of KerberosKey into
+ 150      * KerberosKey instances. (It is not desirable to expose the customer
+ 151      * to sun.security.jgss.krb5.Krb5InitCredential which extends
+ 152      * KerberosTicket and sun.security.jgss.krb5.Kbr5AcceptCredential which
+ 153      * extends KerberosKey.)
+ 154      */
+ 155     private static void populateCredentials(Set&lt;Object&gt; credentials,
+ 156                                             Set&lt;?&gt; gssCredentials) {
+ 157 
+ 158         for (Object cred : gssCredentials) {
+ 159 
+ 160             // Retrieve the internal cred out of SpNegoCredElement
+ 161             if (cred instanceof SpNegoCredElement) {
+ 162                 cred = ((SpNegoCredElement) cred).getInternalCred();
+ 163             }
+ 164 
+ 165             if (cred instanceof KerberosTicket) {
+ 166                 if (!cred.getClass().getName().equals
+ 167                     ("javax.security.auth.kerberos.KerberosTicket")) {
+ 168                     KerberosTicket tempTkt = (KerberosTicket) cred;
+ 169                     cred = new KerberosTicket(tempTkt.getEncoded(),
+ 170                                               tempTkt.getClient(),
+ 171                                               tempTkt.getServer(),
+ 172                                               tempTkt.getSessionKey().getEncoded(),
+ 173                                               tempTkt.getSessionKeyType(),
+ 174                                               tempTkt.getFlags(),
+ 175                                               tempTkt.getAuthTime(),
+ 176                                               tempTkt.getStartTime(),
+ 177                                               tempTkt.getEndTime(),
+ 178                                               tempTkt.getRenewTill(),
+ 179                                               tempTkt.getClientAddresses());
+ 180                 }
+ 181                 credentials.add(cred);
+ 182             } else if (cred instanceof KerberosKey) {
+ 183                 if (!cred.getClass().getName().equals
+ 184                     ("javax.security.auth.kerberos.KerberosKey")) {
+ 185                     KerberosKey tempKey = (KerberosKey) cred;
+ 186                     cred = new KerberosKey(tempKey.getPrincipal(),
+ 187                                            tempKey.getEncoded(),
+ 188                                            tempKey.getKeyType(),
+ 189                                            tempKey.getVersionNumber());
+ 190                 }
+ 191                 credentials.add(cred);
+ 192             } else {
+ 193                 // Ignore non-KerberosTicket and non-KerberosKey elements
+ 194                 debug("Skipped cred element: " + cred);
+ 195             }
+ 196         }
+ 197     }
+ 198 
+ 199     /**
+ 200      * Authenticate using the login module from the specified
+ 201      * configuration entry.
+ 202      *
+ 203      * @param caller the caller of JAAS Login
+ 204      * @param mech the mech to be used
+ 205      * @return the authenticated subject
+ 206      */
+ 207     public static Subject login(GSSCaller caller, Oid mech) throws LoginException {
+ 208 
+ 209         CallbackHandler cb = null;
+ 210         if (caller instanceof HttpCaller) {
+ 211             cb = new sun.net.www.protocol.http.spnego.NegotiateCallbackHandler(
+ 212                     ((HttpCaller)caller).info());
+ 213         } else {
+ 214             String defaultHandler = java.security.Security
+ 215                     .getProperty("auth.login.defaultCallbackHandler");
+ 216             // get the default callback handler
+ 217             if ((defaultHandler != null) &amp;&amp; (defaultHandler.length() != 0)) {
+ 218                 cb = null;
+ 219             } else {
+ 220                 cb = new ConsoleCallbackHandler();
+ 221             }
+ 222         }
+ 223 
+ 224         // New instance of LoginConfigImpl must be created for each login,
+ 225         // since the entry name is not passed as the first argument, but
+ 226         // generated with caller and mech inside LoginConfigImpl
+ 227         LoginContext lc = new LoginContext("", null, cb,
+ 228                 new LoginConfigImpl(caller, mech));
+ 229         lc.login();
+ 230         return lc.getSubject();
+ 231     }
+ 232 
+ 233     /**
+ 234      * Determines if the application doesn't mind if the mechanism obtains
+ 235      * the required credentials from outside of the current Subject. Our
+ 236      * Kerberos v5 mechanism would do a JAAS login on behalf of the
+ 237      * application if this were the case.
+ 238      *
+ 239      * The application indicates this by explicitly setting the system
+ 240      * property javax.security.auth.useSubjectCredsOnly to false.
+ 241      */
+ 242     public static boolean useSubjectCredsOnly(GSSCaller caller) {
+ 243 
+ 244         String propValue = GetPropertyAction
+ 245                 .privilegedGetProperty("javax.security.auth.useSubjectCredsOnly");
+ 246 
+ 247         // Invalid values should be ignored and the default assumed.
+ 248         if (caller instanceof HttpCaller) {
+ 249             // Default for HTTP/SPNEGO is false.
+ 250             return "true".equalsIgnoreCase(propValue);
+ 251         } else {
+ 252             // Default for JGSS is true.
+ 253             return !("false".equalsIgnoreCase(propValue));
+ 254         }
+ 255     }
+ 256 
+ 257     /**
+ 258      * Determines the SPNEGO interoperability mode with Microsoft;
+ 259      * by default it is set to true.
+ 260      *
+ 261      * To disable it, the application indicates this by explicitly setting
+ 262      * the system property sun.security.spnego.interop to false.
+ 263      */
+ 264     public static boolean useMSInterop() {
+ 265         /*
+ 266          * Don't use GetBooleanAction because the default value in the JRE
+ 267          * (when this is unset) has to treated as true.
+ 268          */
+ 269         String propValue = GetPropertyAction
+ 270                 .privilegedGetProperty("sun.security.spnego.msinterop", "true");
+ 271         /*
+ 272          * This property has to be explicitly set to "false". Invalid
+ 273          * values should be ignored and the default "true" assumed.
+ 274          */
+ 275         return (!propValue.equalsIgnoreCase("false"));
+ 276     }
+ 277 
+ 278     /**
+ 279      * Searches the private credentials of current Subject with the
+ 280      * specified criteria and returns the matching GSSCredentialSpi
+ 281      * object out of Sun's impl of GSSCredential. Returns null if
+ 282      * no Subject present or a Vector which contains 0 or more
+ 283      * matching GSSCredentialSpi objects.
+ 284      */
+ 285     public static &lt;T extends GSSCredentialSpi&gt; Vector&lt;T&gt;
+ 286             searchSubject(final GSSNameSpi name,
+ 287                           final Oid mech,
+ 288                           final boolean initiate,
+ 289                           final Class&lt;? extends T&gt; credCls) {
+ 290         debug("Search Subject for " + getMechStr(mech) +
+ 291               (initiate? " INIT" : " ACCEPT") + " cred (" +
+ 292               (name == null? "&lt;&lt;DEF&gt;&gt;" : name.toString()) + ", " +
+ 293               credCls.getName() + ")");
+ 294         final AccessControlContext acc = AccessController.getContext();
+ 295         try {
+ 296             Vector&lt;T&gt; creds =
+ 297                 AccessController.doPrivileged
+ 298                 (new PrivilegedExceptionAction&lt;Vector&lt;T&gt;&gt;() {
+ 299                     public Vector&lt;T&gt; run() throws Exception {
+ 300                         Subject accSubj = Subject.getSubject(acc);
+ 301                         Vector&lt;T&gt; result = null;
+ 302                         if (accSubj == null) {
+ 303                             debug("No Subject");
+ 304                             return result;
+ 305                         }
+ 306 
+ 307                         result = new Vector&lt;T&gt;();
+ 308                         for (GSSCredentialImpl cred : accSubj.getPrivateCredentials
+ 309                                                       (GSSCredentialImpl.class)) {
+ 310                             debug("...Found cred" + cred);
+ 311                             try {
+ 312                                 GSSCredentialSpi ce =
+ 313                                     cred.getElement(mech, initiate);
+ 314                                 debug("......Found element: " + ce);
+ 315                                 if (!ce.getClass().equals(credCls)) {
+ 316                                     debug("......Discard element (class mismatch)");
+ 317                                 } else if (name == null) {
+ 318                                     /*
+ 319                                      * If the caller doesn't care about
+ 320                                      * the specific name, then prefer
+ 321                                      * default credentials to
+ 322                                      * non-default credentials.
+ 323                                      */
+ 324                                     if (ce.isDefaultCredential())
+ 325                                         result.add(0, credCls.cast(ce));
+ 326                                     else
+ 327                                         result.add(credCls.cast(ce));
+ 328                                 } else if (name.equals((Object) ce.getName())) {
+ 329                                     result.add(credCls.cast(ce));
+ 330                                 } else {
+ 331                                     debug("......Discard element (name mismatch)");
+ 332                                 }
+ 333                             } catch (GSSException ge) {
+ 334                                 debug("...Discard cred (exception: " + ge + ")");
+ 335                             }
+ 336                         }
+ 337                         return result;
+ 338                     }
+ 339                 });
+ 340             return creds;
+ 341         } catch (PrivilegedActionException pae) {
+ 342             debug("Unexpected exception when searching Subject:");
+ 343             if (DEBUG) pae.printStackTrace();
+ 344             return null;
+ 345         }
+ 346     }
+ 347 }
+</pre></body></html>

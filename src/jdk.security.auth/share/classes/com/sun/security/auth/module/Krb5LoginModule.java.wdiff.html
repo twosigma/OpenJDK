@@ -1,0 +1,1813 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Krb5LoginModule cleanup
+Add commentary about native in Krb5LoginModule
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java
+</span><span class='added'>          +++ new/src/jdk.security.auth/share/classes/com/sun/security/auth/module/Krb5LoginModule.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">19 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  
+  27   27  package com.sun.security.auth.module;
+  28   28  
+  29   29  import java.io.*;
+<span class='added'>       30 +import java.security.Principal;
+</span>  30   31  import java.text.MessageFormat;
+  31   32  import java.util.*;
+  32   33  
+  33   34  import javax.security.auth.*;
+  34   35  import javax.security.auth.kerberos.KerberosTicket;
+  35   36  import javax.security.auth.kerberos.KerberosPrincipal;
+  36   37  import javax.security.auth.kerberos.KerberosKey;
+  37   38  import javax.security.auth.kerberos.KeyTab;
+  38   39  import javax.security.auth.callback.*;
+  39   40  import javax.security.auth.login.*;
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  40   41  import javax.security.auth.spi.*;
+  41   42  
+  42   43  import sun.security.krb5.*;
+  43   44  import sun.security.jgss.krb5.Krb5Util;
+  44   45  import sun.security.krb5.Credentials;
+  45   46  import sun.security.util.HexDumpEncoder;
+  46   47  import static sun.security.util.ResourcesMgr.getAuthResourceString;
+  47   48  
+  48   49  /**
+  49   50   * This {@code LoginModule} authenticates users using
+  50   51   * Kerberos protocols.
+  51   52   *
+  52   53   * &lt;p&gt; The configuration entry for {@code Krb5LoginModule} has
+  53   54   * several options that control the authentication process and
+  54   55   * additions to the {@code Subject}'s private credential
+  55   56   * set. Irrespective of these options, the {@code Subject}'s
+  56   57   * principal set and private credentials set are updated only when
+  57   58   * {@code commit} is called.
+  58   59   * When {@code commit} is called, the {@code KerberosPrincipal}
+  59   60   * is added to the {@code Subject}'s principal set (unless the
+  60   61   * {@code principal} is specified as "*"). If {@code isInitiator}
+  61   62   * is true, the {@code KerberosTicket} is
+  62   63   * added to the {@code Subject}'s private credentials.
+  63   64   *
+  64   65   * &lt;p&gt; If the configuration entry for {@code KerberosLoginModule}
+  65   66   * has the option {@code storeKey} set to true, then
+  66   67   * {@code KerberosKey} or {@code KeyTab} will also be added to the
+  67   68   * subject's private credentials. {@code KerberosKey}, the principal's
+  68   69   * key(s) will be derived from user's password, and {@code KeyTab} is
+  69   70   * the keytab used when {@code useKeyTab} is set to true. The
+  70   71   * {@code KeyTab} object is restricted to be used by the specified
+  71   72   * principal unless the principal value is "*".
+  72   73   *
+  73   74   * &lt;p&gt; This {@code LoginModule} recognizes the {@code doNotPrompt}
+  74   75   * option. If set to true the user will not be prompted for the password.
+  75   76   *
+  76   77   * &lt;p&gt; The user can  specify the location of the ticket cache by using
+  77   78   * the option {@code ticketCache} in the configuration entry.
+  78   79   *
+  79   80   * &lt;p&gt;The user can specify the keytab location by using
+  80   81   * the option {@code keyTab}
+  81   82   * in the configuration entry.
+  82   83   *
+  83   84   * &lt;p&gt; The principal name can be specified in the configuration entry
+  84   85   * by using the option {@code principal}. The principal name
+  85   86   * can either be a simple user name, a service name such as
+  86   87   * {@code host/mission.eng.sun.com}, or "*". The principal can also
+  87   88   * be set using the system property {@systemProperty sun.security.krb5.principal}.
+  88   89   * This property is checked during login. If this property is not set, then
+  89   90   * the principal name from the configuration is used. In the
+  90   91   * case where the principal property is not set and the principal
+  91   92   * entry also does not exist, the user is prompted for the name.
+  92   93   * When this property of entry is set, and {@code useTicketCache}
+  93   94   * is set to true, only TGT belonging to this principal is used.
+  94   95   *
+  95   96   * &lt;p&gt; The following is a list of configuration options supported
+  96   97   * for {@code Krb5LoginModule}:
+  97   98   * &lt;blockquote&gt;&lt;dl&gt;
+  98   99   * &lt;dt&gt;{@code refreshKrb5Config}:&lt;/dt&gt;
+  99  100   * &lt;dd&gt; Set this to true, if you want the configuration
+ 100  101   * to be refreshed before the {@code login} method is called.&lt;/dd&gt;
+ 101  102   * &lt;dt&gt;{@code useTicketCache}:&lt;/dt&gt;
+ 102  103   * &lt;dd&gt;Set this to true, if you want the
+ 103  104   * TGT to be obtained from the ticket cache. Set this option
+ 104  105   * to false if you do not want this module to use the ticket cache.
+ 105  106   * (Default is False).
+ 106  107   * This module will search for the ticket
+ 107  108   * cache in the following locations: On Solaris and Linux
+ 108  109   * it will look for the ticket cache in /tmp/krb5cc_{@code uid}
+ 109  110   * where the uid is numeric user identifier. If the ticket cache is
+ 110  111   * not available in the above location, or if we are on a
+ 111  112   * Windows platform, it will look for the cache as
+ 112  113   * {user.home}{file.separator}krb5cc_{user.name}.
+ 113  114   * You can override the ticket cache location by using
+ 114  115   * {@code ticketCache}.
+ 115  116   * For Windows, if a ticket cannot be retrieved from the file ticket cache,
+ 116  117   * it will use Local Security Authority (LSA) API to get the TGT.
+ 117  118   * &lt;dt&gt;{@code ticketCache}:&lt;/dt&gt;
+ 118  119   * &lt;dd&gt;Set this to the name of the ticket
+ 119  120   * cache that  contains user's TGT.
+ 120  121   * If this is set,  {@code useTicketCache}
+ 121  122   * must also be set to true; Otherwise a configuration error will
+ 122  123   * be returned.&lt;/dd&gt;
+ 123  124   * &lt;dt&gt;{@code renewTGT}:&lt;/dt&gt;
+ 124  125   * &lt;dd&gt;Set this to true, if you want to renew the TGT when it's more than
+ 125  126   * half-way expired (the time until expiration is less than the time
+ 126  127   * since start time). If this is set, {@code useTicketCache} must also be
+ 127  128   * set to true; otherwise a configuration error will be returned.&lt;/dd&gt;
+ 128  129   * &lt;dt&gt;{@code doNotPrompt}:&lt;/dt&gt;
+ 129  130   * &lt;dd&gt;Set this to true if you do not want to be
+ 130  131   * prompted for the password
+ 131  132   * if credentials can not be obtained from the cache, the keytab,
+ 132  133   * or through shared state.(Default is false)
+ 133  134   * If set to true, credential must be obtained through cache, keytab,
+ 134  135   * or shared state. Otherwise, authentication will fail.&lt;/dd&gt;
+ 135  136   * &lt;dt&gt;{@code useKeyTab}:&lt;/dt&gt;
+ 136  137   * &lt;dd&gt;Set this to true if you
+ 137  138   * want the module to get the principal's key from the
+ 138  139   * the keytab.(default value is False)
+ 139  140   * If {@code keytab} is not set then
+ 140  141   * the module will locate the keytab from the
+ 141  142   * Kerberos configuration file.
+ 142  143   * If it is not specified in the Kerberos configuration file
+ 143  144   * then it will look for the file
+ 144  145   * {@code {user.home}{file.separator}}krb5.keytab.&lt;/dd&gt;
+ 145  146   * &lt;dt&gt;{@code keyTab}:&lt;/dt&gt;
+ 146  147   * &lt;dd&gt;Set this to the file name of the
+ 147  148   * keytab to get principal's secret key.&lt;/dd&gt;
+ 148  149   * &lt;dt&gt;{@code storeKey}:&lt;/dt&gt;
+ 149  150   * &lt;dd&gt;Set this to true to if you want the keytab or the
+ 150  151   * principal's key to be stored in the Subject's private credentials.
+ 151  152   * For {@code isInitiator} being false, if {@code principal}
+ 152  153   * is "*", the {@link KeyTab} stored can be used by anyone, otherwise,
+ 153  154   * it's restricted to be used by the specified principal only.&lt;/dd&gt;
+ 154  155   * &lt;dt&gt;{@code principal}:&lt;/dt&gt;
+ 155  156   * &lt;dd&gt;The name of the principal that should
+ 156  157   * be used. The principal can be a simple username such as
+ 157  158   * "{@code testuser}" or a service name such as
+ 158  159   * "{@code host/testhost.eng.sun.com}". You can use the
+ 159  160   * {@code principal}  option to set the principal when there are
+ 160  161   * credentials for multiple principals in the
+ 161  162   * {@code keyTab} or when you want a specific ticket cache only.
+ 162  163   * The principal can also be set using the system property
+ 163  164   * {@code sun.security.krb5.principal}. In addition, if this
+ 164  165   * system property is defined, then it will be used. If this property
+ 165  166   * is not set, then the principal name from the configuration will be
+ 166  167   * used.
+ 167  168   * The principal name can be set to "*" when {@code isInitiator} is false.
+ 168  169   * In this case, the acceptor is not bound to a single principal. It can
+ 169  170   * act as any principal an initiator requests if keys for that principal
+ 170  171   * can be found. When {@code isInitiator} is true, the principal name
+ 171  172   * cannot be set to "*".
+ 172  173   * &lt;/dd&gt;
+ 173  174   * &lt;dt&gt;{@code isInitiator}:&lt;/dt&gt;
+ 174  175   * &lt;dd&gt;Set this to true, if initiator. Set this to false, if acceptor only.
+ 175  176   * (Default is true).
+ 176  177   * Note: Do not set this value to false for initiators.&lt;/dd&gt;
+ 177  178   * &lt;/dl&gt;&lt;/blockquote&gt;
+ 178  179   *
+ 179  180   * &lt;p&gt; This {@code LoginModule} also recognizes the following additional
+ 180  181   * {@code Configuration}
+ 181  182   * options that enable you to share username and passwords across different
+ 182  183   * authentication modules:
+ 183  184   * &lt;blockquote&gt;&lt;dl&gt;
+ 184  185   *
+ 185  186   *    &lt;dt&gt;{@code useFirstPass}:&lt;/dt&gt;
+ 186  187   *                   &lt;dd&gt;if, true, this LoginModule retrieves the
+ 187  188   *                   username and password from the module's shared state,
+ 188  189   *                   using "javax.security.auth.login.name" and
+ 189  190   *                   "javax.security.auth.login.password" as the respective
+ 190  191   *                   keys. The retrieved values are used for authentication.
+ 191  192   *                   If authentication fails, no attempt for a retry
+ 192  193   *                   is made, and the failure is reported back to the
+ 193  194   *                   calling application.&lt;/dd&gt;
+ 194  195   *
+ 195  196   *    &lt;dt&gt;{@code tryFirstPass}:&lt;/dt&gt;
+ 196  197   *                   &lt;dd&gt;if, true, this LoginModule retrieves the
+ 197  198   *                   the username and password from the module's shared
+ 198  199   *                   state using "javax.security.auth.login.name" and
+ 199  200   *                   "javax.security.auth.login.password" as the respective
+ 200  201   *                   keys.  The retrieved values are used for
+ 201  202   *                   authentication.
+ 202  203   *                   If authentication fails, the module uses the
+ 203  204   *                   CallbackHandler to retrieve a new username
+ 204  205   *                   and password, and another attempt to authenticate
+ 205  206   *                   is made. If the authentication fails,
+ 206  207   *                   the failure is reported back to the calling application&lt;/dd&gt;
+ 207  208   *
+ 208  209   *    &lt;dt&gt;{@code storePass}:&lt;/dt&gt;
+ 209  210   *                   &lt;dd&gt;if, true, this LoginModule stores the username and
+ 210  211   *                   password obtained from the CallbackHandler in the
+ 211  212   *                   modules shared state, using
+ 212  213   *                   "javax.security.auth.login.name" and
+ 213  214   *                   "javax.security.auth.login.password" as the respective
+ 214  215   *                   keys.  This is not performed if existing values already
+ 215  216   *                   exist for the username and password in the shared
+ 216  217   *                   state, or if authentication fails.&lt;/dd&gt;
+ 217  218   *
+ 218  219   *    &lt;dt&gt;{@code clearPass}:&lt;/dt&gt;
+ 219  220   *                   &lt;dd&gt;if, true, this LoginModule clears the
+ 220  221   *                   username and password stored in the module's shared
+ 221  222   *                   state  after both phases of authentication
+ 222  223   *                   (login and commit) have completed.&lt;/dd&gt;
+ 223  224   * &lt;/dl&gt;&lt;/blockquote&gt;
+ 224  225   * &lt;p&gt;If the principal system property or key is already provided, the value of
+ 225  226   * "javax.security.auth.login.name" in the shared state is ignored.
+ 226  227   * &lt;p&gt;When multiple mechanisms to retrieve a ticket or key is provided, the
+ 227  228   * preference order is:
+ 228  229   * &lt;ol&gt;
+ 229  230   * &lt;li&gt;ticket cache
+ 230  231   * &lt;li&gt;keytab
+ 231  232   * &lt;li&gt;shared state
+ 232  233   * &lt;li&gt;user prompt
+ 233  234   * &lt;/ol&gt;
+ 234  235   *
+ 235  236   * &lt;p&gt;Note that if any step fails, it will fallback to the next step.
+ 236  237   * There's only one exception, if the shared state step fails and
+ 237  238   * {@code useFirstPass = true}, no user prompt is made.
+ 238  239   * &lt;p&gt;Examples of some configuration values for Krb5LoginModule in
+ 239  240   * JAAS config file and the results are:
+ 240  241   * &lt;blockquote&gt;
+ 241  242   * &lt;pre&gt;{@code
+ 242  243   * doNotPrompt = true}&lt;/pre&gt;
+ 243  244   * This is an illegal combination since none of {@code useTicketCache,
+ 244  245   * useKeyTab, useFirstPass} and {@code tryFirstPass}
+ 245  246   * is set and the user can not be prompted for the password.
+ 246  247   *
+ 247  248   * &lt;pre&gt;{@code
+ 248  249   * ticketCache = &lt;filename&gt;}&lt;/pre&gt;
+ 249  250   * This is an illegal combination since {@code useTicketCache}
+ 250  251   * is not set to true and the ticketCache is set. A configuration error
+ 251  252   * will occur.
+ 252  253   *
+ 253  254   * &lt;pre&gt;{@code
+ 254  255   * renewTGT = true}&lt;/pre&gt;
+ 255  256   * This is an illegal combination since {@code useTicketCache} is
+ 256  257   * not set to true and renewTGT is set. A configuration error will occur.
+ 257  258   *
+ 258  259   * &lt;pre&gt;{@code
+ 259  260   * storeKey = true  useTicketCache = true  doNotPrompt = true}&lt;/pre&gt;
+ 260  261   * This is an illegal combination since  {@code storeKey} is set to
+ 261  262   * true but the key can not be obtained either by prompting the user or from
+ 262  263   * the keytab, or from the shared state. A configuration error will occur.
+ 263  264   *
+ 264  265   * &lt;pre&gt;{@code
+ 265  266   * keyTab = &lt;filename&gt;  doNotPrompt = true}&lt;/pre&gt;
+ 266  267   * This is an illegal combination since useKeyTab is not set to true and
+ 267  268   * the keyTab is set. A configuration error will occur.
+ 268  269   *
+ 269  270   * &lt;pre&gt;{@code
+ 270  271   * debug = true}&lt;/pre&gt;
+ 271  272   * Prompt the user for the principal name and the password.
+ 272  273   * Use the authentication exchange to get TGT from the KDC and
+ 273  274   * populate the {@code Subject} with the principal and TGT.
+ 274  275   * Output debug messages.
+ 275  276   *
+ 276  277   * &lt;pre&gt;{@code
+ 277  278   * useTicketCache = true  doNotPrompt = true}&lt;/pre&gt;
+ 278  279   * Check the default cache for TGT and populate the {@code Subject}
+ 279  280   * with the principal and TGT. If the TGT is not available,
+ 280  281   * do not prompt the user, instead fail the authentication.
+ 281  282   *
+ 282  283   * &lt;pre&gt;{@code
+ 283  284   * principal = &lt;name&gt;  useTicketCache = true  doNotPrompt = true}&lt;/pre&gt;
+ 284  285   * Get the TGT from the default cache for the principal and populate the
+ 285  286   * Subject's principal and private creds set. If ticket cache is
+ 286  287   * not available or does not contain the principal's TGT
+ 287  288   * authentication will fail.
+ 288  289   *
+ 289  290   * &lt;pre&gt;{@code
+ 290  291   * useTicketCache = true
+ 291  292   * ticketCache = &lt;file name&gt;
+ 292  293   * useKeyTab = true
+ 293  294   * keyTab = &lt;keytab filename&gt;
+ 294  295   * principal = &lt;principal name&gt;
+ 295  296   * doNotPrompt = true}&lt;/pre&gt;
+ 296  297   * Search the cache for the principal's TGT. If it is not available
+ 297  298   * use the key in the keytab to perform authentication exchange with the
+ 298  299   * KDC and acquire the TGT.
+ 299  300   * The Subject will be populated with the principal and the TGT.
+ 300  301   * If the key is not available or valid then authentication will fail.
+ 301  302   *
+ 302  303   * &lt;pre&gt;{@code
+ 303  304   * useTicketCache = true  ticketCache = &lt;filename&gt;}&lt;/pre&gt;
+ 304  305   * The TGT will be obtained from the cache specified.
+ 305  306   * The Kerberos principal name used will be the principal name in
+ 306  307   * the Ticket cache. If the TGT is not available in the
+ 307  308   * ticket cache the user will be prompted for the principal name
+ 308  309   * and the password. The TGT will be obtained using the authentication
+ 309  310   * exchange with the KDC.
+ 310  311   * The Subject will be populated with the TGT.
+ 311  312   *
+ 312  313   * &lt;pre&gt;{@code
+ 313  314   * useKeyTab = true  keyTab=&lt;keytab filename&gt;  principal = &lt;principal name&gt;  storeKey = true}&lt;/pre&gt;
+ 314  315   * The key for the principal will be retrieved from the keytab.
+ 315  316   * If the key is not available in the keytab the user will be prompted
+ 316  317   * for the principal's password. The Subject will be populated
+ 317  318   * with the principal's key either from the keytab or derived from the
+ 318  319   * password entered.
+ 319  320   *
+ 320  321   * &lt;pre&gt;{@code
+ 321  322   * useKeyTab = true  keyTab = &lt;keytabname&gt;  storeKey = true  doNotPrompt = false}&lt;/pre&gt;
+ 322  323   * The user will be prompted for the service principal name.
+ 323  324   * If the principal's
+ 324  325   * longterm key is available in the keytab , it will be added to the
+ 325  326   * Subject's private credentials. An authentication exchange will be
+ 326  327   * attempted with the principal name and the key from the Keytab.
+ 327  328   * If successful the TGT will be added to the
+ 328  329   * Subject's private credentials set. Otherwise the authentication will fail.
+ 329  330   *
+ 330  331   * &lt;pre&gt;{@code
+ 331  332   * isInitiator = false  useKeyTab = true  keyTab = &lt;keytabname&gt;  storeKey = true  principal = *}&lt;/pre&gt;
+ 332  333   * The acceptor will be an unbound acceptor and it can act as any principal
+ 333  334   * as long that principal has keys in the keytab.
+ 334  335   *
+ 335  336   * &lt;pre&gt;{@code
+ 336  337   * useTicketCache = true
+ 337  338   * ticketCache = &lt;file name&gt;
+ 338  339   * useKeyTab = true
+ 339  340   * keyTab = &lt;file name&gt;
+ 340  341   * storeKey = true
+ 341  342   * principal = &lt;principal name&gt;}&lt;/pre&gt;
+ 342  343   * The client's TGT will be retrieved from the ticket cache and added to the
+ 343  344   * {@code Subject}'s private credentials. If the TGT is not available
+ 344  345   * in the ticket cache, or the TGT's client name does not match the principal
+ 345  346   * name, Java will use a secret key to obtain the TGT using the authentication
+ 346  347   * exchange and added to the Subject's private credentials.
+ 347  348   * This secret key will be first retrieved from the keytab. If the key
+ 348  349   * is not available, the user will be prompted for the password. In either
+ 349  350   * case, the key derived from the password will be added to the
+ 350  351   * Subject's private credentials set.
+ 351  352   *
+ 352  353   * &lt;pre&gt;{@code
+ 353  354   * isInitiator = false}&lt;/pre&gt;
+ 354  355   * Configured to act as acceptor only, credentials are not acquired
+ 355  356   * via AS exchange. For acceptors only, set this value to false.
+ 356  357   * For initiators, do not set this value to false.
+ 357  358   *
+ 358  359   * &lt;pre&gt;{@code
+ 359  360   * isInitiator = true}&lt;/pre&gt;
+ 360  361   * Configured to act as initiator, credentials are acquired
+ 361  362   * via AS exchange. For initiators, set this value to true, or leave this
+ 362  363   * option unset, in which case default value (true) will be used.
+ 363  364   *
+ 364  365   * &lt;/blockquote&gt;
+ 365  366   *
+ 366  367   * @author Ram Marti
+ 367  368   */
+ 368  369  
+ 369  370  public class Krb5LoginModule implements LoginModule {
+ 370  371  
+ 371  372      // initial state
+ 372  373      private Subject subject;
+ 373  374      private CallbackHandler callbackHandler;
+ 374  375      private Map&lt;String, Object&gt; sharedState;
+ 375  376      private Map&lt;String, ?&gt; options;
+ 376  377  
+ 377  378      // configurable option
+ 378  379      private boolean debug = false;
+ 379  380      private boolean storeKey = false;
+ 380  381      private boolean doNotPrompt = false;
+ 381  382      private boolean useTicketCache = false;
+ 382  383      private boolean useKeyTab = false;
+ 383  384      private String ticketCacheName = null;
+ 384  385      private String keyTabName = null;
+ 385  386      private String princName = null;
+ 386  387  
+ 387  388      private boolean useFirstPass = false;
+ 388  389      private boolean tryFirstPass = false;
+ 389  390      private boolean storePass = false;
+ 390  391      private boolean clearPass = false;
+ 391  392      private boolean refreshKrb5Config = false;
+ 392  393      private boolean renewTGT = false;
+ 393  394  
+ 394  395      // specify if initiator.
+ 395  396      // perform authentication exchange if initiator
+ 396  397      private boolean isInitiator = true;
+ 397  398  
+ 398  399      // the authentication status
+ 399  400      private boolean succeeded = false;
+ 400  401      private boolean commitSucceeded = false;
+ 401  402      private String username;
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">362 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 402  403  
+ 403  404      // Encryption keys calculated from password. Assigned when storekey == true
+ 404  405      // and useKeyTab == false (or true but not found)
+ 405  406      private EncryptionKey[] encKeys = null;
+ 406  407  
+ 407  408      KeyTab ktab = null;
+ 408  409  
+ 409  410      private Credentials cred = null;
+ 410  411  
+ 411  412      private PrincipalName principal = null;
+<span class='subtracted'> 412      -    private KerberosPrincipal kerbClientPrinc = null;
+</span> 413  413      private KerberosTicket kerbTicket = null;
+ 414  414      private KerberosKey[] kerbKeys = null;
+ 415  415      private StringBuffer krb5PrincName = null;
+ 416  416      private boolean unboundServer = false;
+ 417  417      private char[] password = null;
+ 418  418  
+ 419  419      private static final String NAME = "javax.security.auth.login.name";
+ 420  420      private static final String PWD = "javax.security.auth.login.password";
+ 421  421  
+ 422  422      /**
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 423  423       * Initialize this {@code LoginModule}.
+ 424  424       *
+ 425  425       * @param subject the {@code Subject} to be authenticated.
+ 426  426       *
+ 427  427       * @param callbackHandler a {@code CallbackHandler} for
+ 428  428       *                  communication with the end user (prompting for
+ 429  429       *                  usernames and passwords, for example).
+ 430  430       *
+ 431  431       * @param sharedState shared {@code LoginModule} state.
+ 432  432       *
+ 433  433       * @param options options specified in the login
+ 434  434       *                  {@code Configuration} for this particular
+ 435  435       *                  {@code LoginModule}.
+ 436  436       */
+ 437  437      // Unchecked warning from (Map&lt;String, Object&gt;)sharedState is safe
+ 438  438      // since javax.security.auth.login.LoginContext passes a raw HashMap.
+ 439  439      // Unchecked warnings from options.get(String) are safe since we are
+ 440  440      // passing known keys.
+ 441  441      @SuppressWarnings("unchecked")
+ 442  442      public void initialize(Subject subject,
+ 443  443                             CallbackHandler callbackHandler,
+ 444  444                             Map&lt;String, ?&gt; sharedState,
+ 445  445                             Map&lt;String, ?&gt; options) {
+ 446  446  
+ 447  447          this.subject = subject;
+ 448  448          this.callbackHandler = callbackHandler;
+ 449  449          this.sharedState = (Map&lt;String, Object&gt;)sharedState;
+ 450  450          this.options = options;
+ 451  451  
+ 452  452          // initialize any configured options
+ 453  453  
+ 454  454          debug = "true".equalsIgnoreCase((String)options.get("debug"));
+ 455  455          storeKey = "true".equalsIgnoreCase((String)options.get("storeKey"));
+ 456  456          doNotPrompt = "true".equalsIgnoreCase((String)options.get
+ 457  457                                                ("doNotPrompt"));
+ 458  458          useTicketCache = "true".equalsIgnoreCase((String)options.get
+ 459  459                                                   ("useTicketCache"));
+ 460  460          useKeyTab = "true".equalsIgnoreCase((String)options.get("useKeyTab"));
+ 461  461          ticketCacheName = (String)options.get("ticketCache");
+ 462  462          keyTabName = (String)options.get("keyTab");
+ 463  463          if (keyTabName != null) {
+ 464  464              keyTabName = sun.security.krb5.internal.ktab.KeyTab.normalize(
+ 465  465                           keyTabName);
+ 466  466          }
+ 467  467          princName = (String)options.get("principal");
+ 468  468          refreshKrb5Config =
+ 469  469              "true".equalsIgnoreCase((String)options.get("refreshKrb5Config"));
+ 470  470          renewTGT =
+ 471  471              "true".equalsIgnoreCase((String)options.get("renewTGT"));
+ 472  472  
+ 473  473          // check isInitiator value
+ 474  474          String isInitiatorValue = ((String)options.get("isInitiator"));
+ 475  475          if (isInitiatorValue == null) {
+ 476  476              // use default, if value not set
+ 477  477          } else {
+ 478  478              isInitiator = "true".equalsIgnoreCase(isInitiatorValue);
+ 479  479          }
+ 480  480  
+ 481  481          tryFirstPass =
+ 482  482              "true".equalsIgnoreCase
+ 483  483              ((String)options.get("tryFirstPass"));
+ 484  484          useFirstPass =
+ 485  485              "true".equalsIgnoreCase
+ 486  486              ((String)options.get("useFirstPass"));
+ 487  487          storePass =
+ 488  488              "true".equalsIgnoreCase((String)options.get("storePass"));
+ 489  489          clearPass =
+ 490  490              "true".equalsIgnoreCase((String)options.get("clearPass"));
+ 491  491          if (debug) {
+ 492  492              System.out.print("Debug is  " + debug
+ 493  493                               + " storeKey " + storeKey
+ 494  494                               + " useTicketCache " + useTicketCache
+ 495  495                               + " useKeyTab " + useKeyTab
+ 496  496                               + " doNotPrompt " + doNotPrompt
+ 497  497                               + " ticketCache is " + ticketCacheName
+ 498  498                               + " isInitiator " + isInitiator
+ 499  499                               + " KeyTab is " + keyTabName
+ 500  500                               + " refreshKrb5Config is " + refreshKrb5Config
+ 501  501                               + " principal is " + princName
+ 502  502                               + " tryFirstPass is " + tryFirstPass
+ 503  503                               + " useFirstPass is " + useFirstPass
+ 504  504                               + " storePass is " + storePass
+ 505  505                               + " clearPass is " + clearPass + "\n");
+ 506  506          }
+ 507  507      }
+ 508  508  
+ 509  509  
+ 510  510      /**
+ 511  511       * Authenticate the user
+ 512  512       *
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">90 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 513  513       * @return true in all cases since this {@code LoginModule}
+ 514  514       *          should not be ignored.
+ 515  515       *
+ 516  516       * @exception FailedLoginException if the authentication fails.
+ 517  517       *
+ 518  518       * @exception LoginException if this {@code LoginModule}
+ 519  519       *          is unable to perform the authentication.
+ 520  520       */
+ 521  521      public boolean login() throws LoginException {
+ 522  522  
+<span class='added'>      523 +        /*
+      524 +         * Perhaps we should wrap this in a method that returns false if this
+      525 +         * throws and sun.security.jgss.native=true.  Or perhaps the wrapper
+      526 +         * could see if it can acquire comparable GSS credentials and then
+      527 +         * store those in the subject in commit() in that case (and then
+      528 +         * GSSUtil/Krb5Util code could be changed to look for those).
+      529 +         *
+      530 +         * See related commentary in GssLoginModule.
+      531 +         */
+      532 +
+</span> 523  533          if (refreshKrb5Config) {
+ 524  534              try {
+ 525  535                  if (debug) {
+ 526  536                      System.out.println("Refreshing Kerberos configuration");
+ 527  537                  }
+ 528  538                  sun.security.krb5.Config.refresh();
+ 529  539              } catch (KrbException ke) {
+ 530  540                  LoginException le = new LoginException(ke.getMessage());
+ 531  541                  le.initCause(ke);
+ 532  542                  throw le;
+ 533  543              }
+ 534  544          }
+<span class='added'>      545 +
+      546 +        // -Dsun.security.krb5.principal takes precedence over login module
+      547 +        // "principal" option
+      548 +        //
+      549 +        // XXX This seems misplaced.  This is configuration reading, and that
+      550 +        // clearly belongs in initialize().  It's not like it's very likely
+      551 +        // that this sequence of events takes place anywhere, much less that we
+      552 +        // should cater to it:
+      553 +        //
+      554 +        //  lc.initialize();
+      555 +        //  System.setProperty("sun.security.krb5.principal", ...);
+      556 +        //  lc.login();
+</span> 535  557          String principalProperty = System.getProperty
+ 536  558              ("sun.security.krb5.principal");
+ 537  559          if (principalProperty != null) {
+ 538  560              krb5PrincName = new StringBuffer(principalProperty);
+<span class='subtracted'> 539      -        } else {
+ 540      -            if (princName != null) {
+ 541      -                krb5PrincName = new StringBuffer(princName);
+ 542      -            }
+</span><span class='added'>      561 +        } else if (princName != null) {
+      562 +            krb5PrincName = new StringBuffer(princName);
+</span> 543  563          }
+ 544  564  
+<span class='added'>      565 +        // XXX This really belongs in initialize()
+</span> 545  566          validateConfiguration();
+ 546  567  
+<span class='added'>      568 +        // XXX This really belongs in validateConfiguration()
+</span> 547  569          if (krb5PrincName != null &amp;&amp; krb5PrincName.toString().equals("*")) {
+ 548  570              unboundServer = true;
+ 549  571          }
+ 550  572  
+ 551  573          if (tryFirstPass) {
+ 552  574              try {
+ 553  575                  attemptAuthentication(true);
+ 554  576                  if (debug)
+ 555  577                      System.out.println("\t\t[Krb5LoginModule] " +
+ 556  578                                         "authentication succeeded");
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 557  579                  succeeded = true;
+ 558  580                  cleanState();
+ 559  581                  return true;
+ 560  582              } catch (LoginException le) {
+ 561  583                  // authentication failed -- try again below by prompting
+ 562  584                  cleanState();
+ 563  585                  if (debug) {
+ 564  586                      System.out.println("\t\t[Krb5LoginModule] " +
+ 565  587                                         "tryFirstPass failed with:" +
+ 566  588                                         le.getMessage());
+ 567  589                  }
+ 568  590              }
+ 569  591          } else if (useFirstPass) {
+ 570  592              try {
+ 571  593                  attemptAuthentication(true);
+ 572  594                  succeeded = true;
+ 573  595                  cleanState();
+ 574  596                  return true;
+ 575  597              } catch (LoginException e) {
+ 576  598                  // authentication failed -- clean out state
+ 577  599                  if (debug) {
+ 578  600                      System.out.println("\t\t[Krb5LoginModule] " +
+ 579  601                                         "authentication failed \n" +
+ 580  602                                         e.getMessage());
+ 581  603                  }
+ 582  604                  succeeded = false;
+ 583  605                  cleanState();
+ 584  606                  throw e;
+ 585  607              }
+ 586  608          }
+ 587  609  
+ 588  610          // attempt the authentication by getting the username and pwd
+ 589  611          // by prompting or configuration i.e. not from shared state
+ 590  612  
+ 591  613          try {
+ 592  614              attemptAuthentication(false);
+ 593  615              succeeded = true;
+ 594  616              cleanState();
+ 595  617              return true;
+ 596  618          } catch (LoginException e) {
+ 597  619              // authentication failed -- clean out state
+ 598  620              if (debug) {
+ 599  621                  System.out.println("\t\t[Krb5LoginModule] " +
+ 600  622                                     "authentication failed \n" +
+ 601  623                                     e.getMessage());
+ 602  624              }
+ 603  625              succeeded = false;
+ 604  626              cleanState();
+ 605  627              throw e;
+ 606  628          }
+ 607  629      }
+ 608  630      /**
+ 609  631       * process the configuration options
+ 610  632       * Get the TGT either out of
+ 611  633       * cache or from the KDC using the password entered
+ 612  634       * Check the  permission before getting the TGT
+ 613  635       */
+ 614  636  
+ 615  637      private void attemptAuthentication(boolean getPasswdFromSharedState)
+ 616  638          throws LoginException {
+ 617  639  
+ 618  640          /*
+ 619  641           * Check the creds cache to see whether
+ 620  642           * we have TGT for this client principal
+ 621  643           */
+ 622  644          if (krb5PrincName != null) {
+ 623  645              try {
+ 624  646                  principal = new PrincipalName
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">68 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 625  647                      (krb5PrincName.toString(),
+ 626  648                       PrincipalName.KRB_NT_PRINCIPAL);
+ 627  649              } catch (KrbException e) {
+ 628  650                  LoginException le = new LoginException(e.getMessage());
+ 629  651                  le.initCause(e);
+ 630  652                  throw le;
+ 631  653              }
+ 632  654          }
+ 633  655  
+ 634  656          try {
+<span class='added'>      657 +            // This means "from the traditional FILE ccache"
+</span> 635  658              if (useTicketCache) {
+<span class='subtracted'> 636      -                // ticketCacheName == null implies the default cache
+</span> 637  659                  if (debug)
+<span class='subtracted'> 638      -                    System.out.println("Acquire TGT from Cache");
+ 639      -                cred  = Credentials.acquireTGTFromCache
+ 640      -                    (principal, ticketCacheName);
+ 641      -
+</span><span class='added'>      660 +                    System.out.println("Trying to acquire TGT from Cache");
+      661 +                cred = getCredsFromCCache(principal, renewTGT, ticketCacheName);
+</span> 642  662                  if (cred != null) {
+<span class='subtracted'> 643      -                    if (renewTGT &amp;&amp; isOld(cred)) {
+ 644      -                        // renew if ticket is old.
+ 645      -                        Credentials newCred = renewCredentials(cred);
+ 646      -                        if (newCred != null) {
+ 647      -                            newCred.setProxy(cred.getProxy());
+ 648      -                            cred = newCred;
+ 649      -                        }
+ 650      -                    }
+</span><span class='added'>      663 +                    if (principal == null)
+      664 +                        principal = cred.getClient();
+</span> 651  665                      if (!isCurrent(cred)) {
+<span class='subtracted'> 652      -                        // credentials have expired
+</span> 653  666                          cred = null;
+ 654  667                          if (debug)
+<span class='subtracted'> 655      -                            System.out.println("Credentials are" +
+ 656      -                                    " no longer valid");
+ 657      -                    }
+ 658      -                }
+ 659      -
+ 660      -                if (cred != null) {
+ 661      -                   // get the principal name from the ticket cache
+ 662      -                   if (principal == null) {
+ 663      -                        principal = cred.getClient();
+ 664      -                   }
+ 665      -                }
+ 666      -                if (debug) {
+ 667      -                    System.out.println("Principal is " + principal);
+ 668      -                    if (cred == null) {
+ 669      -                        System.out.println
+ 670      -                            ("null credentials from Ticket Cache");
+</span><span class='added'>      668 +                            System.out.println("Found expired cached " +
+      669 +                                    "credentials for " + principal);
+      670 +                    } else if (debug) {
+      671 +                        System.out.println("Found cached credentials for "
+      672 +                                + principal);
+</span> 671  673                      }
+<span class='added'>      674 +                } else if (debug) {
+      675 +                    System.out.println("Could not find cached credentials");
+</span> 672  676                  }
+ 673  677              }
+ 674  678  
+<span class='subtracted'> 675      -            // cred = null indicates that we didn't get the creds
+ 676      -            // from the cache or useTicketCache was false
+ 677      -
+</span> 678  679              if (cred == null) {
+<span class='subtracted'> 679      -                // We need the principal name whether we use keytab
+ 680      -                // or AS Exchange
+</span><span class='added'>      680 +                // !useTicketCache || credentials not found || expired
+      681 +
+</span> 681  682                  if (principal == null) {
+ 682  683                      promptForName(getPasswdFromSharedState);
+ 683  684                      principal = new PrincipalName
+ 684  685                          (krb5PrincName.toString(),
+ 685  686                           PrincipalName.KRB_NT_PRINCIPAL);
+ 686  687                  }
+ 687  688  
+<span class='subtracted'> 688      -                /*
+ 689      -                 * Before dynamic KeyTab support (6894072), here we check if
+ 690      -                 * the keytab contains keys for the principal. If no, keytab
+ 691      -                 * will not be used and password is prompted for.
+ 692      -                 *
+ 693      -                 * After 6894072, we normally don't check it, and expect the
+ 694      -                 * keys can be populated until a real connection is made. The
+ 695      -                 * check is still done when isInitiator == true, where the keys
+ 696      -                 * will be used right now.
+ 697      -                 *
+ 698      -                 * Probably tricky relations:
+ 699      -                 *
+ 700      -                 * useKeyTab is config flag, but when it's true but the ktab
+ 701      -                 * does not contains keys for principal, we would use password
+ 702      -                 * and keep the flag unchanged (for reuse?). In this method,
+ 703      -                 * we use (ktab != null) to check whether keytab is used.
+ 704      -                 * After this method (and when storeKey == true), we use
+ 705      -                 * (encKeys == null) to check.
+ 706      -                 */
+</span> 707  689                  if (useKeyTab) {
+<span class='subtracted'> 708      -                    if (!unboundServer) {
+ 709      -                        KerberosPrincipal kp =
+ 710      -                                new KerberosPrincipal(principal.getName());
+ 711      -                        ktab = (keyTabName == null)
+ 712      -                                ? KeyTab.getInstance(kp)
+ 713      -                                : KeyTab.getInstance(kp, new File(keyTabName));
+ 714      -                    } else {
+ 715      -                        ktab = (keyTabName == null)
+ 716      -                                ? KeyTab.getUnboundInstance()
+ 717      -                                : KeyTab.getUnboundInstance(new File(keyTabName));
+ 718      -                    }
+ 719      -                    if (isInitiator) {
+ 720      -                        if (Krb5Util.keysFromJavaxKeyTab(ktab, principal).length
+</span><span class='added'>      690 +                    ktab = getKtab(keyTabName, principal, unboundServer);
+      691 +                    if (isInitiator &amp;&amp;
+      692 +                            Krb5Util.keysFromJavaxKeyTab(ktab, principal).length
+</span> 721  693                                  == 0) {
+<span class='subtracted'> 722      -                            ktab = null;
+ 723      -                            if (debug) {
+ 724      -                                System.out.println
+ 725      -                                    ("Key for the principal " +
+ 726      -                                     principal  +
+ 727      -                                     " not available in " +
+ 728      -                                     ((keyTabName == null) ?
+ 729      -                                      "default key tab" : keyTabName));
+ 730      -                            }
+</span><span class='added'>      694 +                        ktab = null;
+      695 +                        if (debug) {
+      696 +                            System.out.println
+      697 +                                ("Key for the principal " +
+      698 +                                 principal  +
+      699 +                                 " not available in " +
+      700 +                                 ((keyTabName == null) ?
+      701 +                                  "default key tab" : keyTabName));
+</span> 731  702                          }
+ 732  703                      }
+ 733  704                  }
+ 734  705  
+ 735  706                  KrbAsReqBuilder builder;
+ 736  707  
+ 737  708                  if (ktab == null) {
+ 738  709                      promptForPass(getPasswdFromSharedState);
+ 739  710                      builder = new KrbAsReqBuilder(principal, password);
+<span class='subtracted'> 740      -                    if (isInitiator) {
+ 741      -                        // XXX Even if isInitiator=false, it might be
+ 742      -                        // better to do an AS-REQ so that keys can be
+ 743      -                        // updated with PA info
+</span><span class='added'>      711 +                    if (isInitiator || storeKey) {
+      712 +                        // Even if isInitiator=false, if we want to accept with
+      713 +                        // long-term key derived from the password, then in
+      714 +                        // principle (and decidedly for new enctypes) we need
+      715 +                        // to do an AS exchange to get the PA etype info for
+      716 +                        // the derivation.  (For older enctypes this is bad, as
+      717 +                        // we will attempt to talk the a KDC we might not be
+      718 +                        // able to reach, then timeout...  If this is not
+      719 +                        // desired, the user can reconfigure the module.)
+</span> 744  720                          cred = builder.action().getCreds();
+<span class='subtracted'> 745      -                    }
+ 746      -                    if (storeKey) {
+ 747      -                        encKeys = builder.getKeys(isInitiator);
+ 748      -                        // When encKeys is empty, the login actually fails.
+ 749      -                        // For compatibility, exception is thrown in commit().
+</span><span class='added'>      721 +                        if (storeKey) {
+      722 +                            encKeys = builder.getKeys(isInitiator);
+      723 +                            // When encKeys is empty, the login actually fails.
+      724 +                            // For compatibility, exception is thrown in commit().
+      725 +                        }
+</span> 750  726                      }
+ 751  727                  } else {
+ 752  728                      builder = new KrbAsReqBuilder(principal, ktab);
+ 753  729                      if (isInitiator) {
+ 754  730                          cred = builder.action().getCreds();
+ 755  731                      }
+ 756  732                  }
+ 757  733                  builder.destroy();
+ 758  734  
+ 759  735                  if (debug) {
+ 760  736                      System.out.println("principal is " + principal);
+ 761  737                      HexDumpEncoder hd = new HexDumpEncoder();
+ 762  738                      if (ktab != null) {
+ 763  739                          System.out.println("Will use keytab");
+ 764  740                      } else if (storeKey) {
+ 765  741                          for (int i = 0; i &lt; encKeys.length; i++) {
+<span class='added'>      742 +                            // Printing keys here just because debug is a bad
+      743 +                            // idea: stdout might be a file that gets sent to
+      744 +                            // loggers, and...  yeah, no.
+</span> 766  745                              System.out.println("EncryptionKey: keyType=" +
+<span class='subtracted'> 767      -                                encKeys[i].getEType() +
+ 768      -                                " keyBytes (hex dump)=" +
+ 769      -                                hd.encodeBuffer(encKeys[i].getBytes()));
+</span><span class='added'>      746 +                                encKeys[i].getEType());
+</span> 770  747                          }
+ 771  748                      }
+ 772  749                  }
+ 773  750  
+<span class='subtracted'> 774      -                // we should hava a non-null cred
+</span> 775  751                  if (isInitiator &amp;&amp; (cred == null)) {
+ 776  752                      throw new LoginException
+ 777  753                          ("TGT Can not be obtained from the KDC ");
+ 778  754                  }
+ 779  755  
+ 780  756              }
+ 781  757          } catch (KrbException e) {
+ 782  758              LoginException le = new LoginException(e.getMessage());
+ 783  759              le.initCause(e);
+ 784  760              throw le;
+</pre>
+<pre id='elided5' class='elided' style='display: none'> 785  761          } catch (IOException ioe) {
+ 786  762              LoginException ie = new LoginException(ioe.getMessage());
+ 787  763              ie.initCause(ioe);
+ 788  764              throw ie;
+ 789  765          }
+ 790  766      }
+ 791  767  
+ 792  768      private void promptForName(boolean getPasswdFromSharedState)
+ 793  769          throws LoginException {
+ 794  770          krb5PrincName = new StringBuffer("");
+ 795  771          if (getPasswdFromSharedState) {
+ 796  772              // use the name saved by the first module in the stack
+ 797  773              username = (String)sharedState.get(NAME);
+ 798  774              if (debug) {
+ 799  775                  System.out.println
+ 800  776                      ("username from shared state is " + username + "\n");
+ 801  777              }
+ 802  778              if (username == null) {
+ 803  779                  System.out.println
+ 804  780                      ("username from shared state is null\n");
+ 805  781                  throw new LoginException
+ 806  782                      ("Username can not be obtained from sharedstate ");
+ 807  783              }
+ 808  784              if (debug) {
+ 809  785                  System.out.println
+ 810  786                      ("username from shared state is " + username + "\n");
+ 811  787              }
+ 812  788              if (username != null &amp;&amp; username.length() &gt; 0) {
+ 813  789                  krb5PrincName.insert(0, username);
+ 814  790                  return;
+ 815  791              }
+ 816  792          }
+ 817  793  
+ 818  794          if (doNotPrompt) {
+ 819  795              throw new LoginException
+ 820  796                  ("Unable to obtain Principal Name for authentication ");
+ 821  797          } else {
+ 822  798              if (callbackHandler == null)
+ 823  799                  throw new LoginException("No CallbackHandler "
+ 824  800                                           + "available "
+ 825  801                                           + "to garner authentication "
+ 826  802                                           + "information from the user");
+ 827  803              try {
+ 828  804                  String defUsername = System.getProperty("user.name");
+ 829  805  
+ 830  806                  Callback[] callbacks = new Callback[1];
+ 831  807                  MessageFormat form = new MessageFormat(
+ 832  808                                         getAuthResourceString(
+ 833  809                                         "Kerberos.username.defUsername."));
+ 834  810                  Object[] source =  {defUsername};
+ 835  811                  callbacks[0] = new NameCallback(form.format(source));
+ 836  812                  callbackHandler.handle(callbacks);
+ 837  813                  username = ((NameCallback)callbacks[0]).getName();
+ 838  814                  if (username == null || username.length() == 0)
+ 839  815                      username = defUsername;
+ 840  816                  krb5PrincName.insert(0, username);
+ 841  817  
+ 842  818              } catch (java.io.IOException ioe) {
+ 843  819                  throw new LoginException(ioe.getMessage());
+ 844  820              } catch (UnsupportedCallbackException uce) {
+ 845  821                  throw new LoginException
+ 846  822                      (uce.getMessage()
+ 847  823                       +" not available to garner "
+ 848  824                       +" authentication information "
+ 849  825                       +" from the user");
+ 850  826              }
+ 851  827          }
+ 852  828      }
+ 853  829  
+ 854  830      private void promptForPass(boolean getPasswdFromSharedState)
+ 855  831          throws LoginException {
+ 856  832  
+ 857  833          if (getPasswdFromSharedState) {
+ 858  834              // use the password saved by the first module in the stack
+ 859  835              password = (char[])sharedState.get(PWD);
+ 860  836              if (password == null) {
+ 861  837                  if (debug) {
+ 862  838                      System.out.println
+ 863  839                          ("Password from shared state is null");
+ 864  840                  }
+ 865  841                  throw new LoginException
+ 866  842                      ("Password can not be obtained from sharedstate ");
+ 867  843              }
+ 868  844              if (debug) {
+ 869  845                  System.out.println
+ 870  846                      ("password is " + new String(password));
+ 871  847              }
+ 872  848              return;
+ 873  849          }
+ 874  850          if (doNotPrompt) {
+ 875  851              throw new LoginException
+ 876  852                  ("Unable to obtain password from user\n");
+ 877  853          } else {
+ 878  854              if (callbackHandler == null)
+ 879  855                  throw new LoginException("No CallbackHandler "
+ 880  856                                           + "available "
+ 881  857                                           + "to garner authentication "
+ 882  858                                           + "information from the user");
+ 883  859              try {
+ 884  860                  Callback[] callbacks = new Callback[1];
+ 885  861                  String userName = krb5PrincName.toString();
+ 886  862                  MessageFormat form = new MessageFormat(
+ 887  863                                           getAuthResourceString(
+ 888  864                                           "Kerberos.password.for.username."));
+ 889  865                  Object[] source = {userName};
+ 890  866                  callbacks[0] = new PasswordCallback(
+ 891  867                                                      form.format(source),
+ 892  868                                                      false);
+ 893  869                  callbackHandler.handle(callbacks);
+ 894  870                  char[] tmpPassword = ((PasswordCallback)
+ 895  871                                        callbacks[0]).getPassword();
+ 896  872                  if (tmpPassword == null) {
+ 897  873                      throw new LoginException("No password provided");
+ 898  874                  }
+ 899  875                  password = new char[tmpPassword.length];
+ 900  876                  System.arraycopy(tmpPassword, 0,
+ 901  877                                   password, 0, tmpPassword.length);
+ 902  878                  ((PasswordCallback)callbacks[0]).clearPassword();
+ 903  879  
+ 904  880  
+ 905  881                  // clear tmpPassword
+ 906  882                  for (int i = 0; i &lt; tmpPassword.length; i++)
+ 907  883                      tmpPassword[i] = ' ';
+ 908  884                  tmpPassword = null;
+ 909  885                  if (debug) {
+ 910  886                      System.out.println("\t\t[Krb5LoginModule] " +
+ 911  887                                         "user entered username: " +
+ 912  888                                         krb5PrincName);
+ 913  889                      System.out.println();
+ 914  890                  }
+ 915  891              } catch (java.io.IOException ioe) {
+ 916  892                  throw new LoginException(ioe.getMessage());
+ 917  893              } catch (UnsupportedCallbackException uce) {
+ 918  894                  throw new LoginException(uce.getMessage()
+ 919  895                                           +" not available to garner "
+ 920  896                                           +" authentication information "
+ 921  897                                           + "from the user");
+ 922  898              }
+ 923  899          }
+ 924  900      }
+ 925  901  
+ 926  902      private void validateConfiguration() throws LoginException {
+ 927  903          if (doNotPrompt &amp;&amp; !useTicketCache &amp;&amp; !useKeyTab
+ 928  904                  &amp;&amp; !tryFirstPass &amp;&amp; !useFirstPass)
+ 929  905              throw new LoginException
+ 930  906                  ("Configuration Error"
+ 931  907                   + " - either doNotPrompt should be "
+ 932  908                   + " false or at least one of useTicketCache, "
+ 933  909                   + " useKeyTab, tryFirstPass and useFirstPass"
+ 934  910                   + " should be true");
+ 935  911          if (ticketCacheName != null &amp;&amp; !useTicketCache)
+ 936  912              throw new LoginException
+ 937  913                  ("Configuration Error "
+ 938  914                   + " - useTicketCache should be set "
+ 939  915                   + "to true to use the ticket cache"
+ 940  916                   + ticketCacheName);
+ 941  917          if (keyTabName != null &amp; !useKeyTab)
+ 942  918              throw new LoginException
+ 943  919                  ("Configuration Error - useKeyTab should be set to true "
+ 944  920                   + "to use the keytab" + keyTabName);
+ 945  921          if (storeKey &amp;&amp; doNotPrompt &amp;&amp; !useKeyTab
+ 946  922                  &amp;&amp; !tryFirstPass &amp;&amp; !useFirstPass)
+ 947  923              throw new LoginException
+ 948  924                  ("Configuration Error - either doNotPrompt should be set to "
+ 949  925                   + " false or at least one of tryFirstPass, useFirstPass "
+ 950  926                   + "or useKeyTab must be set to true for storeKey option");
+ 951  927          if (renewTGT &amp;&amp; !useTicketCache)
+ 952  928              throw new LoginException
+ 953  929                  ("Configuration Error"
+ 954  930                   + " - either useTicketCache should be "
+</pre>
+<table id='hb-elided5' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided5", "hb-elided5", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">170 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided5", "hb-elided5", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 955  931                   + " true or renewTGT should be false");
+ 956  932          if (krb5PrincName != null &amp;&amp; krb5PrincName.toString().equals("*")) {
+ 957  933              if (isInitiator) {
+ 958  934                  throw new LoginException
+ 959  935                      ("Configuration Error"
+ 960  936                      + " - principal cannot be * when isInitiator is true");
+ 961  937              }
+ 962  938          }
+ 963  939      }
+ 964  940  
+<span class='added'>      941 +    private Credentials getCredsFromCCache(PrincipalName princ, boolean renewTGT, String ccacheName)
+      942 +        throws KrbException, IOException {
+      943 +        // ticketCacheName == null implies the default cache
+      944 +        // princ == null implies the cache's default princ(XXX?)
+      945 +        Credentials creds = Credentials.acquireTGTFromCache(princ, ccacheName);
+      946 +        if (creds == null)
+      947 +            return null;
+      948 +        if (renewTGT &amp;&amp; timeToRenew(creds))
+      949 +            creds = possiblyRenewCreds(creds);
+      950 +        // It's the caller's job to deal with expired creds
+      951 +        return creds;
+      952 +    }
+      953 +
+      954 +    private KeyTab getKtab(String keyTabName, PrincipalName principal,
+      955 +            boolean unboundServer)
+      956 +    {
+      957 +        KerberosPrincipal kp = unboundServer ? null :
+      958 +            new KerberosPrincipal(principal.getName());;
+      959 +        return (keyTabName == null)
+      960 +            ? KeyTab.getInstance(kp) // default keytab
+      961 +            : KeyTab.getInstance(kp, new File(keyTabName));
+      962 +    }
+      963 +
+</span> 965  964      private static boolean isCurrent(Credentials creds)
+ 966  965      {
+ 967  966          Date endTime = creds.getEndTime();
+ 968  967          if (endTime != null) {
+ 969  968              return (System.currentTimeMillis() &lt;= endTime.getTime());
+ 970  969          }
+ 971  970          return true;
+ 972  971      }
+ 973  972  
+<span class='subtracted'> 974      -    private static boolean isOld(Credentials creds)
+</span><span class='added'>      973 +    private static boolean timeToRenew(Credentials creds)
+</span> 975  974      {
+<span class='added'>      975 +        if (!creds.isRenewable())
+      976 +            return false;
+      977 +
+</span> 976  978          Date endTime = creds.getEndTime();
+<span class='subtracted'> 977      -        if (endTime != null) {
+ 978      -            Date authTime = creds.getAuthTime();
+ 979      -            long now = System.currentTimeMillis();
+ 980      -            if (authTime != null) {
+ 981      -                // pass the mid between auth and end
+ 982      -                return now - authTime.getTime() &gt; endTime.getTime() - now;
+ 983      -            } else {
+ 984      -                // will expire in less than 2 hours
+ 985      -                return now &lt;= endTime.getTime() - 1000*3600*2L;
+ 986      -            }
+ 987      -        }
+ 988      -        return false;
+</span><span class='added'>      979 +
+      980 +        // endtime is required, so it can't be null.  We only have to check
+      981 +        // because it's Java and we could express that this can't be null.
+      982 +        // Strictly speaking we can leave out this test.
+      983 +        if (endTime == null)
+      984 +            return false;
+      985 +
+      986 +        // There's no point trying to renew a TGT we will be able to renew but
+      987 +        // with no additional lifetime.  And there's no point trying to renew
+      988 +        // non-renewable tickets.
+      989 +        Date renewTill = creds.getRenewTill();
+      990 +        if (renewTill == null || renewTill.getTime() &lt;= endTime.getTime())
+      991 +            return false;
+      992 +
+      993 +        // NOTE WELL: We must use the *start* time, not the auth time, because
+      994 +        //            the auth time refers to when the AS exchange was done,
+      995 +        //            not to when the TGS exchange was done.  For very
+      996 +        //            long-lived TGTs using authTime here means renewing all
+      997 +        //            the time!
+      998 +        Date startTime = creds.getStartTime();
+      999 +        long now = System.currentTimeMillis();
+     1000 +        // Start time can be null
+     1001 +        if (startTime != null)
+     1002 +            // past the mid between start and end
+     1003 +            return now - startTime.getTime() &gt; endTime.getTime() - now;
+     1004 +        // will it expire in less than 2 hours?
+     1005 +        return now &lt;= endTime.getTime() - 1000*3600*2L;
+</span> 989 1006      }
+ 990 1007  
+<span class='subtracted'> 991      -    private Credentials renewCredentials(Credentials creds)
+</span><span class='added'>     1008 +    private Credentials possiblyRenewCreds(Credentials creds)
+     1009 +        throws KrbException, IOException
+</span> 992 1010      {
+<span class='subtracted'> 993      -        Credentials lcreds;
+</span><span class='added'>     1011 +        if (!creds.isRenewable())
+     1012 +            return creds;
+     1013 +
+     1014 +        if (System.currentTimeMillis() &gt; cred.getRenewTill().getTime())
+     1015 +            return creds;
+     1016 +
+</span> 994 1017          try {
+<span class='subtracted'> 995      -            if (!creds.isRenewable())
+ 996      -                throw new RefreshFailedException("This ticket" +
+ 997      -                                " is not renewable");
+ 998      -            if (creds.getRenewTill() == null) {
+ 999      -                // Renewable ticket without renew-till. Illegal and ignored.
+1000      -                return creds;
+1001      -            }
+1002      -            if (System.currentTimeMillis() &gt; cred.getRenewTill().getTime())
+1003      -                throw new RefreshFailedException("This ticket is past "
+1004      -                                             + "its last renewal time.");
+1005      -            lcreds = creds.renew();
+</span><span class='added'>     1018 +            creds = creds.renew();
+</span>1006 1019              if (debug)
+1007 1020                  System.out.println("Renewed Kerberos Ticket");
+1008 1021          } catch (Exception e) {
+<span class='subtracted'>1009      -            lcreds = null;
+</span>1010 1022              if (debug)
+1011 1023                  System.out.println("Ticket could not be renewed : "
+1012 1024                                  + e.getMessage());
+1013 1025          }
+<span class='subtracted'>1014      -        return lcreds;
+</span><span class='added'>     1026 +        return creds;
+</span>1015 1027      }
+1016 1028  
+1017 1029      /**
+1018 1030       * This method is called if the LoginContext's
+1019 1031       * overall authentication succeeded
+1020 1032       * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL
+1021 1033       * LoginModules succeeded).
+1022 1034       *
+1023 1035       * &lt;p&gt; If this LoginModule's own authentication attempt
+1024 1036       * succeeded (checked by retrieving the private state saved by the
+</pre>
+<pre id='elided6' class='elided' style='display: none'>1025 1037       * {@code login} method), then this method associates a
+1026 1038       * {@code Krb5Principal}
+1027 1039       * with the {@code Subject} located in the
+1028 1040       * {@code LoginModule}. It adds Kerberos Credentials to the
+1029 1041       *  the Subject's private credentials set. If this LoginModule's own
+</pre>
+<table id='hb-elided6' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided6", "hb-elided6", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">5 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided6", "hb-elided6", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>1030 1042       * authentication attempted failed, then this method removes
+1031 1043       * any state that was originally saved.
+1032 1044       *
+1033 1045       * @exception LoginException if the commit fails.
+1034 1046       *
+1035 1047       * @return true if this LoginModule's own login and commit
+1036 1048       *          attempts succeeded, or false otherwise.
+1037 1049       */
+1038 1050  
+1039 1051      public boolean commit() throws LoginException {
+<span class='subtracted'>1040      -
+</span>1041 1052          /*
+1042 1053           * Let us add the Krb5 Creds to the Subject's
+1043 1054           * private credentials. The credentials are of type
+1044 1055           * KerberosKey or KerberosTicket
+1045 1056           */
+1046 1057          if (succeeded == false) {
+<span class='added'>     1058 +            cleanKerberosCred();
+</span>1047 1059              return false;
+<span class='subtracted'>1048      -        } else {
+</span><span class='added'>     1060 +        }
+</span>1049 1061  
+<span class='subtracted'>1050      -            if (isInitiator &amp;&amp; (cred == null)) {
+1051      -                succeeded = false;
+1052      -                throw new LoginException("Null Client Credential");
+1053      -            }
+</span><span class='added'>     1062 +        if (isInitiator &amp;&amp; (cred == null)) {
+     1063 +            cleanKerberosCred();
+     1064 +            succeeded = false;
+     1065 +            throw new LoginException("Null Client Credential");
+     1066 +        }
+</span>1054 1067  
+<span class='subtracted'>1055      -            if (subject.isReadOnly()) {
+1056      -                cleanKerberosCred();
+1057      -                throw new LoginException("Subject is Readonly");
+1058      -            }
+</span><span class='added'>     1068 +        if (subject.isReadOnly()) {
+     1069 +            cleanKerberosCred();
+     1070 +            succeeded = false;
+     1071 +            throw new LoginException("Subject is Readonly");
+     1072 +        }
+</span>1059 1073  
+<span class='subtracted'>1060      -            /*
+1061      -             * Add the Principal (authenticated identity)
+1062      -             * to the Subject's principal set and
+1063      -             * add the credentials (TGT or Service key) to the
+1064      -             * Subject's private credentials
+1065      -             */
+1066      -
+1067      -            Set&lt;Object&gt; privCredSet =  subject.getPrivateCredentials();
+1068      -            Set&lt;java.security.Principal&gt; princSet  = subject.getPrincipals();
+1069      -            kerbClientPrinc = new KerberosPrincipal(principal.getName());
+</span><span class='added'>     1074 +        try {
+     1075 +            setupSubject(subject, unboundServer ? null : principal, ktab,
+     1076 +                    storeKey &amp;&amp; encKeys != null ? encKeys : null);
+     1077 +            if (debug)
+     1078 +                System.out.println("Added Kerberos credentials to subject");
+     1079 +            return true;
+     1080 +        } catch (Exception e) {
+     1081 +            cleanKerberosCred();
+     1082 +            succeeded = false;
+     1083 +            throw new LoginException(e.getMessage());
+     1084 +        }
+     1085 +    }
+</span>1070 1086  
+<span class='subtracted'>1071      -            // create Kerberos Ticket
+1072      -            if (isInitiator) {
+1073      -                kerbTicket = Krb5Util.credsToTicket(cred);
+1074      -                if (cred.getProxy() != null) {
+1075      -                    KerberosSecrets.getJavaxSecurityAuthKerberosAccess()
+1076      -                            .kerberosTicketSetProxy(kerbTicket,Krb5Util.credsToTicket(cred.getProxy()));
+1077      -                }
+1078      -            }
+</span><span class='added'>     1087 +    /**
+     1088 +     * Store the given Kerberos crendentials in the given subject.
+     1089 +     *
+     1090 +     * @param subject the {@code Subject} to store the credentials into
+     1091 +     *
+     1092 +     * @param principal the {@code PrincipalName} for the credentials; use null to refer to all principals in the keytab
+     1093 +     *
+     1094 +     * @param ktab a {@code KeyTab} keytab to use for acting as a service (may be null)
+     1095 +     *
+     1096 +     * @param kerbTicket the TGT for the principal (if acting as a client)
+     1097 +     *
+     1098 +     * @param encKeys long-term secret keys for the principal (if acting as a server with the keys derived from a password)
+     1099 +     *
+     1100 +     */
+     1101 +    private static void setupSubject(Subject subject, PrincipalName principal,
+     1102 +            KeyTab ktab, KerberosTicket kerbTicket, EncryptionKey[] encKeys)
+     1103 +        throws LoginException {
+</span>1079 1104  
+<span class='subtracted'>1080      -            if (storeKey &amp;&amp; encKeys != null) {
+1081      -                if (encKeys.length == 0) {
+1082      -                    succeeded = false;
+1083      -                    throw new LoginException("Null Server Key ");
+1084      -                }
+</span><span class='added'>     1105 +        KerberosTicket kerbTicket = null;
+</span>1085 1106  
+<span class='subtracted'>1086      -                kerbKeys = new KerberosKey[encKeys.length];
+1087      -                for (int i = 0; i &lt; encKeys.length; i ++) {
+1088      -                    Integer temp = encKeys[i].getKeyVersionNumber();
+1089      -                    kerbKeys[i] = new KerberosKey(kerbClientPrinc,
+1090      -                                          encKeys[i].getBytes(),
+1091      -                                          encKeys[i].getEType(),
+1092      -                                          (temp == null?
+1093      -                                          0: temp.intValue()));
+1094      -                }
+</span><span class='added'>     1107 +        // create Kerberos Ticket
+     1108 +        if (isInitiator) {
+     1109 +          kerbTicket = Krb5Util.credsToTicket(cred);
+     1110 +          if (cred.getProxy() != null) {
+     1111 +            KerberosSecrets.getJavaxSecurityAuthKerberosAccess()
+     1112 +              .kerberosTicketSetProxy(kerbTicket,Krb5Util.credsToTicket(cred.getProxy()));
+     1113 +          }
+     1114 +        }
+     1115 +        /*
+     1116 +         * Add the Principal (authenticated identity)
+     1117 +         * to the Subject's principal set and
+     1118 +         * add the credentials (TGT or Service key) to the
+     1119 +         * Subject's private credentials
+     1120 +         */
+</span>1095 1121  
+<span class='subtracted'>1096      -            }
+1097      -            // Let us add the kerbClientPrinc,kerbTicket and KeyTab/KerbKey (if
+1098      -            // storeKey is true)
+</span><span class='added'>     1122 +        if (kerbTicket == null &amp;&amp; encKeys == null &amp;&amp; ktab == null)
+     1123 +            throw new LoginException("No Kerberos credentials provided to " +
+     1124 +                    "store in subject");
+</span>1099 1125  
+<span class='subtracted'>1100      -            // We won't add "*" as a KerberosPrincipal
+1101      -            if (!unboundServer &amp;&amp;
+1102      -                    !princSet.contains(kerbClientPrinc)) {
+1103      -                princSet.add(kerbClientPrinc);
+1104      -            }
+</span><span class='added'>     1126 +        Set&lt;Object&gt; privCredSet = subject.getPrivateCredentials();
+     1127 +        Set&lt;Principal&gt; princSet = subject.getPrincipals();
+</span>1105 1128  
+<span class='subtracted'>1106      -            // add the TGT
+1107      -            if (kerbTicket != null) {
+1108      -                if (!privCredSet.contains(kerbTicket))
+1109      -                    privCredSet.add(kerbTicket);
+1110      -            }
+</span><span class='added'>     1129 +        KerberosPrincipal princ = null;
+     1130 +        if (principal != null) {
+     1131 +            princ = new KerberosPrincipal(principal.getName());
+     1132 +            if (!princSet.contains(princ))
+     1133 +                princSet.add(princ);
+     1134 +        }
+</span>1111 1135  
+<span class='subtracted'>1112      -            if (storeKey) {
+1113      -                if (encKeys == null) {
+1114      -                    if (ktab != null) {
+1115      -                        if (!privCredSet.contains(ktab)) {
+1116      -                            privCredSet.add(ktab);
+1117      -                        }
+1118      -                    } else {
+1119      -                        succeeded = false;
+1120      -                        throw new LoginException("No key to store");
+1121      -                    }
+1122      -                } else {
+1123      -                    for (int i = 0; i &lt; kerbKeys.length; i ++) {
+1124      -                        if (!privCredSet.contains(kerbKeys[i])) {
+1125      -                            privCredSet.add(kerbKeys[i]);
+1126      -                        }
+1127      -                        encKeys[i].destroy();
+1128      -                        encKeys[i] = null;
+1129      -                        if (debug) {
+1130      -                            System.out.println("Added server's key"
+1131      -                                            + kerbKeys[i]);
+1132      -                            System.out.println("\t\t[Krb5LoginModule] " +
+1133      -                                           "added Krb5Principal  " +
+1134      -                                           kerbClientPrinc.toString()
+1135      -                                           + " to Subject");
+1136      -                        }
+1137      -                    }
+1138      -                }
+1139      -            }
+</span><span class='added'>     1136 +        if (kerbTicket != null &amp;&amp; !privCredSet.contains(kerbTicket))
+     1137 +            privCredSet.add(kerbTicket);
+     1138 +
+     1139 +        if (ktab != null &amp;&amp; !privCredSet.contains(ktab))
+     1140 +            privCredSet.add(ktab);
+     1141 +
+     1142 +        if (encKeys == null)
+     1143 +            return;
+     1144 +
+     1145 +        if (encKeys.length == 0)
+     1146 +            throw new LoginException("Cannot store empty long-term " +
+     1147 +                    "keyset in Subject");
+     1148 +
+     1149 +        if (princ == null)
+     1150 +            throw new LoginException("Cannot store Kerberos long-term keys " +
+     1151 +                    "for wild-card principal in Subject");
+     1152 +
+     1153 +        for (int i = 0; i &lt; encKeys.length; i ++) {
+     1154 +            Integer temp = encKeys[i].getKeyVersionNumber();
+     1155 +            KerberosKey kerbKey = new KerberosKey(princ,
+     1156 +                    encKeys[i].getBytes(),
+     1157 +                    encKeys[i].getEType(),
+     1158 +                    (temp == null?
+     1159 +                     0: temp.intValue()));
+     1160 +            if (!privCredSet.contains(kerbKey))
+     1161 +                privCredSet.add(kerbKey);
+</span>1140 1162          }
+<span class='subtracted'>1141      -        commitSucceeded = true;
+1142      -        if (debug)
+1143      -            System.out.println("Commit Succeeded \n");
+1144      -        return true;
+</span>1145 1163      }
+1146 1164  
+1147 1165      /**
+1148 1166       * This method is called if the LoginContext's
+1149 1167       * overall authentication failed.
+1150 1168       * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL
+1151 1169       * LoginModules did not succeed).
+1152 1170       *
+1153 1171       * &lt;p&gt; If this LoginModule's own authentication attempt
+1154 1172       * succeeded (checked by retrieving the private state saved by the
+</pre>
+<pre id='elided7' class='elided' style='display: none'>1155 1173       * {@code login} and {@code commit} methods),
+1156 1174       * then this method cleans up any state that was originally saved.
+1157 1175       *
+1158 1176       * @exception LoginException if the abort fails.
+1159 1177       *
+1160 1178       * @return false if this LoginModule's own login and/or commit attempts
+1161 1179       *          failed, and true otherwise.
+1162 1180       */
+1163 1181  
+1164 1182      public boolean abort() throws LoginException {
+1165 1183          if (succeeded == false) {
+1166 1184              return false;
+1167 1185          } else if (succeeded == true &amp;&amp; commitSucceeded == false) {
+1168 1186              // login succeeded but overall authentication failed
+1169 1187              succeeded = false;
+1170 1188              cleanKerberosCred();
+1171 1189          } else {
+1172 1190              // overall authentication succeeded and commit succeeded,
+1173 1191              // but someone else's commit failed
+1174 1192              logout();
+1175 1193          }
+1176 1194          return true;
+1177 1195      }
+1178 1196  
+1179 1197      /**
+1180 1198       * Logout the user.
+1181 1199       *
+1182 1200       * &lt;p&gt; This method removes the {@code Krb5Principal}
+1183 1201       * that was added by the {@code commit} method.
+1184 1202       *
+1185 1203       * @exception LoginException if the logout fails.
+1186 1204       *
+1187 1205       * @return true in all cases since this {@code LoginModule}
+1188 1206       *          should not be ignored.
+1189 1207       */
+1190 1208      public boolean logout() throws LoginException {
+1191 1209  
+</pre>
+<table id='hb-elided7' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided7", "hb-elided7", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">37 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided7", "hb-elided7", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>1192 1210          if (debug) {
+1193 1211              System.out.println("\t\t[Krb5LoginModule]: " +
+1194 1212                  "Entering logout");
+1195 1213          }
+1196 1214  
+1197 1215          if (subject.isReadOnly()) {
+1198 1216              cleanKerberosCred();
+1199 1217              throw new LoginException("Subject is Readonly");
+1200 1218          }
+1201 1219  
+<span class='subtracted'>1202      -        subject.getPrincipals().remove(kerbClientPrinc);
+1203      -           // Let us remove all Kerberos credentials stored in the Subject
+</span><span class='added'>     1220 +        Iterator&lt;Principal&gt; itp = subject.getPrincipals().iterator();
+     1221 +        while (itp.hasNext()) {
+     1222 +            Object o = itp.next();
+     1223 +            if (o instanceof KerberosPrincipal)
+     1224 +                itp.remove();
+     1225 +        }
+     1226 +
+</span>1204 1227          Iterator&lt;Object&gt; it = subject.getPrivateCredentials().iterator();
+1205 1228          while (it.hasNext()) {
+1206 1229              Object o = it.next();
+1207 1230              if (o instanceof KerberosTicket ||
+1208 1231                      o instanceof KerberosKey ||
+1209 1232                      o instanceof KeyTab) {
+1210 1233                  it.remove();
+1211 1234              }
+1212 1235          }
+1213 1236          // clean the kerberos ticket and keys
+</pre>
+<pre id='elided8' class='elided' style='display: none'>1214 1237          cleanKerberosCred();
+1215 1238  
+1216 1239          succeeded = false;
+1217 1240          commitSucceeded = false;
+1218 1241          if (debug) {
+1219 1242              System.out.println("\t\t[Krb5LoginModule]: " +
+1220 1243                                 "logged out Subject");
+1221 1244          }
+1222 1245          return true;
+1223 1246      }
+1224 1247  
+1225 1248      /**
+1226 1249       * Clean Kerberos credentials
+1227 1250       */
+1228 1251      private void cleanKerberosCred() throws LoginException {
+1229 1252          // Clean the ticket and server key
+1230 1253          try {
+1231 1254              if (kerbTicket != null)
+</pre>
+<table id='hb-elided8' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided8", "hb-elided8", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">18 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided8", "hb-elided8", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>1232 1255                  kerbTicket.destroy();
+1233 1256              if (kerbKeys != null) {
+1234 1257                  for (int i = 0; i &lt; kerbKeys.length; i++) {
+1235 1258                      kerbKeys[i].destroy();
+1236 1259                  }
+1237 1260              }
+1238 1261          } catch (DestroyFailedException e) {
+1239 1262              throw new LoginException
+1240 1263                  ("Destroy Failed on Kerberos Private Credentials");
+1241 1264          }
+<span class='added'>     1265 +        for (int i = 0; i &lt; kerbKeys.length; i++) {
+     1266 +            encKeys[i].destroy();
+     1267 +            encKeys[i] = null;
+     1268 +        }
+</span>1242 1269          kerbTicket = null;
+1243 1270          kerbKeys = null;
+<span class='subtracted'>1244      -        kerbClientPrinc = null;
+</span>1245 1271      }
+1246 1272  
+1247 1273      /**
+1248 1274       * Clean out the state
+1249 1275       */
+1250 1276      private void cleanState() {
+1251 1277  
+1252 1278          // save input as shared state only if
+1253 1279          // authentication succeeded
+1254 1280          if (succeeded) {
+</pre>
+<pre id='elided9' class='elided' style='display: none'>1255 1281              if (storePass &amp;&amp;
+1256 1282                  !sharedState.containsKey(NAME) &amp;&amp;
+1257 1283                  !sharedState.containsKey(PWD)) {
+1258 1284                  sharedState.put(NAME, username);
+1259 1285                  sharedState.put(PWD, password);
+1260 1286              }
+1261 1287          } else {
+1262 1288              // remove temp results for the next try
+1263 1289              encKeys = null;
+1264 1290              ktab = null;
+1265 1291              principal = null;
+1266 1292          }
+1267 1293          username = null;
+1268 1294          password = null;
+1269 1295          if (krb5PrincName != null &amp;&amp; krb5PrincName.length() != 0)
+1270 1296              krb5PrincName.delete(0, krb5PrincName.length());
+1271 1297          krb5PrincName = null;
+1272 1298          if (clearPass) {
+1273 1299              sharedState.remove(NAME);
+1274 1300              sharedState.remove(PWD);
+1275 1301          }
+1276 1302      }
+1277 1303  }
+</pre>
+<table id='hb-elided9' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided9", "hb-elided9", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">23 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided9", "hb-elided9", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 9; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 9; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

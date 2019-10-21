@@ -1,0 +1,301 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Old src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 2000, 2006, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package sun.security.jgss.spi;
+  27 
+  28 import org.ietf.jgss.*;
+  29 import java.security.Provider;
+  30 
+  31 /**
+  32  * This interface is implemented by the factory class for every
+  33  * plugin mechanism. The GSSManager locates an implementation of this
+  34  * interface by querying the security providers installed on the
+  35  * system. For a provider to support a mechanism defined by Oid x.y.z,
+  36  * the provider master file would have to contain a mapping from the
+  37  * property "GssApiMechanism.x.y.z" to an implementation class that serves
+  38  * as the factory for that mechanism.
+  39  * &lt;p&gt;
+  40  * e.g., If a provider master file contained the a mapping from the
+  41  * property "GssApiMechanism.1.2.840.113554.1.2.2" to the class name
+  42  * "com.foo.krb5.Krb5GssFactory", then the GSS-API framework would assume
+  43  * that com.foo.krb5.Krb5GssFactory implements the MechanismFactory
+  44  * interface and that it can be used to obtain elements required by for
+  45  * supporting this mechanism.
+  46  *
+  47  * @author Mayank Upadhyay
+  48  */
+  49 
+  50 public interface MechanismFactory {
+  51 
+  52     /**
+  53      * Returns the Oid of the mechanism that this factory supports.
+  54      * @return the Oid
+  55      */
+  56     public Oid getMechanismOid();
+  57 
+  58     /**
+  59      * Returns the provider that this factory came from.
+  60      * @return the provider
+  61      */
+  62     public Provider getProvider();
+  63 
+  64     /**
+  65      * Returns the GSS-API nametypes that this mechanism can
+  66      * support. Having this method helps the GSS-Framework decide quickly
+  67      * if a certain mechanism can be skipped when importing a name.
+  68      * @return an array of the Oid's corresponding to the different GSS-API
+  69      * nametypes supported
+  70      * @see org.ietf.jgss.GSSName
+  71      */
+  72     public Oid[] getNameTypes() throws GSSException;
+  73 
+  74     /**
+  75      * Creates a credential element for this mechanism to be included as
+  76      * part of a GSSCredential implementation. A GSSCredential is
+  77      * conceptually a container class of several credential elements from
+  78      * different mechanisms. A GSS-API credential can be used either for
+  79      * initiating GSS security contexts or for accepting them. This method
+  80      * also accepts parameters that indicate what usage is expected and how
+  81      * long the life of the credential should be. It is not necessary that
+  82      * the mechanism honor the request for lifetime. An application will
+  83      * always query an acquired GSSCredential to determine what lifetime it
+  84      * got back.&lt;p&gt;
+  85      *
+  86      * &lt;b&gt;Not all mechanisms support the concept of one credential element
+  87      * that can be used for both initiating and accepting a context. In the
+  88      * event that an application requests usage INITIATE_AND_ACCEPT for a
+  89      * credential from such a mechanism, the GSS framework will need to
+  90      * obtain two different credential elements from the mechanism, one
+  91      * that will have usage INITIATE_ONLY and another that will have usage
+  92      * ACCEPT_ONLY. The mechanism will help the GSS-API realize this by
+  93      * returning a credential element with usage INITIATE_ONLY or
+  94      * ACCEPT_ONLY prompting it to make another call to
+  95      * getCredentialElement, this time with the other usage mode. The
+  96      * mechanism indicates the missing mode by returning a 0 lifetime for
+  97      * it.&lt;/b&gt;
+  98      *
+  99      * @param name the mechanism level name element for the entity whose
+ 100      * credential is desired. A null value indicates that a mechanism
+ 101      * dependent default choice is to be made.
+ 102      * @param initLifetime indicates the lifetime (in seconds) that is
+ 103      * requested for this credential to be used at the context initiator's
+ 104      * end. This value should be ignored if the usage is
+ 105      * ACCEPT_ONLY. Predefined contants are available in the
+ 106      * org.ietf.jgss.GSSCredential interface.
+ 107      * @param acceptLifetime indicates the lifetime (in seconds) that is
+ 108      * requested for this credential to be used at the context acceptor's
+ 109      * end. This value should be ignored if the usage is
+ 110      * INITIATE_ONLY. Predefined contants are available in the
+ 111      * org.ietf.jgss.GSSCredential interface.
+ 112      * @param usage One of the values GSSCredential.INIATE_ONLY,
+ 113      * GSSCredential.ACCEPT_ONLY, and GSSCredential.INITIATE_AND_ACCEPT.
+ 114      * @see org.ietf.jgss.GSSCredential
+ 115      * @throws GSSException if one of the error situations described in RFC
+ 116      * 2743 with the GSS_Acquire_Cred or GSS_Add_Cred calls occurs.
+ 117      */
+ 118     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+ 119       int initLifetime, int acceptLifetime, int usage) throws GSSException;
+ 120 
+ 121     /**
+ 122      * Creates a name element for this mechanism to be included as part of
+ 123      * a GSSName implementation. A GSSName is conceptually a container
+ 124      * class of several name elements from different mechanisms. A GSSName
+ 125      * can be created either with a String or with a sequence of
+ 126      * bytes. This factory method accepts the name in a String. Such a name
+ 127      * can generally be assumed to be printable and may be returned from
+ 128      * the name element's toString() method.
+ 129      *
+ 130      * @param nameStr a string containing the characters describing this
+ 131      * entity to the mechanism
+ 132      * @param nameType an Oid serving as a clue as to how the mechanism should
+ 133      * interpret the nameStr
+ 134      * @throws GSSException if any of the errors described in RFC 2743 for
+ 135      * the GSS_Import_Name or GSS_Canonicalize_Name calls occur.
+ 136      */
+ 137     public GSSNameSpi getNameElement(String nameStr, Oid nameType)
+ 138         throws GSSException;
+ 139 
+ 140     /**
+ 141      * This is a variation of the factory method that accepts a String for
+ 142      * the characters that make up the name. Usually the String characters
+ 143      * are assumed to be printable. The bytes passed in to this method have
+ 144      * to be converted to characters using some encoding of the mechanism's
+ 145      * choice. It is recommended that UTF-8 be used. (Note that UTF-8
+ 146      * preserves the encoding for 7-bit ASCII characters.)
+ 147      * &lt;p&gt;
+ 148      * An exported name will generally be passed in using this method.
+ 149      *
+ 150      * @param name the bytes describing this entity to the mechanism
+ 151      * @param nameType an Oid serving as a clue as to how the mechanism should
+ 152      * interpret the nameStr
+ 153      * @throws GSSException if any of the errors described in RFC 2743 for
+ 154      * the GSS_Import_Name or GSS_Canonicalize_Name calls occur.
+ 155      */
+ 156     public GSSNameSpi getNameElement(byte[] name, Oid nameType)
+ 157         throws GSSException;
+ 158 
+ 159     /**
+ 160      * Creates a security context for this mechanism so that it can be used
+ 161      * on the context initiator's side.
+ 162      *
+ 163      * @param peer the name element from this mechanism that represents the
+ 164      * peer
+ 165      * @param myInitiatorCred a credential element for the context
+ 166      * initiator obtained previously from this mechanism. The identity of
+ 167      * the context initiator can be obtained from this credential. Passing
+ 168      * a value of null here indicates that a default entity of the
+ 169      * mechanism's choice should be assumed to be the context initiator and
+ 170      * that default credentials should be applied.
+ 171      * @param lifetime the requested lifetime (in seconds) for the security
+ 172      * context. Predefined contants are available in the
+ 173      * org.ietf.jgss.GSSContext interface.
+ 174      * @throws GSSException if any of the errors described in RFC 2743 in
+ 175      * the GSS_Init_Sec_Context call occur.
+ 176      */
+ 177     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+ 178                                              GSSCredentialSpi myInitiatorCred,
+ 179                                              int lifetime) throws GSSException;
+ 180 
+ 181     /**
+ 182      * Creates a security context for this mechanism so thatit can be used
+ 183      * on the context acceptor's side.
+ 184      *
+ 185      * @param myAcceptorCred a credential element for the context acceptor
+ 186      * obtained previously from this mechanism. The identity of the context
+ 187      * acceptor cna be obtained from this credential. Passing a value of
+ 188      * null here indicates that tha default entity of the mechanism's
+ 189      * choice should be assumed to be the context acceptor and default
+ 190      * credentials should be applied.
+ 191      *
+ 192      * @throws GSSException if any of the errors described in RFC 2743 in
+ 193      * the GSS_Accept_Sec_Context call occur.
+ 194      */
+ 195     public GSSContextSpi getMechanismContext(GSSCredentialSpi myAcceptorCred)
+ 196         throws GSSException;
+ 197 
+ 198     /**
+ 199      * Creates a security context from a previously exported (serialized)
+ 200      * security context. Note that this is different from Java
+ 201      * serialization and is defined at a mechanism level to interoperate
+ 202      * over the wire with non-Java implementations. Either the initiator or
+ 203      * the acceptor can export and then import a security context.
+ 204      * Implementations of mechanism contexts are not required to implement
+ 205      * exporting and importing.
+ 206      *
+ 207      * @param exportedContext the bytes representing this security context
+ 208      * @throws GSSException is any of the errors described in RFC 2743 in
+ 209      * the GSS_Import_Sec_Context call occur.
+ 210      */
+ 211     public GSSContextSpi getMechanismContext(byte[] exportedContext)
+ 212         throws GSSException;
+ 213 
+ 214 }
+</pre></body></html>

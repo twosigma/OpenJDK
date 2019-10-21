@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Cdiff src/java.security.jgss/share/native/libj2gss/NativeFunc.h</title>
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method</pre>
+        <pre>
+<hr></hr><span class="oldmarker">*** 82,101 ****</span>
+<span class="newmarker">--- 82,140 ----</span>
+                                  (OM_uint32 *minor_status,
+                                  gss_const_name_t input_name,
+                                  gss_buffer_t output_name_buffer,
+                                  gss_OID *output_name_type);
+  
+<span class="new">+ typedef OM_uint32 (*LOCAL_NAME_FN_PTR)</span>
+<span class="new">+                                 (OM_uint32 *minor_status,</span>
+<span class="new">+                                 gss_name_t input_name,</span>
+<span class="new">+                                 gss_OID mech,</span>
+<span class="new">+                                 gss_buffer_t output_name_buffer);</span>
+<span class="new">+ </span>
+  typedef OM_uint32 (*ACQUIRE_CRED_FN_PTR)
+                                  (OM_uint32 *minor_status,
+                                  gss_const_name_t desired_name,
+                                  OM_uint32 time_req,
+                                  gss_const_OID_set desired_mech,
+                                  gss_cred_usage_t cred_usage,
+                                  gss_cred_id_t *output_cred_handle,
+                                  gss_OID_set *actual_mechs,
+                                  OM_uint32 *time_rec);
+  
+<span class="new">+ typedef OM_uint32 (*ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)</span>
+<span class="new">+                                 (OM_uint32 *minor_status,</span>
+<span class="new">+                                 gss_name_t desired_name,</span>
+<span class="new">+                                 gss_buffer_t password,</span>
+<span class="new">+                                 OM_uint32 time_req,</span>
+<span class="new">+                                 gss_OID_set desired_mech,</span>
+<span class="new">+                                 gss_cred_usage_t cred_usage,</span>
+<span class="new">+                                 gss_cred_id_t *output_cred_handle,</span>
+<span class="new">+                                 gss_OID_set *actual_mechs,</span>
+<span class="new">+                                 OM_uint32 *time_rec);</span>
+<span class="new">+ </span>
+<span class="new">+ typedef OM_uint32 (*ACQUIRE_CRED_FROM_FN_PTR)</span>
+<span class="new">+                                 (OM_uint32 *minor_status,</span>
+<span class="new">+                                  gss_const_name_t desired_name,</span>
+<span class="new">+                                  OM_uint32 time_req,</span>
+<span class="new">+                                  const gss_OID_set desired_mechs,</span>
+<span class="new">+                                  gss_cred_usage_t cred_usage,</span>
+<span class="new">+                                  gss_const_key_value_set_t cred_store,</span>
+<span class="new">+                                  gss_cred_id_t * output_cred_handle,</span>
+<span class="new">+                                  gss_OID_set * actual_mechs,</span>
+<span class="new">+                                  OM_uint32 * time_rec);</span>
+<span class="new">+ </span>
+<span class="new">+ typedef OM_uint32 (*STORE_CRED_INTO_FN_PTR)</span>
+<span class="new">+                                 (OM_uint32 *minor_status,</span>
+<span class="new">+                                  gss_const_cred_id_t input_cred_handle,</span>
+<span class="new">+                                  gss_cred_usage_t input_usage,</span>
+<span class="new">+                                  const gss_OID desired_mech,</span>
+<span class="new">+                                  OM_uint32 overwrite_cred,</span>
+<span class="new">+                                  OM_uint32 default_cred,</span>
+<span class="new">+                                  gss_const_key_value_set_t cred_store,</span>
+<span class="new">+                                  gss_OID_set * elements_stored,</span>
+<span class="new">+                                  gss_cred_usage_t * cred_usage_stored);</span>
+<span class="new">+ </span>
+  typedef OM_uint32 (*RELEASE_CRED_FN_PTR)
+                                  (OM_uint32 *minor_status,
+                                  gss_cred_id_t *cred_handle);
+  
+  typedef OM_uint32 (*INQUIRE_CRED_FN_PTR)
+<hr></hr><span class="oldmarker">*** 247,257 ****</span>
+<span class="newmarker">--- 286,300 ----</span>
+      IMPORT_NAME_FN_PTR                  importName;
+      COMPARE_NAME_FN_PTR                 compareName;
+      CANONICALIZE_NAME_FN_PTR            canonicalizeName;
+      EXPORT_NAME_FN_PTR                  exportName;
+      DISPLAY_NAME_FN_PTR                 displayName;
+<span class="new">+     LOCAL_NAME_FN_PTR                   localName;</span>
+      ACQUIRE_CRED_FN_PTR                 acquireCred;
+<span class="new">+     ACQUIRE_CRED_WITH_PASSWORD_FN_PTR   acquireCredWithPassword;</span>
+<span class="new">+     ACQUIRE_CRED_FROM_FN_PTR            acquireCredFrom;</span>
+<span class="new">+     STORE_CRED_INTO_FN_PTR              storeCredInto;</span>
+      RELEASE_CRED_FN_PTR                 releaseCred;
+      INQUIRE_CRED_FN_PTR                 inquireCred;
+      IMPORT_SEC_CONTEXT_FN_PTR           importSecContext;
+      INIT_SEC_CONTEXT_FN_PTR             initSecContext;
+      ACCEPT_SEC_CONTEXT_FN_PTR           acceptSecContext;
+</pre></body></html>
+

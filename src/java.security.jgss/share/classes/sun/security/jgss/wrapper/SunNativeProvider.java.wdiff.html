@@ -1,0 +1,350 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+FIXME commentary
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package sun.security.jgss.wrapper;
+  27   27  
+  28   28  import java.util.HashMap;
+  29   29  import java.security.Provider;
+  30   30  import java.security.AccessController;
+  31   31  import java.security.PrivilegedAction;
+  32   32  import org.ietf.jgss.Oid;
+  33   33  import sun.security.action.PutAllAction;
+  34   34  import static sun.security.util.SecurityConstants.PROVIDER_VER;
+  35   35  
+  36   36  /**
+  37   37   * Defines the Sun NativeGSS provider for plugging in the
+  38   38   * native GSS mechanisms to Java GSS.
+  39   39   *
+  40   40   * List of supported mechanisms depends on the local
+  41   41   * machine configuration.
+  42   42   *
+  43   43   * @author Yu-Ching Valerie Peng
+  44   44   */
+  45   45  
+  46   46  public final class SunNativeProvider extends Provider {
+  47   47  
+  48   48      private static final long serialVersionUID = -238911724858694204L;
+  49   49  
+  50   50      private static final String NAME = "SunNativeGSS";
+  51   51      private static final String INFO = "Sun Native GSS provider";
+  52   52      private static final String MF_CLASS =
+  53   53          "sun.security.jgss.wrapper.NativeGSSFactory";
+  54   54      private static final HashMap&lt;String, String&gt; MECH_MAP;
+  55   55      static final Provider INSTANCE;
+  56   56      static boolean DEBUG;
+  57   57      static void debug(String message) {
+  58   58          if (DEBUG) {
+  59   59              if (message == null) {
+  60   60                  throw new NullPointerException();
+  61   61              }
+  62   62              System.out.println(NAME + ": " + message);
+  63   63          }
+  64   64      }
+  65   65  
+  66   66      static {
+  67   67          MECH_MAP =
+  68   68              AccessController.doPrivileged(
+  69   69                  new PrivilegedAction&lt;&gt;() {
+  70   70                      public HashMap&lt;String, String&gt; run() {
+  71   71                          DEBUG = Boolean.parseBoolean(
+  72   72                              System.getProperty("sun.security.nativegss.debug"));
+  73   73                          try {
+  74   74                              System.loadLibrary("j2gss");
+  75   75                          } catch (Error err) {
+  76   76                              debug("No j2gss library found!");
+  77   77                              if (DEBUG) err.printStackTrace();
+  78   78                              return null;
+  79   79                          }
+  80   80                          String[] gssLibs;
+  81   81                          String defaultLib
+  82   82                                  = System.getProperty("sun.security.jgss.lib");
+  83   83                          if (defaultLib == null || defaultLib.trim().equals("")) {
+  84   84                              String osname = System.getProperty("os.name");
+  85   85                              if (osname.startsWith("SunOS")) {
+  86   86                                  gssLibs = new String[]{ "libgss.so" };
+  87   87                              } else if (osname.startsWith("Linux")) {
+  88   88                                  gssLibs = new String[]{
+  89   89                                      "libgssapi.so",
+  90   90                                      "libgssapi_krb5.so",
+  91   91                                      "libgssapi_krb5.so.2",
+  92   92                                  };
+  93   93                              } else if (osname.contains("OS X")) {
+  94   94                                  gssLibs = new String[]{
+  95   95                                      "libgssapi_krb5.dylib",
+  96   96                                      "/usr/lib/sasl2/libgssapiv2.2.so",
+  97   97                                 };
+  98   98                              } else if (osname.contains("Windows")) {
+  99   99                                  // Full path needed, DLL is in jre/bin
+ 100  100                                  gssLibs = new String[]{ System.getProperty("java.home")
+ 101  101                                          + "\\bin\\sspi_bridge.dll" };
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">101 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 102  102                              } else {
+ 103  103                                  gssLibs = new String[0];
+ 104  104                              }
+ 105  105                          } else {
+ 106  106                              gssLibs = new String[]{ defaultLib };
+ 107  107                          }
+ 108  108                          for (String libName: gssLibs) {
+ 109  109                              if (GSSLibStub.init(libName, DEBUG)) {
+ 110  110                                  debug("Loaded GSS library: " + libName);
+ 111  111                                  Oid[] mechs = GSSLibStub.indicateMechs();
+<span class='subtracted'> 112      -                                HashMap&lt;String,String&gt; map = new HashMap&lt;&gt;();
+</span><span class='added'>      112 +                                HashMap&lt;String, String&gt; map =
+      113 +                                            new HashMap&lt;String, String&gt;();
+      114 +                                // If the GSSLibStub does not support SPNEGO,
+      115 +                                // we could use ours, but ours has too much
+      116 +                                // knowledge of the Java Krb5 GSS mechanism, so
+      117 +                                // we can't, but if we could we'd do it thusly:
+      118 +                                //   map.put("GssApiMechanism.1.3.6.1.5.5.2",
+      119 +                                //           "sun.security.jgss.spnego.SpNegoMechFactory");
+</span> 113  120                                  for (int i = 0; i &lt; mechs.length; i++) {
+ 114  121                                      debug("Native MF for " + mechs[i]);
+ 115  122                                      map.put("GssApiMechanism." + mechs[i],
+ 116  123                                              MF_CLASS);
+ 117  124                                  }
+ 118  125                                  return map;
+ 119  126                              }
+ 120  127                          }
+ 121  128                          return null;
+ 122  129                      }
+</pre>
+<pre id='elided2' class='elided' style='display: none'> 123  130                  });
+ 124  131          // initialize INSTANCE after MECH_MAP is constructed
+ 125  132          INSTANCE = new SunNativeProvider();
+ 126  133      }
+ 127  134  
+ 128  135      public SunNativeProvider() {
+ 129  136          /* We are the Sun NativeGSS provider */
+ 130  137          super(NAME, PROVIDER_VER, INFO);
+ 131  138  
+ 132  139          if (MECH_MAP != null) {
+ 133  140              AccessController.doPrivileged(new PutAllAction(this, MECH_MAP));
+ 134  141          }
+ 135  142      }
+ 136  143  }
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">14 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 2; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 2; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

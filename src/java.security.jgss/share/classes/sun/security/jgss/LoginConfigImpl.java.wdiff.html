@@ -1,0 +1,474 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Engage GssLoginModule (only) when native=true
+Also don't force same name for acceptor and initiator.
+Add GssLoginModule
+This module is to be used for GSS applications in preference to
+Krb5LoginModule, especially when using the native GSS provider.
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package sun.security.jgss;
+  27   27  
+  28   28  import java.util.HashMap;
+  29   29  import javax.security.auth.login.AppConfigurationEntry;
+  30   30  import javax.security.auth.login.Configuration;
+  31   31  import org.ietf.jgss.Oid;
+  32   32  import sun.security.action.GetPropertyAction;
+  33   33  
+  34   34  /**
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">34 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  35   35   * A Configuration implementation especially designed for JGSS.
+  36   36   *
+  37   37   * @author weijun.wang
+  38   38   * @since 1.6
+  39   39   */
+  40   40  public class LoginConfigImpl extends Configuration {
+  41   41  
+  42   42      private final Configuration config;
+  43   43      private final GSSCaller caller;
+  44   44      private final String mechName;
+<span class='added'>       45 +    private final boolean useNative;
+</span>  45   46      private static final sun.security.util.Debug debug =
+  46   47          sun.security.util.Debug.getInstance("gssloginconfig", "\t[GSS LoginConfigImpl]");
+  47   48  
+  48   49      public static final boolean HTTP_USE_GLOBAL_CREDS;
+  49   50  
+  50   51      static {
+  51   52          String prop = GetPropertyAction
+  52   53                  .privilegedGetProperty("http.use.global.creds");
+  53   54          //HTTP_USE_GLOBAL_CREDS = "true".equalsIgnoreCase(prop); // default false
+  54   55          HTTP_USE_GLOBAL_CREDS = !"false".equalsIgnoreCase(prop); // default true
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  55   56      }
+  56   57  
+  57   58  
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">3 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  58   59      /**
+  59   60       * A new instance of LoginConfigImpl must be created for each login request
+  60   61       * since it's only used by a single (caller, mech) pair
+  61   62       * @param caller defined in GSSUtil as CALLER_XXX final fields
+  62   63       * @param mech defined in GSSUtil as XXX_MECH_OID final fields
+  63   64       */
+  64   65      public LoginConfigImpl(GSSCaller caller, Oid mech) {
+  65   66  
+  66   67          this.caller = caller;
+  67   68  
+<span class='subtracted'>  68      -        if (mech.equals(GSSUtil.GSS_KRB5_MECH_OID)) {
+</span><span class='added'>       69 +        useNative = "true".equalsIgnoreCase(
+       70 +                System.getProperty("sun.security.jgss.native"));
+       71 +
+       72 +        if (mech.equals(GSSUtil.GSS_KRB5_MECH_OID) ||
+       73 +                mech.equals(GSSUtil.GSS_KRB5_MECH_OID2) ||
+       74 +                mech.equals(GSSUtil.GSS_KRB5_MECH_OID_MS)) {
+</span>  69   75              mechName = "krb5";
+<span class='added'>       76 +        } else if (useNative) {
+       77 +            // We don't really need a mechName, nor do we have any sort of
+       78 +            // standard notion of mechanism name (other than OIDs).
+       79 +            mechName = mech.toString();
+</span>  70   80          } else {
+  71   81              throw new IllegalArgumentException(mech.toString() + " not supported");
+  72   82          }
+  73   83          config = java.security.AccessController.doPrivileged
+  74   84                  (new java.security.PrivilegedAction &lt;Configuration&gt; () {
+  75   85              public Configuration run() {
+  76   86                  return Configuration.getConfiguration();
+  77   87              }
+  78   88          });
+  79   89      }
+</pre>
+<pre id='elided3' class='elided' style='display: none'>  80   90  
+  81   91      /**
+  82   92       * @param name Almost useless, since the (caller, mech) is already passed
+  83   93       *             into constructor. The only use will be detecting OTHER which
+  84   94       *             is called in LoginContext
+  85   95       */
+  86   96      public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+  87   97  
+  88   98          AppConfigurationEntry[] entries = null;
+  89   99  
+  90  100          // This is the second call from LoginContext, which we will just ignore
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">11 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  91  101          if ("OTHER".equalsIgnoreCase(name)) {
+  92  102              return null;
+  93  103          }
+  94  104  
+  95  105          String[] alts = null;
+  96  106  
+  97  107          // Compatibility:
+  98  108          // For the 4 old callers, old entry names will be used if the new
+  99  109          // entry name is not provided.
+ 100  110  
+<span class='subtracted'> 101      -        if ("krb5".equals(mechName)) {
+</span><span class='added'>      111 +        if ("krb5".equals(mechName) || useNative) {
+</span> 102  112              if (caller == GSSCaller.CALLER_INITIATE) {
+ 103  113                  alts = new String[] {
+ 104  114                      "com.sun.security.jgss.krb5.initiate",
+ 105  115                      "com.sun.security.jgss.initiate",
+ 106  116                  };
+ 107  117              } else if (caller == GSSCaller.CALLER_ACCEPT) {
+ 108  118                  alts = new String[] {
+ 109  119                      "com.sun.security.jgss.krb5.accept",
+ 110  120                      "com.sun.security.jgss.accept",
+ 111  121                  };
+ 112  122              } else if (caller instanceof HttpCaller) {
+ 113  123                  alts = new String[] {
+ 114  124                      "com.sun.security.jgss.krb5.initiate",
+ 115  125                  };
+ 116  126              } else if (caller == GSSCaller.CALLER_UNKNOWN) {
+ 117  127                  throw new AssertionError("caller not defined");
+ 118  128              }
+ 119  129          } else {
+ 120  130              throw new IllegalArgumentException(mechName + " not supported");
+<span class='subtracted'> 121      -            // No other mech at the moment, maybe --
+</span><span class='added'>      131 +            // No other Java-coded mech at the moment, maybe --
+</span> 122  132              /*
+ 123  133              switch (caller) {
+ 124  134              case GSSUtil.CALLER_INITIATE:
+ 125  135              case GSSUtil.CALLER_HTTP_NEGOTIATE:
+ 126  136                  alts = new String[] {
+ 127  137                      "com.sun.security.jgss." + mechName + ".initiate",
+ 128  138                  };
+ 129  139                  break;
+ 130  140              case GSSUtil.CALLER_ACCEPT:
+ 131  141                  alts = new String[] {
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 132  142                      "com.sun.security.jgss." + mechName + ".accept",
+ 133  143                  };
+ 134  144                  break;
+ 135  145              case GSSUtil.CALLER_UNKNOWN:
+ 136  146                  // should never use
+ 137  147                  throw new AssertionError("caller cannot be unknown");
+ 138  148              default:
+ 139  149                  throw new AssertionError("caller not defined");
+ 140  150              }
+ 141  151               */
+ 142  152          }
+ 143  153          for (String alt: alts) {
+ 144  154              entries = config.getAppConfigurationEntry(alt);
+ 145  155              if (debug != null) {
+ 146  156                  debug.println("Trying " + alt +
+ 147  157                          ((entries == null)?": does not exist.":": Found!"));
+ 148  158              }
+ 149  159              if (entries != null) {
+ 150  160                  break;
+ 151  161              }
+ 152  162          }
+ 153  163  
+ 154  164          if (entries == null) {
+ 155  165              if (debug != null) {
+ 156  166                  debug.println("Cannot read JGSS entry, use default values instead.");
+ 157  167              }
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">26 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 158  168              entries = getDefaultConfigurationEntry();
+ 159  169          }
+ 160  170          return entries;
+ 161  171      }
+ 162  172  
+ 163  173      /**
+ 164  174       * Default value for a caller-mech pair when no entry is defined in
+ 165  175       * the system-wide Configuration object.
+ 166  176       */
+ 167  177      private AppConfigurationEntry[] getDefaultConfigurationEntry() {
+<span class='subtracted'> 168      -        HashMap &lt;String, String&gt; options = new HashMap &lt;String, String&gt; (2);
+</span><span class='added'>      178 +        HashMap &lt;String, String&gt; gssOptions = new HashMap &lt;String, String&gt; (2);
+      179 +        HashMap &lt;String, String&gt; krb5Options = new HashMap &lt;String, String&gt; (2);
+</span> 169  180  
+<span class='subtracted'> 170      -        if (mechName == null || mechName.equals("krb5")) {
+</span><span class='added'>      181 +        if (mechName == null || mechName.equals("krb5") || useNative) {
+</span> 171  182              if (isServerSide(caller)) {
+<span class='added'>      183 +                gssOptions.put("useDefaultCreds", "true");
+      184 +                gssOptions.put("doNotPrompt", "true");
+      185 +                gssOptions.put("accept", "true");
+</span> 172  186                  // Assuming the keytab file can be found through
+ 173  187                  // krb5 config file or under user home directory
+<span class='subtracted'> 174      -                options.put("useKeyTab", "true");
+ 175      -                options.put("storeKey", "true");
+ 176      -                options.put("doNotPrompt", "true");
+ 177      -                options.put("principal", "*");
+ 178      -                options.put("isInitiator", "false");
+</span><span class='added'>      188 +                krb5Options.put("useKeyTab", "true");
+      189 +                krb5Options.put("storeKey", "true");
+      190 +                krb5Options.put("doNotPrompt", "true");
+      191 +                krb5Options.put("principal", "*");
+      192 +                krb5Options.put("isInitiator", "false");
+</span> 179  193              } else {
+ 180  194                  if (caller instanceof HttpCaller &amp;&amp; !HTTP_USE_GLOBAL_CREDS) {
+<span class='subtracted'> 181      -                    options.put("useTicketCache", "false");
+</span><span class='added'>      195 +                    gssOptions.put("tryDefaultCreds", "false");
+      196 +                    krb5Options.put("useTicketCache", "false");
+</span> 182  197                  } else {
+<span class='subtracted'> 183      -                    options.put("useTicketCache", "true");
+</span><span class='added'>      198 +                    gssOptions.put("tryDefaultCreds", "true");
+      199 +                    krb5Options.put("useTicketCache", "true");
+</span> 184  200                  }
+<span class='subtracted'> 185      -                options.put("doNotPrompt", "false");
+</span><span class='added'>      201 +                gssOptions.put("initiate", "true");
+      202 +                gssOptions.put("doNotPrompt", "false");
+      203 +                krb5Options.put("doNotPrompt", "false");
+</span> 186  204              }
+ 187  205              return new AppConfigurationEntry[] {
+ 188  206                  new AppConfigurationEntry(
+<span class='subtracted'> 189      -                        "com.sun.security.auth.module.Krb5LoginModule",
+</span><span class='added'>      207 +                        "com.sun.security.auth.module.GssLoginModule",
+</span> 190  208                          AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+<span class='subtracted'> 191      -                        options)
+</span><span class='added'>      209 +                        gssOptions),
+      210 +                new AppConfigurationEntry(
+      211 +                        "com.sun.security.auth.module.Krb5LoginModule",
+      212 +                        AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT,
+      213 +                        krb5Options)
+</span> 192  214              };
+ 193  215          }
+ 194  216          return null;
+ 195  217      }
+ 196  218  
+ 197  219      private static boolean isServerSide (GSSCaller caller) {
+ 198  220          return GSSCaller.CALLER_ACCEPT == caller;
+ 199  221      }
+ 200  222  }
+    </pre>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 4; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 4; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

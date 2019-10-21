@@ -1,0 +1,573 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add commentary about permissions checks
+Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method
+Add actual mechanism to native GSSNameElement state
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package sun.security.jgss.wrapper;
+  27   27  
+  28   28  import org.ietf.jgss.*;
+  29   29  import java.security.Provider;
+  30   30  import java.security.Security;
+  31   31  import java.io.IOException;
+  32   32  import java.io.UnsupportedEncodingException;
+  33   33  import sun.security.krb5.Realm;
+  34   34  import sun.security.jgss.GSSUtil;
+  35   35  import sun.security.util.ObjectIdentifier;
+  36   36  import sun.security.util.DerInputStream;
+  37   37  import sun.security.util.DerOutputStream;
+  38   38  import sun.security.jgss.GSSUtil;
+  39   39  import sun.security.jgss.GSSExceptionImpl;
+  40   40  import sun.security.jgss.spi.GSSNameSpi;
+  41   41  
+  42   42  import javax.security.auth.kerberos.ServicePermission;
+  43   43  
+  44   44  /**
+  45   45   * This class is essentially a wrapper class for the gss_name_t
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">45 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  46   46   * structure of the native GSS library.
+  47   47   * @author Valerie Peng
+  48   48   * @since 1.6
+  49   49   */
+  50   50  
+  51   51  public class GSSNameElement implements GSSNameSpi {
+  52   52  
+  53   53      long pName = 0; // Pointer to the gss_name_t structure
+  54   54      private String printableName;
+  55   55      private Oid printableType;
+<span class='added'>       56 +    private Oid mech;
+</span>  56   57      private GSSLibStub cStub;
+  57   58  
+  58   59      static final GSSNameElement DEF_ACCEPTOR = new GSSNameElement();
+  59   60  
+  60   61      private static Oid getNativeNameType(Oid nameType, GSSLibStub stub) {
+  61   62          if (GSSUtil.NT_GSS_KRB5_PRINCIPAL.equals(nameType)) {
+  62   63              Oid[] supportedNTs = null;
+  63   64              try {
+  64   65                  supportedNTs = stub.inquireNamesForMech();
+  65   66              } catch (GSSException ge) {
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  66   67                  if (ge.getMajor() == GSSException.BAD_MECH &amp;&amp;
+  67   68                      GSSUtil.isSpNegoMech(stub.getMech())) {
+  68   69                      // Workaround known Heimdal issue and retry with KRB5
+  69   70                      try {
+  70   71                          stub = GSSLibStub.getInstance
+  71   72                              (GSSUtil.GSS_KRB5_MECH_OID);
+  72   73                          supportedNTs = stub.inquireNamesForMech();
+  73   74                      } catch (GSSException ge2) {
+  74   75                          // Should never happen
+  75   76                          SunNativeProvider.debug("Name type list unavailable: " +
+  76   77                              ge2.getMajorString());
+  77   78                      }
+  78   79                  } else {
+  79   80                      SunNativeProvider.debug("Name type list unavailable: " +
+  80   81                          ge.getMajorString());
+  81   82                  }
+  82   83              }
+  83   84              if (supportedNTs != null) {
+  84   85                  for (int i = 0; i &lt; supportedNTs.length; i++) {
+  85   86                      if (supportedNTs[i].equals(nameType)) return nameType;
+  86   87                  }
+  87   88                  // Special handling the specified name type
+  88   89                  SunNativeProvider.debug("Override " + nameType +
+  89   90                      " with mechanism default(null)");
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">24 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  90   91                  return null; // Use mechanism specific default
+  91   92              }
+  92   93          }
+  93   94          return nameType;
+  94   95      }
+  95   96  
+  96   97      private GSSNameElement() {
+  97   98          printableName = "&lt;DEFAULT ACCEPTOR&gt;";
+  98   99      }
+  99  100  
+<span class='subtracted'> 100      -    GSSNameElement(long pNativeName, GSSLibStub stub) throws GSSException {
+</span><span class='added'>      101 +    GSSNameElement(long pNativeName, Oid mech, GSSLibStub stub) throws GSSException {
+</span> 101  102          assert(stub != null);
+ 102  103          if (pNativeName == 0) {
+ 103  104              throw new GSSException(GSSException.BAD_NAME);
+ 104  105          }
+ 105  106          // Note: pNativeName is assumed to be a MN.
+ 106  107          pName = pNativeName;
+<span class='added'>      108 +        this.mech = mech;
+</span> 107  109          cStub = stub;
+ 108  110          setPrintables();
+ 109  111      }
+ 110  112  
+ 111  113      GSSNameElement(byte[] nameBytes, Oid nameType, GSSLibStub stub)
+ 112  114          throws GSSException {
+ 113  115          assert(stub != null);
+ 114  116          if (nameBytes == null) {
+ 115  117              throw new GSSException(GSSException.BAD_NAME);
+ 116  118          }
+ 117  119          cStub = stub;
+ 118  120          byte[] name = nameBytes;
+<span class='added'>      121 +        mech = cStub.getMech();
+</span> 119  122  
+ 120  123          if (nameType != null) {
+ 121  124              // Special handling the specified name type if
+ 122  125              // necessary
+ 123  126              nameType = getNativeNameType(nameType, stub);
+ 124  127  
+ 125  128              if (GSSName.NT_EXPORT_NAME.equals(nameType)) {
+ 126  129                  // Need to add back the mech Oid portion (stripped
+ 127  130                  // off by GSSNameImpl class prior to calling this
+ 128  131                  // method) for "NT_EXPORT_NAME"
+ 129  132                  byte[] mechBytes = null;
+ 130  133                  DerOutputStream dout = new DerOutputStream();
+<span class='subtracted'> 131      -                Oid mech = cStub.getMech();
+</span> 132  134                  try {
+ 133  135                      dout.putOID(new ObjectIdentifier(mech.toString()));
+ 134  136                  } catch (IOException e) {
+ 135  137                      throw new GSSExceptionImpl(GSSException.FAILURE, e);
+ 136  138                  }
+ 137  139                  mechBytes = dout.toByteArray();
+ 138  140                  name = new byte[2 + 2 + mechBytes.length + 4 + nameBytes.length];
+ 139  141                  int pos = 0;
+ 140  142                  name[pos++] = 0x04;
+ 141  143                  name[pos++] = 0x01;
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 142  144                  name[pos++] = (byte) (mechBytes.length&gt;&gt;&gt;8);
+ 143  145                  name[pos++] = (byte) mechBytes.length;
+ 144  146                  System.arraycopy(mechBytes, 0, name, pos, mechBytes.length);
+ 145  147                  pos += mechBytes.length;
+ 146  148                  name[pos++] = (byte) (nameBytes.length&gt;&gt;&gt;24);
+ 147  149                  name[pos++] = (byte) (nameBytes.length&gt;&gt;&gt;16);
+ 148  150                  name[pos++] = (byte) (nameBytes.length&gt;&gt;&gt;8);
+ 149  151                  name[pos++] = (byte) nameBytes.length;
+ 150  152                  System.arraycopy(nameBytes, 0, name, pos, nameBytes.length);
+ 151  153              }
+ 152  154          }
+ 153  155          pName = cStub.importName(name, nameType);
+ 154  156          setPrintables();
+ 155  157  
+ 156  158          SecurityManager sm = System.getSecurityManager();
+ 157  159          if (sm != null &amp;&amp; !Realm.AUTODEDUCEREALM) {
+ 158  160              String krbName = getKrbName();
+ 159  161              int atPos = krbName.lastIndexOf('@');
+ 160  162              if (atPos != -1) {
+ 161  163                  String atRealm = krbName.substring(atPos);
+ 162  164                  // getNativeNameType() can modify NT_GSS_KRB5_PRINCIPAL to null
+ 163  165                  if ((nameType == null
+ 164  166                              || nameType.equals(GSSUtil.NT_GSS_KRB5_PRINCIPAL))
+ 165  167                          &amp;&amp; new String(nameBytes).endsWith(atRealm)) {
+ 166  168                      // Created from Kerberos name with realm, no need to check
+ 167  169                  } else {
+ 168  170                      try {
+ 169  171                          sm.checkPermission(new ServicePermission(atRealm, "-"));
+ 170  172                      } catch (SecurityException se) {
+ 171  173                          // Do not chain the actual exception to hide info
+ 172  174                          throw new GSSException(GSSException.FAILURE);
+ 173  175                      }
+ 174  176                  }
+ 175  177              }
+ 176  178          }
+ 177  179  
+ 178  180          SunNativeProvider.debug("Imported " + printableName + " w/ type " +
+ 179  181                                  printableType);
+ 180  182      }
+ 181  183  
+ 182  184      private void setPrintables() throws GSSException {
+ 183  185          Object[] printables = null;
+ 184  186          printables = cStub.displayName(pName);
+ 185  187          assert((printables != null) &amp;&amp; (printables.length == 2));
+ 186  188          printableName = (String) printables[0];
+ 187  189          assert(printableName != null);
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">46 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 188  190          printableType = (Oid) printables[1];
+ 189  191          if (printableType == null) {
+ 190  192              printableType = GSSName.NT_USER_NAME;
+ 191  193          }
+ 192  194      }
+ 193  195  
+ 194  196      // Need to be public for GSSUtil.getSubject()
+ 195  197      public String getKrbName() throws GSSException {
+ 196  198          long mName = 0;
+ 197  199          GSSLibStub stub = cStub;
+<span class='subtracted'> 198      -        if (!GSSUtil.isKerberosMech(cStub.getMech())) {
+</span><span class='added'>      200 +        if (!GSSUtil.isKerberosMech(mech)) {
+      201 +            // XXX We can't expect this to work generally.  We should
+      202 +            // generalize the permission checks so that they can deal
+      203 +            // with name forms other than those of Kerberos.
+      204 +            //
+      205 +            // Alternatively we could have a method in GSSLibStub for
+      206 +            // mapping a non-Kerberos MN to a Kerberos MN, but depending
+      207 +            // on the specifics of the non-Kerberos mechanism we would
+      208 +            // either end up needing new conventions for Kerberos naming
+      209 +            // or else having cases where we can end up failing to
+      210 +            // support unconventional name forms.
+      211 +            //
+      212 +            // Consider a SAML assertion with a variety of identifying
+      213 +            // attributes and a variety of non-identifying attributes
+      214 +            // that are relevant to authorization.  How should a
+      215 +            // Kerberos-equivalent be constructed?  GSS does have
+      216 +            // extensions for decorating name objects with attributes,
+      217 +            // so that's not an issue, but if there are multiple
+      218 +            // identifying attributes then we'd have to pick one.  Now,
+      219 +            // suppose the identifying attribute has a form like
+      220 +            // &lt;phone-number&gt; -- we'd need a Kerberos convention for
+      221 +            // that, which might be PHONE/&lt;number&gt;@&lt;ASSERTION-SIGNER&gt;.
+</span> 199  222              stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
+ 200  223          }
+ 201  224          mName = stub.canonicalizeName(pName);
+ 202  225          Object[] printables2 = stub.displayName(mName);
+ 203  226          stub.releaseName(mName);
+ 204  227          SunNativeProvider.debug("Got kerberized name: " + printables2[0]);
+ 205  228          return (String) printables2[0];
+ 206  229      }
+ 207  230  
+ 208  231      public Provider getProvider() {
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 209  232          return SunNativeProvider.INSTANCE;
+ 210  233      }
+ 211  234  
+ 212  235      public boolean equals(GSSNameSpi other) throws GSSException {
+ 213  236          if (!(other instanceof GSSNameElement)) {
+ 214  237              return false;
+ 215  238          }
+ 216  239          return cStub.compareName(pName, ((GSSNameElement)other).pName);
+ 217  240      }
+ 218  241  
+ 219  242      public boolean equals(Object other) {
+ 220  243          if (!(other instanceof GSSNameElement)) {
+ 221  244              return false;
+ 222  245          }
+ 223  246          try {
+ 224  247              return equals((GSSNameElement) other);
+ 225  248          } catch (GSSException ex) {
+ 226  249              return false;
+ 227  250          }
+ 228  251      }
+ 229  252  
+ 230  253      public int hashCode() {
+ 231  254          return Long.hashCode(pName);
+ 232  255      }
+ 233  256  
+ 234  257      public byte[] export() throws GSSException {
+ 235  258          byte[] nameVal = cStub.exportName(pName);
+ 236  259  
+ 237  260          // Need to strip off the mech Oid portion of the exported
+ 238  261          // bytes since GSSNameImpl class will subsequently add it.
+ 239  262          int pos = 0;
+ 240  263          if ((nameVal[pos++] != 0x04) ||
+ 241  264              (nameVal[pos++] != 0x01))
+ 242  265              throw new GSSException(GSSException.BAD_NAME);
+ 243  266  
+ 244  267          int mechOidLen  = (((0xFF &amp; nameVal[pos++]) &lt;&lt; 8) |
+ 245  268                             (0xFF &amp; nameVal[pos++]));
+ 246  269          ObjectIdentifier temp = null;
+ 247  270          try {
+ 248  271              DerInputStream din = new DerInputStream(nameVal, pos,
+ 249  272                                                      mechOidLen);
+ 250  273              temp = new ObjectIdentifier(din);
+ 251  274          } catch (IOException e) {
+ 252  275              throw new GSSExceptionImpl(GSSException.BAD_NAME, e);
+ 253  276          }
+ 254  277          Oid mech2 = new Oid(temp.toString());
+ 255  278          assert(mech2.equals(getMechanism()));
+ 256  279          pos += mechOidLen;
+ 257  280          int mechPortionLen = (((0xFF &amp; nameVal[pos++]) &lt;&lt; 24) |
+ 258  281                                ((0xFF &amp; nameVal[pos++]) &lt;&lt; 16) |
+ 259  282                                ((0xFF &amp; nameVal[pos++]) &lt;&lt; 8) |
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">51 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 260  283                                (0xFF &amp; nameVal[pos++]));
+ 261  284          if (mechPortionLen &lt; 0) {
+ 262  285              throw new GSSException(GSSException.BAD_NAME);
+ 263  286          }
+ 264  287          byte[] mechPortion = new byte[mechPortionLen];
+ 265  288          System.arraycopy(nameVal, pos, mechPortion, 0, mechPortionLen);
+ 266  289          return mechPortion;
+ 267  290      }
+ 268  291  
+ 269  292      public Oid getMechanism() {
+<span class='subtracted'> 270      -        return cStub.getMech();
+</span><span class='added'>      293 +        return (mech != null) ? mech : cStub.getMech();
+</span> 271  294      }
+ 272  295  
+ 273  296      public String toString() {
+ 274  297          return printableName;
+ 275  298      }
+ 276  299  
+<span class='added'>      300 +    public String getLocalName() throws GSSException {
+      301 +        return cStub.localName(pName, mech);
+      302 +    }
+      303 +
+      304 +    public String getLocalName(Oid mech) throws GSSException {
+      305 +        if (mech.equals(this.mech))
+      306 +            return cStub.localName(pName, mech);
+      307 +        throw new GSSException(GSSException.BAD_MECH);
+      308 +    }
+      309 +
+</span> 277  310      public Oid getStringNameType() {
+ 278  311          return printableType;
+ 279  312      }
+ 280  313  
+ 281  314      public boolean isAnonymousName() {
+ 282  315          return (GSSName.NT_ANONYMOUS.equals(printableType));
+<span class='added'>      316 +    }
+      317 +
+      318 +    public boolean isDefaultCredentialName() {
+      319 +        return (this == DEF_ACCEPTOR);
+</span> 283  320      }
+ 284  321  
+ 285  322      public void dispose() {
+ 286  323          if (pName != 0) {
+ 287  324              cStub.releaseName(pName);
+ 288  325              pName = 0;
+ 289  326          }
+ 290  327      }
+ 291  328  
+ 292  329      @SuppressWarnings("deprecation")
+ 293  330      protected void finalize() throws Throwable {
+ 294  331          dispose();
+ 295  332      }
+ 296  333  }
+    </pre>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 4; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 4; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,141 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Udiff src/java.security.jgss/share/native/libj2gss/NativeUtil.h</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Revert initGSSBuffer to JDK7 non-copy behaviour
+Implement String to gss_buffer_t import
+Fix error handling in GSSLibStub
+Also improve object size handling in NativeUtil.</pre>
+        <pre>
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -34,22 +34,25 @@</span>
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+   extern jint getJavaTime(OM_uint32);
+   extern OM_uint32 getGSSTime(jint);
+<span class="removed">-  extern void checkStatus(JNIEnv *, jobject, OM_uint32, OM_uint32, char*);</span>
+<span class="new">+  extern void checkStatus(JNIEnv *, jobject, OM_uint32, OM_uint32, const char *);</span>
+   extern jint checkTime(OM_uint32);
+   extern void throwOutOfMemoryError(JNIEnv *, const char*);
+<span class="removed">-  extern void initGSSBuffer(JNIEnv *, jbyteArray, gss_buffer_t);</span>
+<span class="removed">-  extern void resetGSSBuffer(gss_buffer_t);</span>
+<span class="new">+  extern void initGSSBuffer(JNIEnv *, jbyteArray, gss_buffer_t, jboolean);</span>
+<span class="new">+  extern void resetGSSBuffer(JNIEnv *, jbyteArray, gss_buffer_t);</span>
+<span class="new">+  extern void initGSSBufferString(JNIEnv *, jstring, gss_buffer_t);</span>
+<span class="new">+  extern void resetGSSBufferString(JNIEnv *, jstring, gss_buffer_t);</span>
+<span class="new">+  extern void initGSSCredStore(JNIEnv *, jarray, gss_key_value_set_desc *);</span>
+<span class="new">+  extern void resetGSSCredStore(JNIEnv *, jarray, gss_key_value_set_desc *);</span>
+ 
+   extern gss_OID newGSSOID(JNIEnv *, jobject);
+   extern void deleteGSSOID(gss_OID);
+<span class="removed">-  extern gss_OID_set newGSSOIDSet(gss_OID);</span>
+<span class="removed">-  extern void deleteGSSOIDSet(gss_OID_set);</span>
+<span class="new">+  extern gss_OID_set makeGSSOIDSet(gss_OID_set, gss_OID);</span>
+ 
+<span class="removed">-  extern jbyteArray getJavaBuffer(JNIEnv *, gss_buffer_t);</span>
+<span class="new">+  extern jbyteArray getJavaBuffer(JNIEnv *, gss_buffer_t, jboolean);</span>
+   extern jstring getJavaString(JNIEnv *, gss_buffer_t);
+   extern jobject getJavaOID(JNIEnv *, gss_OID);
+   extern jobjectArray getJavaOIDArray(JNIEnv *, gss_OID_set);
+ 
+   extern jstring getMinorMessage(JNIEnv *, jobject, OM_uint32);
+</pre></body></html>
+

@@ -1,0 +1,226 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Sdiff src/jdk.jdwp.agent/unix/native/libjdwp/linker_md.c</title>
+</head><body id="SUNWwebrev">
+<a class="print" href="javascript:print()">Print this page</a>
+<pre>Add missing dbgsysGetLastErrorString()</pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+  49     paths_copy = strdup(paths);
+  50     if (paths_copy == NULL) {
+  51         return;
+  52     }
+  53 
+  54     next_token = NULL;
+  55     path = strtok_r(paths_copy, PATH_SEPARATOR, &amp;next_token);
+  56 
+  57     while (path != NULL) {
+  58         snprintf(buffer, buflen, "%s/lib%s." LIB_SUFFIX, path, fname);
+  59         if (access(buffer, F_OK) == 0) {
+  60             break;
+  61         }
+  62         *buffer = '\0';
+  63         path = strtok_r(NULL, PATH_SEPARATOR, &amp;next_token);
+  64     }
+  65 
+  66     free(paths_copy);
+  67 }
+  68 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  69 /*
+  70  * create a string for the JNI native function name by adding the
+  71  * appropriate decorations.
+  72  */
+  73 int
+  74 dbgsysBuildFunName(char *name, int nameLen, int args_size, int encodingIndex)
+  75 {
+  76     // On Unix, there is only one encoding method.
+  77     if (encodingIndex == 0)
+  78         return 1;
+  79     return 0;
+  80 }
+  81 
+  82 /*
+  83  * create a string for the dynamic lib open call by adding the
+  84  * appropriate pre and extensions to a filename and the path
+  85  */
+  86 void
+  87 dbgsysBuildLibName(char *holder, int holderlen, const char *pname,
+  88                    const char *fname)
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+  49     paths_copy = strdup(paths);
+  50     if (paths_copy == NULL) {
+  51         return;
+  52     }
+  53 
+  54     next_token = NULL;
+  55     path = strtok_r(paths_copy, PATH_SEPARATOR, &amp;next_token);
+  56 
+  57     while (path != NULL) {
+  58         snprintf(buffer, buflen, "%s/lib%s." LIB_SUFFIX, path, fname);
+  59         if (access(buffer, F_OK) == 0) {
+  60             break;
+  61         }
+  62         *buffer = '\0';
+  63         path = strtok_r(NULL, PATH_SEPARATOR, &amp;next_token);
+  64     }
+  65 
+  66     free(paths_copy);
+  67 }
+  68 
+<span class="new">  69 int</span>
+<span class="new">  70 dbgsysGetLastErrorString(char *buf, int len)</span>
+<span class="new">  71 {</span>
+<span class="new">  72     const char *s = dlerror();</span>
+<span class="new">  73     size_t n;</span>
+<span class="new">  74     size_t l = (size_t)len;</span>
+<span class="new">  75 </span>
+<span class="new">  76     if (len &lt;= 0)</span>
+<span class="new">  77         return 0;</span>
+<span class="new">  78 </span>
+<span class="new">  79     *buf = '\0';</span>
+<span class="new">  80     if (s == NULL)</span>
+<span class="new">  81         return 0;</span>
+<span class="new">  82 </span>
+<span class="new">  83     n = strlen(s);</span>
+<span class="new">  84     if (n &gt;= l)</span>
+<span class="new">  85         n = l - 1;</span>
+<span class="new">  86     strncpy(buf, s, n);</span>
+<span class="new">  87     buf[n] = '\0'; /* not actually needed */</span>
+<span class="new">  88     return n;</span>
+<span class="new">  89 }</span>
+<span class="new">  90 </span>
+  91 /*
+  92  * create a string for the JNI native function name by adding the
+  93  * appropriate decorations.
+  94  */
+  95 int
+  96 dbgsysBuildFunName(char *name, int nameLen, int args_size, int encodingIndex)
+  97 {
+  98     // On Unix, there is only one encoding method.
+  99     if (encodingIndex == 0)
+ 100         return 1;
+ 101     return 0;
+ 102 }
+ 103 
+ 104 /*
+ 105  * create a string for the dynamic lib open call by adding the
+ 106  * appropriate pre and extensions to a filename and the path
+ 107  */
+ 108 void
+ 109 dbgsysBuildLibName(char *holder, int holderlen, const char *pname,
+ 110                    const char *fname)
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

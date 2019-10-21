@@ -1,0 +1,287 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Old src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package sun.security.jgss;
+  27 
+  28 import java.util.HashMap;
+  29 import javax.security.auth.login.AppConfigurationEntry;
+  30 import javax.security.auth.login.Configuration;
+  31 import org.ietf.jgss.Oid;
+  32 import sun.security.action.GetPropertyAction;
+  33 
+  34 /**
+  35  * A Configuration implementation especially designed for JGSS.
+  36  *
+  37  * @author weijun.wang
+  38  * @since 1.6
+  39  */
+  40 public class LoginConfigImpl extends Configuration {
+  41 
+  42     private final Configuration config;
+  43     private final GSSCaller caller;
+  44     private final String mechName;
+  45     private static final sun.security.util.Debug debug =
+  46         sun.security.util.Debug.getInstance("gssloginconfig", "\t[GSS LoginConfigImpl]");
+  47 
+  48     public static final boolean HTTP_USE_GLOBAL_CREDS;
+  49 
+  50     static {
+  51         String prop = GetPropertyAction
+  52                 .privilegedGetProperty("http.use.global.creds");
+  53         //HTTP_USE_GLOBAL_CREDS = "true".equalsIgnoreCase(prop); // default false
+  54         HTTP_USE_GLOBAL_CREDS = !"false".equalsIgnoreCase(prop); // default true
+  55     }
+  56 
+  57 
+  58     /**
+  59      * A new instance of LoginConfigImpl must be created for each login request
+  60      * since it's only used by a single (caller, mech) pair
+  61      * @param caller defined in GSSUtil as CALLER_XXX final fields
+  62      * @param mech defined in GSSUtil as XXX_MECH_OID final fields
+  63      */
+  64     public LoginConfigImpl(GSSCaller caller, Oid mech) {
+  65 
+  66         this.caller = caller;
+  67 
+  68         if (mech.equals(GSSUtil.GSS_KRB5_MECH_OID)) {
+  69             mechName = "krb5";
+  70         } else {
+  71             throw new IllegalArgumentException(mech.toString() + " not supported");
+  72         }
+  73         config = java.security.AccessController.doPrivileged
+  74                 (new java.security.PrivilegedAction &lt;Configuration&gt; () {
+  75             public Configuration run() {
+  76                 return Configuration.getConfiguration();
+  77             }
+  78         });
+  79     }
+  80 
+  81     /**
+  82      * @param name Almost useless, since the (caller, mech) is already passed
+  83      *             into constructor. The only use will be detecting OTHER which
+  84      *             is called in LoginContext
+  85      */
+  86     public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+  87 
+  88         AppConfigurationEntry[] entries = null;
+  89 
+  90         // This is the second call from LoginContext, which we will just ignore
+  91         if ("OTHER".equalsIgnoreCase(name)) {
+  92             return null;
+  93         }
+  94 
+  95         String[] alts = null;
+  96 
+  97         // Compatibility:
+  98         // For the 4 old callers, old entry names will be used if the new
+  99         // entry name is not provided.
+ 100 
+ 101         if ("krb5".equals(mechName)) {
+ 102             if (caller == GSSCaller.CALLER_INITIATE) {
+ 103                 alts = new String[] {
+ 104                     "com.sun.security.jgss.krb5.initiate",
+ 105                     "com.sun.security.jgss.initiate",
+ 106                 };
+ 107             } else if (caller == GSSCaller.CALLER_ACCEPT) {
+ 108                 alts = new String[] {
+ 109                     "com.sun.security.jgss.krb5.accept",
+ 110                     "com.sun.security.jgss.accept",
+ 111                 };
+ 112             } else if (caller instanceof HttpCaller) {
+ 113                 alts = new String[] {
+ 114                     "com.sun.security.jgss.krb5.initiate",
+ 115                 };
+ 116             } else if (caller == GSSCaller.CALLER_UNKNOWN) {
+ 117                 throw new AssertionError("caller not defined");
+ 118             }
+ 119         } else {
+ 120             throw new IllegalArgumentException(mechName + " not supported");
+ 121             // No other mech at the moment, maybe --
+ 122             /*
+ 123             switch (caller) {
+ 124             case GSSUtil.CALLER_INITIATE:
+ 125             case GSSUtil.CALLER_HTTP_NEGOTIATE:
+ 126                 alts = new String[] {
+ 127                     "com.sun.security.jgss." + mechName + ".initiate",
+ 128                 };
+ 129                 break;
+ 130             case GSSUtil.CALLER_ACCEPT:
+ 131                 alts = new String[] {
+ 132                     "com.sun.security.jgss." + mechName + ".accept",
+ 133                 };
+ 134                 break;
+ 135             case GSSUtil.CALLER_UNKNOWN:
+ 136                 // should never use
+ 137                 throw new AssertionError("caller cannot be unknown");
+ 138             default:
+ 139                 throw new AssertionError("caller not defined");
+ 140             }
+ 141              */
+ 142         }
+ 143         for (String alt: alts) {
+ 144             entries = config.getAppConfigurationEntry(alt);
+ 145             if (debug != null) {
+ 146                 debug.println("Trying " + alt +
+ 147                         ((entries == null)?": does not exist.":": Found!"));
+ 148             }
+ 149             if (entries != null) {
+ 150                 break;
+ 151             }
+ 152         }
+ 153 
+ 154         if (entries == null) {
+ 155             if (debug != null) {
+ 156                 debug.println("Cannot read JGSS entry, use default values instead.");
+ 157             }
+ 158             entries = getDefaultConfigurationEntry();
+ 159         }
+ 160         return entries;
+ 161     }
+ 162 
+ 163     /**
+ 164      * Default value for a caller-mech pair when no entry is defined in
+ 165      * the system-wide Configuration object.
+ 166      */
+ 167     private AppConfigurationEntry[] getDefaultConfigurationEntry() {
+ 168         HashMap &lt;String, String&gt; options = new HashMap &lt;String, String&gt; (2);
+ 169 
+ 170         if (mechName == null || mechName.equals("krb5")) {
+ 171             if (isServerSide(caller)) {
+ 172                 // Assuming the keytab file can be found through
+ 173                 // krb5 config file or under user home directory
+ 174                 options.put("useKeyTab", "true");
+ 175                 options.put("storeKey", "true");
+ 176                 options.put("doNotPrompt", "true");
+ 177                 options.put("principal", "*");
+ 178                 options.put("isInitiator", "false");
+ 179             } else {
+ 180                 if (caller instanceof HttpCaller &amp;&amp; !HTTP_USE_GLOBAL_CREDS) {
+ 181                     options.put("useTicketCache", "false");
+ 182                 } else {
+ 183                     options.put("useTicketCache", "true");
+ 184                 }
+ 185                 options.put("doNotPrompt", "false");
+ 186             }
+ 187             return new AppConfigurationEntry[] {
+ 188                 new AppConfigurationEntry(
+ 189                         "com.sun.security.auth.module.Krb5LoginModule",
+ 190                         AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+ 191                         options)
+ 192             };
+ 193         }
+ 194         return null;
+ 195     }
+ 196 
+ 197     private static boolean isServerSide (GSSCaller caller) {
+ 198         return GSSCaller.CALLER_ACCEPT == caller;
+ 199     }
+ 200 }
+</pre></body></html>

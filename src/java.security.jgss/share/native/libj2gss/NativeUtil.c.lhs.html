@@ -1,0 +1,1144 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add actual mechanism to native GSSNameElement state
+Revert initGSSBuffer to JDK7 non-copy behaviour
+Implement String to gss_buffer_t import
+Fix error handling in GSSLibStub
+Also improve object size handling in NativeUtil.</pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 #include "NativeUtil.h"
+  27 #include "NativeFunc.h"
+  28 #include "jlong.h"
+  29 #include &lt;jni.h&gt;
+  30 #include "jni_util.h"
+  31 
+  32 const int JAVA_DUPLICATE_TOKEN_CODE = 19; /* DUPLICATE_TOKEN */
+  33 const int JAVA_OLD_TOKEN_CODE = 20; /* OLD_TOKEN */
+  34 const int JAVA_UNSEQ_TOKEN_CODE = 21; /* UNSEQ_TOKEN */
+  35 const int JAVA_GAP_TOKEN_CODE = 22; /* GAP_TOKEN */
+  36 const int JAVA_ERROR_CODE[] = {
+  37   2,  /* BAD_MECH */
+  38   3,  /* BAD_NAME */
+  39   4,  /* BAD_NAMETYPE */
+  40   1,  /* BAD_BINDINGS */
+  41   5,  /* BAD_STATUS */
+  42   6,  /* BAD_MIC */
+  43   13, /* NO_CRED */
+  44   12, /* NO_CONTEXT */
+  45   10, /* DEFECTIVE_TOKEN */
+  46   9,  /* DEFECTIVE_CREDENTIAL */
+  47   8,  /* CREDENTIAL_EXPIRED */
+  48   7,  /* CONTEXT_EXPIRED */
+  49   11, /* FAILURE */
+  50   14, /* BAD_QOP */
+  51   15, /* UNAUTHORIZED */
+  52   16, /* UNAVAILABLE */
+  53   17, /* DUPLICATE_ELEMENT */
+  54   18, /* NAME_NOT_MN */
+  55 };
+  56 const char SPNEGO_BYTES[] = {
+  57  0x2b, 0x06, 0x01, 0x05, 0x05, 0x02
+  58 };
+  59 
+  60 jclass CLS_Object;
+  61 jclass CLS_String;
+  62 jclass CLS_Oid;
+  63 jclass CLS_GSSException;
+  64 jclass CLS_GSSNameElement;
+  65 jclass CLS_GSSCredElement;
+  66 jclass CLS_NativeGSSContext;
+  67 jclass CLS_SunNativeProvider;
+  68 jmethodID MID_String_ctor;
+  69 jmethodID MID_Oid_ctor1;
+  70 jmethodID MID_Oid_getDER;
+  71 jmethodID MID_MessageProp_getPrivacy;
+  72 jmethodID MID_MessageProp_getQOP;
+  73 jmethodID MID_MessageProp_setPrivacy;
+  74 jmethodID MID_MessageProp_setQOP;
+  75 jmethodID MID_MessageProp_setSupplementaryStates;
+  76 jmethodID MID_GSSException_ctor3;
+  77 jmethodID MID_ChannelBinding_getInitiatorAddr;
+  78 jmethodID MID_ChannelBinding_getAcceptorAddr;
+  79 jmethodID MID_ChannelBinding_getAppData;
+  80 jmethodID MID_InetAddress_getAddr;
+  81 jmethodID MID_GSSNameElement_ctor;
+  82 jmethodID MID_GSSCredElement_ctor;
+  83 jmethodID MID_NativeGSSContext_ctor;
+  84 jfieldID FID_GSSLibStub_pMech;
+  85 jfieldID FID_NativeGSSContext_pContext;
+  86 jfieldID FID_NativeGSSContext_srcName;
+  87 jfieldID FID_NativeGSSContext_targetName;
+  88 jfieldID FID_NativeGSSContext_isInitiator;
+  89 jfieldID FID_NativeGSSContext_isEstablished;
+  90 jfieldID FID_NativeGSSContext_delegatedCred;
+  91 jfieldID FID_NativeGSSContext_flags;
+  92 jfieldID FID_NativeGSSContext_lifetime;
+  93 jfieldID FID_NativeGSSContext_actualMech;
+  94 
+  95 int JGSS_DEBUG;
+  96 
+  97 JNIEXPORT jint JNICALL
+  98 DEF_JNI_OnLoad(JavaVM *jvm, void *reserved) {
+  99   JNIEnv *env;
+ 100   jclass cls;
+ 101 
+ 102   if ((*jvm)-&gt;GetEnv(jvm, (void **)&amp;env, JNI_VERSION_1_2)) {
+ 103     return JNI_EVERSION; /* JNI version not supported */
+ 104   }
+ 105   /* Retrieve and store the classes in global ref */
+ 106   cls = (*env)-&gt;FindClass(env, "java/lang/Object");
+ 107   if (cls == NULL) {
+ 108     printf("Couldn't find Object class\n");
+ 109     return JNI_ERR;
+ 110   }
+ 111   CLS_Object = (*env)-&gt;NewGlobalRef(env, cls);
+ 112   if (CLS_Object == NULL) {
+ 113     return JNI_ERR;
+ 114   }
+ 115   cls = (*env)-&gt;FindClass(env, "java/lang/String");
+ 116   if (cls == NULL) {
+ 117     printf("Couldn't find String class\n");
+ 118     return JNI_ERR;
+ 119   }
+ 120   CLS_String = (*env)-&gt;NewGlobalRef(env, cls);
+ 121   if (CLS_String == NULL) {
+ 122     return JNI_ERR;
+ 123   }
+ 124   cls = (*env)-&gt;FindClass(env, "org/ietf/jgss/Oid");
+ 125   if (cls == NULL) {
+ 126     printf("Couldn't find org.ietf.jgss.Oid class\n");
+ 127     return JNI_ERR;
+ 128   }
+ 129   CLS_Oid = (*env)-&gt;NewGlobalRef(env, cls);
+ 130   if (CLS_Oid == NULL) {
+ 131     return JNI_ERR;
+ 132   }
+ 133   cls = (*env)-&gt;FindClass(env, "org/ietf/jgss/GSSException");
+ 134   if (cls == NULL) {
+ 135     printf("Couldn't find org.ietf.jgss.GSSException class\n");
+ 136     return JNI_ERR;
+ 137   }
+ 138   CLS_GSSException = (*env)-&gt;NewGlobalRef(env, cls);
+ 139   if (CLS_GSSException == NULL) {
+ 140     return JNI_ERR;
+ 141   }
+ 142   cls = (*env)-&gt;FindClass(env, "sun/security/jgss/wrapper/GSSNameElement");
+ 143   if (cls == NULL) {
+ 144     printf("Couldn't find sun.security.jgss.wrapper.GSSNameElement class\n");
+ 145     return JNI_ERR;
+ 146   }
+ 147   CLS_GSSNameElement = (*env)-&gt;NewGlobalRef(env, cls);
+ 148   if (CLS_GSSNameElement == NULL) {
+ 149     return JNI_ERR;
+ 150   }
+ 151   cls = (*env)-&gt;FindClass(env, "sun/security/jgss/wrapper/GSSCredElement");
+ 152   if (cls == NULL) {
+ 153     printf("Couldn't find sun.security.jgss.wrapper.GSSCredElement class\n");
+ 154     return JNI_ERR;
+ 155   }
+ 156   CLS_GSSCredElement = (*env)-&gt;NewGlobalRef(env, cls);
+ 157   if (CLS_GSSCredElement == NULL) {
+ 158     return JNI_ERR;
+ 159   }
+ 160   cls = (*env)-&gt;FindClass(env, "sun/security/jgss/wrapper/NativeGSSContext");
+ 161   if (cls == NULL) {
+ 162     printf("Couldn't find sun.security.jgss.wrapper.NativeGSSContext class\n");
+ 163     return JNI_ERR;
+ 164   }
+ 165   CLS_NativeGSSContext = (*env)-&gt;NewGlobalRef(env, cls);
+ 166   if (CLS_NativeGSSContext == NULL) {
+ 167     return JNI_ERR;
+ 168   }
+ 169   cls = (*env)-&gt;FindClass(env, "sun/security/jgss/wrapper/SunNativeProvider");
+ 170   if (cls == NULL) {
+ 171     printf("Couldn't find sun.security.jgss.wrapper.SunNativeProvider class\n");
+ 172     return JNI_ERR;
+ 173   }
+ 174   CLS_SunNativeProvider = (*env)-&gt;NewGlobalRef(env, cls);
+ 175   if (CLS_SunNativeProvider == NULL) {
+ 176     return JNI_ERR;
+ 177   }
+ 178   /* Compute and cache the method ID */
+ 179   MID_String_ctor = (*env)-&gt;GetMethodID(env, CLS_String,
+ 180                                         "&lt;init&gt;", "([B)V");
+ 181   if (MID_String_ctor == NULL) {
+ 182     printf("Couldn't find String(byte[]) constructor\n");
+ 183     return JNI_ERR;
+ 184   }
+ 185   MID_Oid_ctor1 =
+ 186     (*env)-&gt;GetMethodID(env, CLS_Oid, "&lt;init&gt;", "([B)V");
+ 187   if (MID_Oid_ctor1 == NULL) {
+ 188     printf("Couldn't find Oid(byte[]) constructor\n");
+ 189     return JNI_ERR;
+ 190   }
+ 191   MID_Oid_getDER = (*env)-&gt;GetMethodID(env, CLS_Oid, "getDER", "()[B");
+ 192   if (MID_Oid_getDER == NULL) {
+ 193     printf("Couldn't find Oid.getDER() method\n");
+ 194     return JNI_ERR;
+ 195   }
+ 196   cls = (*env)-&gt;FindClass(env, "org/ietf/jgss/MessageProp");
+ 197   if (cls == NULL) {
+ 198     printf("Couldn't find org.ietf.jgss.MessageProp class\n");
+ 199     return JNI_ERR;
+ 200   }
+ 201   MID_MessageProp_getPrivacy =
+ 202     (*env)-&gt;GetMethodID(env, cls, "getPrivacy", "()Z");
+ 203   if (MID_MessageProp_getPrivacy == NULL) {
+ 204     printf("Couldn't find MessageProp.getPrivacy() method\n");
+ 205     return JNI_ERR;
+ 206   }
+ 207   MID_MessageProp_getQOP = (*env)-&gt;GetMethodID(env, cls, "getQOP", "()I");
+ 208   if (MID_MessageProp_getQOP == NULL) {
+ 209     printf("Couldn't find MessageProp.getQOP() method\n");
+ 210     return JNI_ERR;
+ 211   }
+ 212   MID_MessageProp_setPrivacy =
+ 213     (*env)-&gt;GetMethodID(env, cls, "setPrivacy", "(Z)V");
+ 214   if (MID_MessageProp_setPrivacy == NULL) {
+ 215     printf("Couldn't find MessageProp.setPrivacy(boolean) method\n");
+ 216     return JNI_ERR;
+ 217   }
+ 218   MID_MessageProp_setQOP = (*env)-&gt;GetMethodID(env, cls, "setQOP", "(I)V");
+ 219   if (MID_MessageProp_setQOP == NULL) {
+ 220     printf("Couldn't find MessageProp.setQOP(int) method\n");
+ 221     return JNI_ERR;
+ 222   }
+ 223   MID_MessageProp_setSupplementaryStates =
+ 224     (*env)-&gt;GetMethodID(env, cls, "setSupplementaryStates",
+ 225                         "(ZZZZILjava/lang/String;)V");
+ 226   if (MID_MessageProp_setSupplementaryStates == NULL) {
+ 227     printf("Couldn't find MessageProp.setSupplementaryStates(...) method\n");
+ 228     return JNI_ERR;
+ 229   }
+ 230   MID_GSSException_ctor3 = (*env)-&gt;GetMethodID
+ 231     (env, CLS_GSSException, "&lt;init&gt;", "(IILjava/lang/String;)V");
+ 232   if (MID_GSSException_ctor3 == NULL) {
+ 233     printf("Couldn't find GSSException(int, int, String) constructor\n");
+ 234     return JNI_ERR;
+ 235   }
+ 236   cls = (*env)-&gt;FindClass(env, "org/ietf/jgss/ChannelBinding");
+ 237   if (cls == NULL) {
+ 238     printf("Couldn't find org.ietf.jgss.ChannelBinding class\n");
+ 239     return JNI_ERR;
+ 240   }
+ 241   MID_ChannelBinding_getInitiatorAddr =
+ 242     (*env)-&gt;GetMethodID(env, cls, "getInitiatorAddress",
+ 243                         "()Ljava/net/InetAddress;");
+ 244   if (MID_ChannelBinding_getInitiatorAddr == NULL) {
+ 245     printf("Couldn't find ChannelBinding.getInitiatorAddress() method\n");
+ 246     return JNI_ERR;
+ 247   }
+ 248   MID_ChannelBinding_getAcceptorAddr =
+ 249     (*env)-&gt;GetMethodID(env, cls, "getAcceptorAddress",
+ 250                         "()Ljava/net/InetAddress;");
+ 251   if (MID_ChannelBinding_getAcceptorAddr == NULL) {
+ 252     printf("Couldn't find ChannelBinding.getAcceptorAddress() method\n");
+ 253     return JNI_ERR;
+ 254   }
+ 255   MID_ChannelBinding_getAppData =
+ 256     (*env)-&gt;GetMethodID(env, cls, "getApplicationData", "()[B");
+ 257   if (MID_ChannelBinding_getAppData == NULL) {
+ 258     printf("Couldn't find ChannelBinding.getApplicationData() method\n");
+ 259     return JNI_ERR;
+ 260   }
+ 261   cls = (*env)-&gt;FindClass(env, "java/net/InetAddress");
+ 262   if (cls == NULL) {
+ 263     printf("Couldn't find java.net.InetAddress class\n");
+ 264     return JNI_ERR;
+ 265   }
+ 266   MID_InetAddress_getAddr = (*env)-&gt;GetMethodID(env, cls, "getAddress",
+ 267                                                 "()[B");
+ 268   if (MID_InetAddress_getAddr == NULL) {
+ 269     printf("Couldn't find InetAddress.getAddress() method\n");
+ 270     return JNI_ERR;
+ 271   }
+ 272   MID_GSSNameElement_ctor =
+ 273     (*env)-&gt;GetMethodID(env, CLS_GSSNameElement,
+<a name="1" id="anc1"></a><span class="changed"> 274                         "&lt;init&gt;", "(JLsun/security/jgss/wrapper/GSSLibStub;)V");</span>
+ 275   if (MID_GSSNameElement_ctor == NULL) {
+<a name="2" id="anc2"></a><span class="changed"> 276     printf("Couldn't find GSSNameElement(long, GSSLibStub) constructor\n");</span>
+ 277     return JNI_ERR;
+ 278   }
+ 279   MID_GSSCredElement_ctor =
+ 280     (*env)-&gt;GetMethodID(env, CLS_GSSCredElement, "&lt;init&gt;",
+ 281         "(JLsun/security/jgss/wrapper/GSSNameElement;Lorg/ietf/jgss/Oid;)V");
+ 282   if (MID_GSSCredElement_ctor == NULL) {
+ 283     printf("Couldn't find GSSCredElement(long, GSSLibStub) constructor\n");
+ 284     return JNI_ERR;
+ 285   }
+ 286   MID_NativeGSSContext_ctor =
+ 287     (*env)-&gt;GetMethodID(env, CLS_NativeGSSContext, "&lt;init&gt;",
+ 288                         "(JLsun/security/jgss/wrapper/GSSLibStub;)V");
+ 289   if (MID_NativeGSSContext_ctor == NULL) {
+ 290     printf("Couldn't find NativeGSSContext(long, GSSLibStub) constructor\n");
+ 291     return JNI_ERR;
+ 292   }
+ 293   /* Compute and cache the field ID */
+ 294   cls = (*env)-&gt;FindClass(env, "sun/security/jgss/wrapper/GSSLibStub");
+ 295   if (cls == NULL) {
+ 296     printf("Couldn't find sun.security.jgss.wrapper.GSSLibStub class\n");
+ 297     return JNI_ERR;
+ 298   }
+ 299   FID_GSSLibStub_pMech =
+ 300     (*env)-&gt;GetFieldID(env, cls, "pMech", "J");
+ 301   if (FID_GSSLibStub_pMech == NULL) {
+ 302     printf("Couldn't find GSSLibStub.pMech field\n");
+ 303     return JNI_ERR;
+ 304   }
+ 305   FID_NativeGSSContext_pContext =
+ 306     (*env)-&gt;GetFieldID(env, CLS_NativeGSSContext, "pContext", "J");
+ 307   if (FID_NativeGSSContext_pContext == NULL) {
+ 308     printf("Couldn't find NativeGSSContext.pContext field\n");
+ 309     return JNI_ERR;
+ 310   }
+ 311   FID_NativeGSSContext_srcName =
+ 312     (*env)-&gt;GetFieldID(env, CLS_NativeGSSContext, "srcName",
+ 313                        "Lsun/security/jgss/wrapper/GSSNameElement;");
+ 314   if (FID_NativeGSSContext_srcName == NULL) {
+ 315     printf("Couldn't find NativeGSSContext.srcName field\n");
+ 316    return JNI_ERR;
+ 317   }
+ 318   FID_NativeGSSContext_targetName =
+ 319     (*env)-&gt;GetFieldID(env, CLS_NativeGSSContext, "targetName",
+ 320                        "Lsun/security/jgss/wrapper/GSSNameElement;");
+ 321   if (FID_NativeGSSContext_targetName == NULL) {
+ 322     printf("Couldn't find NativeGSSContext.targetName field\n");
+ 323     return JNI_ERR;
+ 324   }
+ 325   FID_NativeGSSContext_isInitiator =
+ 326     (*env)-&gt;GetFieldID(env, CLS_NativeGSSContext, "isInitiator", "Z");
+ 327   if (FID_NativeGSSContext_isInitiator == NULL) {
+ 328     printf("Couldn't find NativeGSSContext.isInitiator field\n");
+ 329     return JNI_ERR;
+ 330   }
+ 331   FID_NativeGSSContext_isEstablished =
+ 332     (*env)-&gt;GetFieldID(env, CLS_NativeGSSContext, "isEstablished", "Z");
+ 333   if (FID_NativeGSSContext_isEstablished == NULL) {
+ 334     printf("Couldn't find NativeGSSContext.isEstablished field\n");
+ 335     return JNI_ERR;
+ 336   }
+ 337   FID_NativeGSSContext_delegatedCred =
+ 338     (*env)-&gt;GetFieldID(env, CLS_NativeGSSContext, "delegatedCred",
+ 339                        "Lsun/security/jgss/wrapper/GSSCredElement;");
+ 340   if (FID_NativeGSSContext_delegatedCred == NULL) {
+ 341     printf("Couldn't find NativeGSSContext.delegatedCred field\n");
+ 342     return JNI_ERR;
+ 343   }
+ 344   FID_NativeGSSContext_flags =
+ 345     (*env)-&gt;GetFieldID(env, CLS_NativeGSSContext, "flags", "I");
+ 346   if (FID_NativeGSSContext_flags == NULL) {
+ 347     printf("Couldn't find NativeGSSContext.flags field\n");
+ 348     return JNI_ERR;
+ 349   }
+ 350   FID_NativeGSSContext_lifetime =
+ 351     (*env)-&gt;GetFieldID(env, CLS_NativeGSSContext, "lifetime", "I");
+ 352   if (FID_NativeGSSContext_lifetime == NULL) {
+ 353     printf("Couldn't find NativeGSSContext.lifetime field\n");
+ 354     return JNI_ERR;
+ 355   }
+ 356   FID_NativeGSSContext_actualMech =
+ 357     (*env)-&gt;GetFieldID(env, CLS_NativeGSSContext, "actualMech",
+ 358                        "Lorg/ietf/jgss/Oid;");
+ 359   if (FID_NativeGSSContext_actualMech == NULL) {
+ 360     printf("Couldn't find NativeGSSContext.actualMech field\n");
+ 361     return JNI_ERR;
+ 362   }
+ 363   return JNI_VERSION_1_2;
+ 364 }
+ 365 
+ 366 JNIEXPORT void JNICALL
+ 367 DEF_JNI_OnUnload(JavaVM *jvm, void *reserved) {
+ 368   JNIEnv *env;
+ 369 
+ 370   if ((*jvm)-&gt;GetEnv(jvm, (void **)&amp;env, JNI_VERSION_1_2)) {
+ 371     return;
+ 372   }
+ 373   /* Delete the global refs */
+ 374   (*env)-&gt;DeleteGlobalRef(env, CLS_Object);
+ 375   (*env)-&gt;DeleteGlobalRef(env, CLS_String);
+ 376   (*env)-&gt;DeleteGlobalRef(env, CLS_Oid);
+ 377   (*env)-&gt;DeleteGlobalRef(env, CLS_GSSException);
+ 378   (*env)-&gt;DeleteGlobalRef(env, CLS_GSSNameElement);
+ 379   (*env)-&gt;DeleteGlobalRef(env, CLS_GSSCredElement);
+ 380   (*env)-&gt;DeleteGlobalRef(env, CLS_SunNativeProvider);
+ 381   return;
+ 382 }
+ 383 
+ 384 const OM_uint32 JAVA_MAX = GSS_C_INDEFINITE/2;
+ 385 
+ 386 /*
+ 387  * Utility routine for converting the C unsigned integer time
+ 388  * to Java signed integer time.
+ 389  */
+ 390 jint getJavaTime(OM_uint32 ctime) {
+ 391   jint result;
+ 392 
+ 393   /* special handle values equals or more than JAVA_MAX */
+ 394   if (ctime == GSS_C_INDEFINITE) {
+ 395     result = JAVA_MAX;
+ 396   } else if (ctime &gt;= JAVA_MAX) {
+ 397     result = JAVA_MAX-1;
+ 398   } else {
+ 399     result = ctime;
+ 400   }
+ 401   return result;
+ 402 }
+ 403 /*
+ 404  * Utility routine for converting the Java signed integer time
+ 405  * to C unsigned integer time.
+ 406  */
+ 407 OM_uint32 getGSSTime(jint jtime) {
+ 408   OM_uint32 result;
+ 409 
+ 410   /* special handle values equal to JAVA_MAX */
+ 411   if (jtime == (jint)JAVA_MAX) {
+ 412     result = GSS_C_INDEFINITE;
+ 413   } else {
+ 414     result = jtime;
+ 415   }
+ 416   return result;
+ 417 }
+ 418 /*
+ 419  * Utility routine for mapping the C error code to the
+ 420  * Java one. The routine errors really should have
+ 421  * shared the same values but unfortunately don't.
+ 422  */
+ 423 jint getJavaErrorCode(int cNonCallingErr) {
+ 424   int cRoutineErr, cSuppStatus;
+ 425   /* map the routine errors */
+ 426   cRoutineErr = GSS_ROUTINE_ERROR(cNonCallingErr) &gt;&gt; 16;
+ 427   if (cRoutineErr != GSS_S_COMPLETE) {
+ 428     return JAVA_ERROR_CODE[cRoutineErr-1];
+ 429   }
+ 430   /* map the supplementary infos */
+ 431   cSuppStatus = GSS_SUPPLEMENTARY_INFO(cNonCallingErr);
+ 432   if (cSuppStatus &amp; GSS_S_DUPLICATE_TOKEN) {
+ 433     return JAVA_DUPLICATE_TOKEN_CODE;
+ 434   } else if (cSuppStatus &amp; GSS_S_OLD_TOKEN) {
+ 435     return JAVA_OLD_TOKEN_CODE;
+ 436   } else if (cSuppStatus &amp; GSS_S_UNSEQ_TOKEN) {
+ 437     return JAVA_UNSEQ_TOKEN_CODE;
+ 438   } else if (cSuppStatus &amp; GSS_S_GAP_TOKEN) {
+ 439     return JAVA_GAP_TOKEN_CODE;
+ 440   }
+ 441   return GSS_S_COMPLETE;
+ 442 }
+ 443 
+ 444 
+ 445 /* Throws a Java Exception by name */
+ 446 void throwByName(JNIEnv *env, const char *name, const char *msg) {
+ 447     jclass cls = (*env)-&gt;FindClass(env, name);
+ 448 
+ 449     if (cls != NULL) {
+ 450         (*env)-&gt;ThrowNew(env, cls, msg);
+ 451     }
+ 452 }
+ 453 
+ 454 void throwOutOfMemoryError(JNIEnv *env, const char *message) {
+ 455     throwByName(env, "java/lang/OutOfMemoryError", message);
+ 456 }
+ 457 
+<a name="3" id="anc3"></a>
+
+
+
+
+
+
+
+ 458 /*
+ 459  * Utility routine for creating a java.lang.String object
+ 460  * using the specified gss_buffer_t structure. The specified
+ 461  * gss_buffer_t structure is always released.
+ 462  */
+ 463 jstring getJavaString(JNIEnv *env, gss_buffer_t bytes) {
+ 464   jstring result = NULL;
+ 465   OM_uint32 minor;
+<a name="4" id="anc4"></a><span class="changed"> 466   int len;</span>
+ 467   jbyteArray jbytes;
+ 468 
+<a name="5" id="anc5"></a><span class="changed"> 469   if (bytes != NULL) {</span>
+<span class="changed"> 470     /* constructs the String object with new String(byte[])</span>
+<span class="changed"> 471        NOTE: do NOT include the trailing NULL */</span>
+<span class="changed"> 472     len = (int) bytes-&gt;length;</span>
+
+
+
+
+
+ 473     jbytes = (*env)-&gt;NewByteArray(env, len);
+ 474     if (jbytes == NULL) {
+<a name="6" id="anc6"></a><span class="changed"> 475       goto finish;</span>
+
+ 476     }
+ 477 
+ 478     (*env)-&gt;SetByteArrayRegion(env, jbytes, 0, len, (jbyte *) bytes-&gt;value);
+<a name="7" id="anc7"></a><span class="changed"> 479     if ((*env)-&gt;ExceptionCheck(env)) {</span>
+<span class="changed"> 480       goto finish;</span>
+<span class="changed"> 481     }</span>
+<span class="changed"> 482 </span>
+ 483     result = (*env)-&gt;NewObject(env, CLS_String, MID_String_ctor,
+ 484                                jbytes);
+<a name="8" id="anc8"></a><span class="changed"> 485   finish:</span>
+
+ 486     (*env)-&gt;DeleteLocalRef(env, jbytes);
+ 487     (*ftab-&gt;releaseBuffer)(&amp;minor, bytes);
+ 488     return result;
+<a name="9" id="anc9"></a><span class="removed"> 489   } /* else fall through */</span>
+<span class="removed"> 490   return NULL;</span>
+ 491 }
+ 492 /*
+ 493  * Utility routine for generate message for the specified minor
+ 494  * status code.
+ 495  */
+ 496 jstring getMinorMessage(JNIEnv *env, jobject jstub, OM_uint32 statusValue) {
+ 497   OM_uint32 messageContext, minor, major;
+ 498   gss_buffer_desc statusString;
+ 499   gss_OID mech;
+ 500 
+ 501   messageContext = 0;
+ 502   if (jstub != NULL) {
+ 503     mech = (gss_OID) jlong_to_ptr((*env)-&gt;GetLongField(env, jstub, FID_GSSLibStub_pMech));
+ 504   } else {
+ 505     mech = GSS_C_NO_OID;
+ 506   }
+ 507 
+ 508   /* gss_display_status(...) =&gt; GSS_S_BAD_MECH, GSS_S_BAD_STATUS */
+ 509   // TBD: check messageContext value and repeat the call if necessary
+ 510   major = (*ftab-&gt;displayStatus)(&amp;minor, statusValue, GSS_C_MECH_CODE, mech,
+ 511                                  &amp;messageContext, &amp;statusString);
+ 512 
+ 513   return getJavaString(env, &amp;statusString);
+ 514 }
+ 515 
+ 516 /*
+ 517  * Utility routine checking the specified major and minor
+ 518  * status codes. GSSExceptions will be thrown if they are
+ 519  * not GSS_S_COMPLETE (i.e. 0).
+ 520  */
+ 521 void checkStatus(JNIEnv *env, jobject jstub, OM_uint32 major,
+<a name="10" id="anc10"></a><span class="changed"> 522                  OM_uint32 minor, char* methodName) {</span>
+ 523   int callingErr, routineErr, supplementaryInfo;
+ 524   jint jmajor, jminor;
+ 525   char* msg;
+ 526   jstring jmsg;
+ 527   jthrowable gssEx;
+ 528 
+ 529   if (major == GSS_S_COMPLETE) return;
+ 530 
+ 531   callingErr = GSS_CALLING_ERROR(major);
+ 532   routineErr = GSS_ROUTINE_ERROR(major);
+ 533   supplementaryInfo = GSS_SUPPLEMENTARY_INFO(major);
+ 534 
+ 535   TRACE3("%s Status major/minor = %x/%d", methodName, major, minor);
+ 536   TRACE3("c/r/s = %d/%d/%d ", callingErr&gt;&gt;24, routineErr&gt;&gt;16,
+ 537           supplementaryInfo);
+ 538 
+ 539   jmajor = getJavaErrorCode(routineErr | supplementaryInfo);
+ 540   jminor = minor;
+ 541   if (jmajor != GSS_S_COMPLETE) {
+ 542     jmsg = NULL;
+ 543     if (minor != 0) {
+ 544       jmsg = getMinorMessage(env, jstub, minor);
+ 545       if ((*env)-&gt;ExceptionCheck(env)) {
+ 546         return;
+ 547       }
+ 548     }
+ 549 
+ 550     gssEx = (*env)-&gt;NewObject(env, CLS_GSSException,
+ 551                               MID_GSSException_ctor3,
+ 552                               jmajor, jminor, jmsg);
+ 553     if (gssEx != NULL) {
+ 554       (*env)-&gt;Throw(env, gssEx);
+ 555     }
+ 556   } else {
+ 557     /* Error in calling the GSS api */
+ 558     if (callingErr == GSS_S_CALL_INACCESSIBLE_READ) {
+ 559       msg = "A required input parameter cannot be read";
+ 560     } else if (callingErr == GSS_S_CALL_INACCESSIBLE_WRITE) {
+ 561       msg = "A required output parameter cannot be write";
+ 562     } else {
+ 563       msg = "A parameter was malformed";
+ 564     }
+ 565     jmajor = 13; /* use GSSException.FAILURE for now */
+ 566     jmsg = (*env)-&gt;NewStringUTF(env, msg);
+ 567     if (jmsg == NULL) {
+ 568       return;
+ 569     }
+ 570     gssEx = (*env)-&gt;NewObject(env, CLS_GSSException,
+ 571                               MID_GSSException_ctor3,
+ 572                               jmajor, jminor, jmsg);
+ 573     if (gssEx != NULL) {
+ 574       (*env)-&gt;Throw(env, gssEx);
+ 575     }
+ 576   }
+ 577 }
+ 578 
+ 579 /*
+ 580  * Utility routine for initializing gss_buffer_t structure
+ 581  * with the byte[] in the specified jbyteArray object.
+ 582  * NOTE: must call resetGSSBuffer() to free up the resources
+<a name="11" id="anc11"></a><span class="removed"> 583  * inside the gss_buffer_t structure.</span>
+ 584  */
+ 585 void initGSSBuffer(JNIEnv *env, jbyteArray jbytes,
+<a name="12" id="anc12"></a><span class="changed"> 586                      gss_buffer_t cbytes) {</span>
+<span class="changed"> 587 </span>
+<span class="changed"> 588   int len;</span>
+
+ 589   void* value;
+ 590 
+<a name="13" id="anc13"></a><span class="changed"> 591   if (jbytes != NULL) {</span>
+<span class="changed"> 592     len = (*env)-&gt;GetArrayLength(env, jbytes);</span>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 593     value = malloc(len);
+ 594     if (value == NULL) {
+ 595       throwOutOfMemoryError(env, NULL);
+ 596       return;
+<a name="14" id="anc14"></a><span class="changed"> 597     } else {</span>
+
+ 598       (*env)-&gt;GetByteArrayRegion(env, jbytes, 0, len, value);
+ 599       if ((*env)-&gt;ExceptionCheck(env)) {
+ 600         free(value);
+ 601         return;
+<a name="15" id="anc15"></a><span class="removed"> 602       } else {</span>
+<span class="removed"> 603         cbytes-&gt;length = len;</span>
+<span class="removed"> 604         cbytes-&gt;value = value;</span>
+ 605       }
+<a name="16" id="anc16"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 606     }
+<a name="17" id="anc17"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 607   } else {
+<a name="18" id="anc18"></a><span class="changed"> 608     cbytes-&gt;length = 0;</span>
+<span class="changed"> 609     cbytes-&gt;value = NULL;</span>
+
+ 610   }
+ 611 }
+ 612 
+ 613 /*
+<a name="19" id="anc19"></a><span class="changed"> 614  * Utility routine for freeing the bytes malloc'ed</span>
+<span class="changed"> 615  * in initGSSBuffer() method.</span>
+<span class="changed"> 616  * NOTE: used in conjunction with initGSSBuffer(...).</span>
+ 617  */
+<a name="20" id="anc20"></a><span class="changed"> 618 void resetGSSBuffer(gss_buffer_t cbytes) {</span>
+<span class="changed"> 619   if ((cbytes != NULL) &amp;&amp; (cbytes != GSS_C_NO_BUFFER)) {</span>
+<span class="changed"> 620     free(cbytes-&gt;value);</span>
+<span class="changed"> 621     cbytes-&gt;length = 0;</span>
+<span class="changed"> 622     cbytes-&gt;value = NULL;</span>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 623   }
+<a name="21" id="anc21"></a>
+
+
+
+ 624 }
+ 625 
+<a name="22" id="anc22"></a>
+ 626 /*
+ 627  * Utility routine for creating a jbyteArray object using
+ 628  * the byte[] value in specified gss_buffer_t structure.
+ 629  * NOTE: the specified gss_buffer_t structure is always
+ 630  * released.
+ 631  */
+<a name="23" id="anc23"></a><span class="changed"> 632 jbyteArray getJavaBuffer(JNIEnv *env, gss_buffer_t cbytes) {</span>
+ 633   jbyteArray result = NULL;
+<a name="24" id="anc24"></a><span class="changed"> 634   OM_uint32 minor; // don't care, just so it compiles</span>
+
+
+
+
+
+
+
+
+ 635 
+<a name="25" id="anc25"></a><span class="changed"> 636   if (cbytes != NULL) {</span>
+<span class="changed"> 637     if ((cbytes != GSS_C_NO_BUFFER) &amp;&amp; (cbytes-&gt;length != 0)) {</span>
+<span class="changed"> 638       result = (*env)-&gt;NewByteArray(env, (int) cbytes-&gt;length);</span>
+<span class="changed"> 639       if (result == NULL) {</span>
+<span class="changed"> 640         goto finish;</span>
+ 641       }
+<a name="26" id="anc26"></a><span class="changed"> 642       (*env)-&gt;SetByteArrayRegion(env, result, 0, (int) cbytes-&gt;length,</span>
+
+ 643                                  cbytes-&gt;value);
+ 644       if ((*env)-&gt;ExceptionCheck(env)) {
+<a name="27" id="anc27"></a>
+ 645         result = NULL;
+ 646       }
+ 647     }
+<a name="28" id="anc28"></a><span class="removed"> 648   finish:</span>
+<span class="removed"> 649     (*ftab-&gt;releaseBuffer)(&amp;minor, cbytes);</span>
+<span class="removed"> 650     return result;</span>
+ 651   }
+<a name="29" id="anc29"></a><span class="changed"> 652   return NULL;</span>
+
+ 653 }
+ 654 
+ 655 /*
+ 656  * Utility routine for creating a non-mech gss_OID using
+ 657  * the specified org.ietf.jgss.Oid object.
+ 658  * NOTE: must call deleteGSSOID(...) to free up the gss_OID.
+ 659  */
+ 660 gss_OID newGSSOID(JNIEnv *env, jobject jOid) {
+ 661   jbyteArray jbytes;
+ 662   gss_OID cOid;
+ 663   if (jOid != NULL) {
+ 664     jbytes = (*env)-&gt;CallObjectMethod(env, jOid, MID_Oid_getDER);
+ 665     if ((*env)-&gt;ExceptionCheck(env)) {
+ 666       return GSS_C_NO_OID;
+ 667     }
+ 668     cOid = malloc(sizeof(struct gss_OID_desc_struct));
+ 669     if (cOid == NULL) {
+ 670       throwOutOfMemoryError(env,NULL);
+ 671       return GSS_C_NO_OID;
+ 672     }
+ 673     cOid-&gt;length = (*env)-&gt;GetArrayLength(env, jbytes) - 2;
+ 674     cOid-&gt;elements = malloc(cOid-&gt;length);
+ 675     if (cOid-&gt;elements == NULL) {
+ 676       throwOutOfMemoryError(env,NULL);
+ 677       goto cleanup;
+ 678     }
+ 679     (*env)-&gt;GetByteArrayRegion(env, jbytes, 2, cOid-&gt;length,
+ 680                                cOid-&gt;elements);
+ 681     if ((*env)-&gt;ExceptionCheck(env)) {
+ 682       goto cleanup;
+ 683     }
+ 684     return cOid;
+ 685   } else {
+ 686     return GSS_C_NO_OID;
+ 687   }
+ 688   cleanup:
+ 689     (*env)-&gt;DeleteLocalRef(env, jbytes);
+ 690     free(cOid-&gt;elements);
+ 691     free(cOid);
+ 692     return GSS_C_NO_OID;
+ 693 }
+ 694 
+ 695 /*
+ 696  * Utility routine for releasing the specified gss_OID
+ 697  * structure.
+ 698  * NOTE: used in conjunction with newGSSOID(...).
+ 699  */
+ 700 void deleteGSSOID(gss_OID oid) {
+ 701   if (oid != GSS_C_NO_OID) {
+ 702     free(oid-&gt;elements);
+ 703     free(oid);
+ 704   }
+ 705 }
+ 706 
+ 707 /*
+ 708  * Utility routine for creating a org.ietf.jgss.Oid
+ 709  * object using the specified gss_OID structure.
+ 710  */
+ 711 jobject getJavaOID(JNIEnv *env, gss_OID cOid) {
+ 712   int cLen;
+ 713   char oidHdr[2];
+ 714   jbyteArray jbytes;
+ 715   jobject result = NULL;
+ 716 
+ 717   if ((cOid == NULL) || (cOid == GSS_C_NO_OID)) {
+ 718     return NULL;
+ 719   }
+ 720   cLen = cOid-&gt;length;
+ 721   oidHdr[0] = 6;
+ 722   oidHdr[1] = cLen;
+ 723   jbytes = (*env)-&gt;NewByteArray(env, cLen+2);
+ 724   if (jbytes == NULL) {
+ 725     return NULL;
+ 726   }
+ 727   if (!(*env)-&gt;ExceptionCheck(env)) {
+ 728     (*env)-&gt;SetByteArrayRegion(env, jbytes, 0, 2, (jbyte *) oidHdr);
+ 729   }
+ 730   if (!(*env)-&gt;ExceptionCheck(env)) {
+ 731     (*env)-&gt;SetByteArrayRegion(env, jbytes, 2, cLen, (jbyte *) cOid-&gt;elements);
+ 732   }
+ 733   if (!(*env)-&gt;ExceptionCheck(env)) {
+ 734     result = (*env)-&gt;NewObject(env, CLS_Oid, MID_Oid_ctor1, jbytes);
+ 735   }
+ 736   (*env)-&gt;DeleteLocalRef(env, jbytes);
+ 737   return result;
+ 738 }
+ 739 /*
+<a name="30" id="anc30"></a><span class="changed"> 740  * Utility routine for creating a gss_OID_set structure</span>
+<span class="changed"> 741  * using the specified gss_OID.</span>
+<span class="changed"> 742  * NOTE: need to call deleteGSSOIDSet(...) afterwards</span>
+<span class="changed"> 743  * to release the created gss_OID_set structure.</span>
+<span class="changed"> 744  */</span>
+<span class="changed"> 745 gss_OID_set newGSSOIDSet(gss_OID oid) {</span>
+<span class="changed"> 746   gss_OID_set oidSet;</span>
+<span class="changed"> 747   OM_uint32 minor; // don't care; just so it compiles</span>
+<span class="changed"> 748 </span>
+<span class="changed"> 749   if (oid-&gt;length != 6 ||</span>
+<span class="changed"> 750       memcmp(oid-&gt;elements, SPNEGO_BYTES, 6) != 0) {</span>
+<span class="changed"> 751       (*ftab-&gt;createEmptyOidSet)(&amp;minor, &amp;oidSet);</span>
+<span class="changed"> 752       (*ftab-&gt;addOidSetMember)(&amp;minor, oid, &amp;oidSet);</span>
+<span class="changed"> 753       return oidSet;</span>
+<span class="changed"> 754   } else {</span>
+<span class="changed"> 755       // Use all mechs for SPNEGO in order to work with</span>
+<span class="changed"> 756       // various native GSS impls</span>
+<span class="changed"> 757       return (ftab-&gt;mechs);</span>
+<span class="changed"> 758   }</span>
+<span class="changed"> 759 }</span>
+<span class="changed"> 760 /*</span>
+<span class="changed"> 761  * Utility routine for releasing a gss_OID_set structure.</span>
+<span class="changed"> 762  * NOTE: used in conjunction with newGSSOIDSet(...).</span>
+<span class="changed"> 763  */</span>
+<span class="changed"> 764 void deleteGSSOIDSet(gss_OID_set oidSet) {</span>
+<span class="changed"> 765   OM_uint32 minor; /* don't care; just so it compiles */</span>
+<span class="changed"> 766 </span>
+<span class="changed"> 767   if ((oidSet != ftab-&gt;mechs) &amp;&amp;</span>
+<span class="changed"> 768       (oidSet != NULL) &amp;&amp; (oidSet != GSS_C_NO_OID_SET)) {</span>
+<span class="changed"> 769     (*ftab-&gt;releaseOidSet)(&amp;minor, &amp;oidSet);</span>
+ 770   }
+<a name="31" id="anc31"></a>
+
+ 771 }
+ 772 /*
+ 773  * Utility routine for creating a org.ietf.jgss.Oid[]
+ 774  * using the specified gss_OID_set structure.
+ 775  */
+ 776 jobjectArray getJavaOIDArray(JNIEnv *env, gss_OID_set cOidSet) {
+<a name="32" id="anc32"></a><span class="changed"> 777   int numOfOids = 0;</span>
+ 778   jobjectArray jOidSet;
+ 779   jobject jOid;
+<a name="33" id="anc33"></a><span class="changed"> 780   int i;</span>
+ 781 
+ 782   if (cOidSet != NULL &amp;&amp; cOidSet != GSS_C_NO_OID_SET) {
+<a name="34" id="anc34"></a><span class="changed"> 783     numOfOids = (int) cOidSet-&gt;count;</span>
+
+
+
+ 784     jOidSet = (*env)-&gt;NewObjectArray(env, numOfOids, CLS_Oid, NULL);
+ 785     if ((*env)-&gt;ExceptionCheck(env)) {
+ 786       return NULL;
+ 787     }
+ 788     for (i = 0; i &lt; numOfOids; i++) {
+ 789       jOid = getJavaOID(env, &amp;(cOidSet-&gt;elements[i]));
+ 790       if ((*env)-&gt;ExceptionCheck(env)) {
+ 791         return NULL;
+ 792       }
+ 793       (*env)-&gt;SetObjectArrayElement(env, jOidSet, i, jOid);
+ 794       if ((*env)-&gt;ExceptionCheck(env)) {
+ 795         return NULL;
+ 796       }
+ 797       (*env)-&gt;DeleteLocalRef(env, jOid);
+ 798     }
+ 799     return jOidSet;
+ 800   }
+ 801   return NULL;
+ 802 }
+ 803 
+ 804 int sameMech(gss_OID mech, gss_OID mech2) {
+ 805   int result = JNI_FALSE; // default to not equal
+ 806 
+ 807   if (mech-&gt;length == mech2-&gt;length) {
+ 808     result = (memcmp(mech-&gt;elements, mech2-&gt;elements, mech-&gt;length) == 0);
+ 809   }
+ 810   return result;
+ 811 }
+<a name="35" id="anc35"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="35" type="hidden"></input></form></body></html>

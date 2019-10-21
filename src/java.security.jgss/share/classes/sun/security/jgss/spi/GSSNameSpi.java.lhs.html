@@ -1,0 +1,309 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre>Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method</pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 2000, 2005, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package sun.security.jgss.spi;
+  27 
+  28 import org.ietf.jgss.*;
+  29 import java.security.Provider;
+  30 
+  31 /**
+  32  * This interface is implemented by a mechanism specific name element. A
+  33  * GSSName is conceptually a container class of several name elements from
+  34  * different mechanisms.
+  35  *
+  36  * @author Mayank Upadhyay
+  37  */
+  38 
+  39 public interface GSSNameSpi {
+  40 
+  41     public Provider getProvider();
+  42 
+  43     /**
+  44      * Equals method for the GSSNameSpi objects.
+  45      * If either name denotes an anonymous principal, the call should
+  46      * return false.
+  47      *
+  48      * @param name to be compared with
+  49      * @return true if they both refer to the same entity, else false
+  50      * @exception GSSException with major codes of BAD_NAMETYPE,
+  51      *    BAD_NAME, FAILURE
+  52      */
+  53     public boolean equals(GSSNameSpi name) throws GSSException;
+  54 
+  55     /**
+  56      * Compares this &lt;code&gt;GSSNameSpi&lt;/code&gt; object to another Object
+  57      * that might be a &lt;code&gt;GSSNameSpi&lt;/code&gt;. The behaviour is exactly
+  58      * the same as in {@link #equals(GSSNameSpi) equals} except that
+  59      * no GSSException is thrown; instead, false will be returned in the
+  60      * situation where an error occurs.
+  61      *
+  62      * @param another the object to be compared to
+  63      * @return true if they both refer to the same entity, else false
+  64      * @see #equals(GSSNameSpi)
+  65      */
+  66     public boolean equals(Object another);
+  67 
+  68     /**
+  69      * Returns a hashcode value for this GSSNameSpi.
+  70      *
+  71      * @return a hashCode value
+  72      */
+  73     public int hashCode();
+  74 
+  75     /**
+  76      * Returns a flat name representation for this object. The name
+  77      * format is defined in RFC 2078.
+  78      *
+  79      * @return the flat name representation for this object
+  80      * @exception GSSException with major codes NAME_NOT_MN, BAD_NAME,
+  81      *    BAD_NAME, FAILURE.
+  82      */
+  83     public byte[] export() throws GSSException;
+  84 
+  85 
+  86     /**
+  87      * Get the mechanism type that this NameElement corresponds to.
+  88      *
+  89      * @return the Oid of the mechanism type
+  90      */
+  91     public Oid getMechanism();
+  92 
+  93     /**
+  94      * Returns a string representation for this name. The printed
+  95      * name type can be obtained by calling getStringNameType().
+  96      *
+  97      * @return string form of this name
+  98      * @see #getStringNameType()
+  99      * @overrides Object#toString
+ 100      */
+ 101     public String toString();
+ 102 
+<a name="1" id="anc1"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 103 
+ 104     /**
+ 105      * Returns the oid describing the format of the printable name.
+ 106      *
+ 107      * @return the Oid for the format of the printed name
+ 108      */
+ 109     public Oid getStringNameType();
+ 110 
+ 111     /**
+ 112      * Indicates if this name object represents an Anonymous name.
+ 113      */
+ 114     public boolean isAnonymousName();
+<a name="2" id="anc2"></a>
+
+
+
+
+
+ 115 }
+<a name="3" id="anc3"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="3" type="hidden"></input></form></body></html>

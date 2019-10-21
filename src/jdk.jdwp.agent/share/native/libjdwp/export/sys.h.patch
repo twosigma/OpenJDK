@@ -1,0 +1,10 @@
+--- old/src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h	2019-10-21 14:15:15.572462218 -0500
++++ new/src/jdk.jdwp.agent/share/native/libjdwp/export/sys.h	2019-10-21 14:15:15.576462168 -0500
+@@ -41,6 +41,7 @@
+ void *  dbgsysLoadLibrary(const char *, char *err_buf, int err_buflen);
+ void    dbgsysUnloadLibrary(void *);
+ void *  dbgsysFindLibraryEntry(void *, const char *);
++int     dbgsysGetLastErrorString(char *, int);
+ 
+ /* Implemented in exec_md.c */
+ int     dbgsysExec(char *cmdLine);

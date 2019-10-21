@@ -1,0 +1,82 @@
+From 56203b3eeb85c60e5f3535ae5f477f3157864b6d Mon Sep 17 00:00:00 2001
+From: Nico Williams <nico@twosigma.com>
+Date: Fri, 4 Dec 2015 23:19:50 +0000
+Subject: [PATCH 13/24] JGSS: Prefer default cred handles if possible
+
+---
+ .../classes/sun/security/jgss/GSSUtil.java    | 56 ++++++++++++-------
+ 1 file changed, 35 insertions(+), 21 deletions(-)
+
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java b/src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java
+index 936883c9c6..4b5e57ed1c 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java
+@@ -321,30 +321,44 @@ public class GSSUtil {
+                     public Vector<T> run() throws Exception {
+                         Subject accSubj = Subject.getSubject(acc);
+                         Vector<T> result = null;
+-                        if (accSubj != null) {
+-                            result = new Vector<T>();
+-                            Iterator<GSSCredentialImpl> iterator =
+-                                accSubj.getPrivateCredentials
+-                                (GSSCredentialImpl.class).iterator();
+-                            while (iterator.hasNext()) {
+-                                GSSCredentialImpl cred = iterator.next();
+-                                debug("...Found cred" + cred);
+-                                try {
+-                                    GSSCredentialSpi ce =
+-                                        cred.getElement(mech, initiate);
+-                                    debug("......Found element: " + ce);
+-                                    if (ce.getClass().equals(credCls) &&
+-                                        (name == null ||
+-                                         name.equals((Object) ce.getName()))) {
++                        if (accSubj == null) {
++                            debug("No Subject");
++                            return result;
++                        }
++
++                        result = new Vector<T>();
++                        Iterator<GSSCredentialImpl> iterator =
++                            accSubj.getPrivateCredentials
++                            (GSSCredentialImpl.class).iterator();
++                        while (iterator.hasNext()) {
++                            GSSCredentialImpl cred = iterator.next();
++                            debug("...Found cred" + cred);
++                            try {
++                                GSSCredentialSpi ce =
++                                    cred.getElement(mech, initiate);
++                                debug("......Found element: " + ce);
++                                if (!ce.getClass().equals(credCls)) {
++                                    debug("......Discard element (class mismatch)");
++                                } else if (name == null) {
++                                    /*
++                                     * If the caller doesn't care about
++                                     * the specific name, then prefer
++                                     * default credentials to
++                                     * non-default credentials.
++                                     */
++                                    if (ce.isDefaultCredential())
++                                        result.add(0, credCls.cast(ce));
++                                    else
+                                         result.add(credCls.cast(ce));
+-                                    } else {
+-                                        debug("......Discard element");
+-                                    }
+-                                } catch (GSSException ge) {
+-                                    debug("...Discard cred (" + ge + ")");
++                                } else if (name.equals((Object) ce.getName())) {
++                                    result.add(credCls.cast(ce));
++                                } else {
++                                    debug("......Discard element (name mismatch)");
+                                 }
++                            } catch (GSSException ge) {
++                                debug("...Discard cred (exception: " + ge + ")");
+                             }
+-                        } else debug("No Subject");
++                        }
+                         return result;
+                     }
+                 });
+-- 
+2.17.1
+

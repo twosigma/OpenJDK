@@ -1,0 +1,194 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Sdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java</title>
+</head><body id="SUNWwebrev">
+<a class="print" href="javascript:print()">Print this page</a>
+<pre>FIXME commentary</pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+  92                                 };
+  93                             } else if (osname.contains("OS X")) {
+  94                                 gssLibs = new String[]{
+  95                                     "libgssapi_krb5.dylib",
+  96                                     "/usr/lib/sasl2/libgssapiv2.2.so",
+  97                                };
+  98                             } else if (osname.contains("Windows")) {
+  99                                 // Full path needed, DLL is in jre/bin
+ 100                                 gssLibs = new String[]{ System.getProperty("java.home")
+ 101                                         + "\\bin\\sspi_bridge.dll" };
+ 102                             } else {
+ 103                                 gssLibs = new String[0];
+ 104                             }
+ 105                         } else {
+ 106                             gssLibs = new String[]{ defaultLib };
+ 107                         }
+ 108                         for (String libName: gssLibs) {
+ 109                             if (GSSLibStub.init(libName, DEBUG)) {
+ 110                                 debug("Loaded GSS library: " + libName);
+ 111                                 Oid[] mechs = GSSLibStub.indicateMechs();
+<span class="changed"> 112                                 HashMap&lt;String,String&gt; map = new HashMap&lt;&gt;();</span>
+
+
+
+
+
+
+
+ 113                                 for (int i = 0; i &lt; mechs.length; i++) {
+ 114                                     debug("Native MF for " + mechs[i]);
+ 115                                     map.put("GssApiMechanism." + mechs[i],
+ 116                                             MF_CLASS);
+ 117                                 }
+ 118                                 return map;
+ 119                             }
+ 120                         }
+ 121                         return null;
+ 122                     }
+ 123                 });
+ 124         // initialize INSTANCE after MECH_MAP is constructed
+ 125         INSTANCE = new SunNativeProvider();
+ 126     }
+ 127 
+ 128     public SunNativeProvider() {
+ 129         /* We are the Sun NativeGSS provider */
+ 130         super(NAME, PROVIDER_VER, INFO);
+ 131 
+ 132         if (MECH_MAP != null) {
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+  92                                 };
+  93                             } else if (osname.contains("OS X")) {
+  94                                 gssLibs = new String[]{
+  95                                     "libgssapi_krb5.dylib",
+  96                                     "/usr/lib/sasl2/libgssapiv2.2.so",
+  97                                };
+  98                             } else if (osname.contains("Windows")) {
+  99                                 // Full path needed, DLL is in jre/bin
+ 100                                 gssLibs = new String[]{ System.getProperty("java.home")
+ 101                                         + "\\bin\\sspi_bridge.dll" };
+ 102                             } else {
+ 103                                 gssLibs = new String[0];
+ 104                             }
+ 105                         } else {
+ 106                             gssLibs = new String[]{ defaultLib };
+ 107                         }
+ 108                         for (String libName: gssLibs) {
+ 109                             if (GSSLibStub.init(libName, DEBUG)) {
+ 110                                 debug("Loaded GSS library: " + libName);
+ 111                                 Oid[] mechs = GSSLibStub.indicateMechs();
+<span class="changed"> 112                                 HashMap&lt;String, String&gt; map =</span>
+<span class="changed"> 113                                             new HashMap&lt;String, String&gt;();</span>
+<span class="changed"> 114                                 // If the GSSLibStub does not support SPNEGO,</span>
+<span class="changed"> 115                                 // we could use ours, but ours has too much</span>
+<span class="changed"> 116                                 // knowledge of the Java Krb5 GSS mechanism, so</span>
+<span class="changed"> 117                                 // we can't, but if we could we'd do it thusly:</span>
+<span class="changed"> 118                                 //   map.put("GssApiMechanism.1.3.6.1.5.5.2",</span>
+<span class="changed"> 119                                 //           "sun.security.jgss.spnego.SpNegoMechFactory");</span>
+ 120                                 for (int i = 0; i &lt; mechs.length; i++) {
+ 121                                     debug("Native MF for " + mechs[i]);
+ 122                                     map.put("GssApiMechanism." + mechs[i],
+ 123                                             MF_CLASS);
+ 124                                 }
+ 125                                 return map;
+ 126                             }
+ 127                         }
+ 128                         return null;
+ 129                     }
+ 130                 });
+ 131         // initialize INSTANCE after MECH_MAP is constructed
+ 132         INSTANCE = new SunNativeProvider();
+ 133     }
+ 134 
+ 135     public SunNativeProvider() {
+ 136         /* We are the Sun NativeGSS provider */
+ 137         super(NAME, PROVIDER_VER, INFO);
+ 138 
+ 139         if (MECH_MAP != null) {
+</pre></td>
+</tr></table>
+</body></html>

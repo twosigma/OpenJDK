@@ -1,0 +1,283 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Cdiff src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java</title>
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Modernize GSSUtil.java
+Based on code review commentary by Peter Burka.
+Make GSSName implement Principal (add getName())
+JGSS: Prefer default cred handles if possible</pre>
+        <pre>
+<hr></hr><span class="oldmarker">*** 118,164 ****</span>
+       */
+      public static Subject getSubject(GSSName name,
+                                       GSSCredential creds) {
+  
+          HashSet&lt;Object&gt; privCredentials = null;
+<span class="changed">!         HashSet&lt;Object&gt; pubCredentials = new HashSet&lt;Object&gt;(); // empty Set</span>
+  
+          Set&lt;GSSCredentialSpi&gt; gssCredentials = null;
+  
+<span class="changed">!         Set&lt;KerberosPrincipal&gt; krb5Principals =</span>
+<span class="changed">!                                 new HashSet&lt;KerberosPrincipal&gt;();</span>
+<span class="changed">! </span>
+<span class="changed">!         if (name instanceof GSSNameImpl) {</span>
+<span class="changed">!             try {</span>
+<span class="changed">!                 GSSNameSpi ne = ((GSSNameImpl) name).getElement</span>
+<span class="changed">!                     (GSS_KRB5_MECH_OID);</span>
+<span class="changed">!                 String krbName = ne.toString();</span>
+<span class="changed">!                 if (ne instanceof Krb5NameElement) {</span>
+<span class="changed">!                     krbName =</span>
+<span class="changed">!                         ((Krb5NameElement) ne).getKrb5PrincipalName().getName();</span>
+<span class="changed">!                 }</span>
+<span class="changed">!                 KerberosPrincipal krbPrinc = new KerberosPrincipal(krbName);</span>
+<span class="changed">!                 krb5Principals.add(krbPrinc);</span>
+<span class="changed">!             } catch (GSSException ge) {</span>
+<span class="changed">!                 debug("Skipped name " + name + " due to " + ge);</span>
+<span class="changed">!             }</span>
+<span class="changed">!         }</span>
+  
+          if (creds instanceof GSSCredentialImpl) {
+              gssCredentials = ((GSSCredentialImpl) creds).getElements();
+<span class="changed">!             privCredentials = new HashSet&lt;Object&gt;(gssCredentials.size());</span>
+              populateCredentials(privCredentials, gssCredentials);
+          } else {
+<span class="changed">!             privCredentials = new HashSet&lt;Object&gt;(); // empty Set</span>
+          }
+          debug("Created Subject with the following");
+<span class="changed">!         debug("principals=" + krb5Principals);</span>
+          debug("public creds=" + pubCredentials);
+          debug("private creds=" + privCredentials);
+  
+<span class="changed">!         return new Subject(false, krb5Principals, pubCredentials,</span>
+<span class="changed">!                            privCredentials);</span>
+  
+      }
+  
+      /**
+       * Populates the set credentials with elements from gssCredentials. At
+<span class="newmarker">--- 118,147 ----</span>
+       */
+      public static Subject getSubject(GSSName name,
+                                       GSSCredential creds) {
+  
+          HashSet&lt;Object&gt; privCredentials = null;
+<span class="changed">!         HashSet&lt;Object&gt; pubCredentials = new HashSet&lt;&gt;(); // empty Set</span>
+  
+          Set&lt;GSSCredentialSpi&gt; gssCredentials = null;
+  
+<span class="changed">!         Set&lt;GSSName&gt; names = new HashSet&lt;&gt;();</span>
+<span class="changed">!         names.add(name);</span>
+  
+          if (creds instanceof GSSCredentialImpl) {
+              gssCredentials = ((GSSCredentialImpl) creds).getElements();
+<span class="changed">!             privCredentials = new HashSet&lt;&gt;(gssCredentials.size());</span>
+              populateCredentials(privCredentials, gssCredentials);
+          } else {
+<span class="changed">!             privCredentials = new HashSet&lt;&gt;(); // empty Set</span>
+          }
+          debug("Created Subject with the following");
+<span class="changed">!         debug("principals=" + names);</span>
+          debug("public creds=" + pubCredentials);
+          debug("private creds=" + privCredentials);
+  
+<span class="changed">!         return new Subject(false, names, pubCredentials, privCredentials);</span>
+  
+      }
+  
+      /**
+       * Populates the set credentials with elements from gssCredentials. At
+<hr></hr><span class="oldmarker">*** 170,185 ****</span>
+       * extends KerberosKey.)
+       */
+      private static void populateCredentials(Set&lt;Object&gt; credentials,
+                                              Set&lt;?&gt; gssCredentials) {
+  
+<span class="changed">!         Object cred;</span>
+<span class="changed">! </span>
+<span class="changed">!         Iterator&lt;?&gt; elements = gssCredentials.iterator();</span>
+<span class="changed">!         while (elements.hasNext()) {</span>
+<span class="changed">! </span>
+<span class="changed">!             cred = elements.next();</span>
+  
+              // Retrieve the internal cred out of SpNegoCredElement
+              if (cred instanceof SpNegoCredElement) {
+                  cred = ((SpNegoCredElement) cred).getInternalCred();
+              }
+<span class="newmarker">--- 153,163 ----</span>
+       * extends KerberosKey.)
+       */
+      private static void populateCredentials(Set&lt;Object&gt; credentials,
+                                              Set&lt;?&gt; gssCredentials) {
+  
+<span class="changed">!         for (Object cred : gssCredentials) {</span>
+  
+              // Retrieve the internal cred out of SpNegoCredElement
+              if (cred instanceof SpNegoCredElement) {
+                  cred = ((SpNegoCredElement) cred).getInternalCred();
+              }
+<hr></hr><span class="oldmarker">*** 319,352 ****</span>
+                  AccessController.doPrivileged
+                  (new PrivilegedExceptionAction&lt;Vector&lt;T&gt;&gt;() {
+                      public Vector&lt;T&gt; run() throws Exception {
+                          Subject accSubj = Subject.getSubject(acc);
+                          Vector&lt;T&gt; result = null;
+<span class="changed">!                         if (accSubj != null) {</span>
+                              result = new Vector&lt;T&gt;();
+<span class="changed">!                             Iterator&lt;GSSCredentialImpl&gt; iterator =</span>
+<span class="changed">!                                 accSubj.getPrivateCredentials</span>
+<span class="changed">!                                 (GSSCredentialImpl.class).iterator();</span>
+<span class="changed">!                             while (iterator.hasNext()) {</span>
+<span class="changed">!                                 GSSCredentialImpl cred = iterator.next();</span>
+                                  debug("...Found cred" + cred);
+                                  try {
+                                      GSSCredentialSpi ce =
+                                          cred.getElement(mech, initiate);
+                                      debug("......Found element: " + ce);
+<span class="changed">!                                     if (ce.getClass().equals(credCls) &amp;&amp;</span>
+<span class="changed">!                                         (name == null ||</span>
+<span class="changed">!                                          name.equals((Object) ce.getName()))) {</span>
+                                          result.add(credCls.cast(ce));
+                                      } else {
+<span class="changed">!                                         debug("......Discard element");</span>
+                                      }
+                                  } catch (GSSException ge) {
+<span class="changed">!                                     debug("...Discard cred (" + ge + ")");</span>
+                                  }
+                              }
+<span class="removed">-                         } else debug("No Subject");</span>
+                          return result;
+                      }
+                  });
+              return creds;
+          } catch (PrivilegedActionException pae) {
+<span class="newmarker">--- 297,341 ----</span>
+                  AccessController.doPrivileged
+                  (new PrivilegedExceptionAction&lt;Vector&lt;T&gt;&gt;() {
+                      public Vector&lt;T&gt; run() throws Exception {
+                          Subject accSubj = Subject.getSubject(acc);
+                          Vector&lt;T&gt; result = null;
+<span class="changed">!                         if (accSubj == null) {</span>
+<span class="changed">!                             debug("No Subject");</span>
+<span class="changed">!                             return result;</span>
+<span class="changed">!                         }</span>
+<span class="changed">! </span>
+                          result = new Vector&lt;T&gt;();
+<span class="changed">!                         for (GSSCredentialImpl cred : accSubj.getPrivateCredentials</span>
+<span class="changed">!                                                       (GSSCredentialImpl.class)) {</span>
+                              debug("...Found cred" + cred);
+                              try {
+                                  GSSCredentialSpi ce =
+                                      cred.getElement(mech, initiate);
+                                  debug("......Found element: " + ce);
+<span class="changed">!                                 if (!ce.getClass().equals(credCls)) {</span>
+<span class="changed">!                                     debug("......Discard element (class mismatch)");</span>
+<span class="changed">!                                 } else if (name == null) {</span>
+<span class="changed">!                                     /*</span>
+<span class="changed">!                                      * If the caller doesn't care about</span>
+<span class="changed">!                                      * the specific name, then prefer</span>
+<span class="changed">!                                      * default credentials to</span>
+<span class="changed">!                                      * non-default credentials.</span>
+<span class="changed">!                                      */</span>
+<span class="changed">!                                     if (ce.isDefaultCredential())</span>
+<span class="changed">!                                         result.add(0, credCls.cast(ce));</span>
+<span class="changed">!                                     else</span>
+<span class="changed">!                                         result.add(credCls.cast(ce));</span>
+<span class="changed">!                                 } else if (name.equals((Object) ce.getName())) {</span>
+                                      result.add(credCls.cast(ce));
+                                  } else {
+<span class="changed">!                                     debug("......Discard element (name mismatch)");</span>
+                                  }
+                              } catch (GSSException ge) {
+<span class="changed">!                                 debug("...Discard cred (exception: " + ge + ")");</span>
+                              }
+                          }
+                          return result;
+                      }
+                  });
+              return creds;
+          } catch (PrivilegedActionException pae) {
+</pre></body></html>
+

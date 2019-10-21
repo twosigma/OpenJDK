@@ -1,0 +1,499 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">19 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package sun.security.jgss.wrapper;
+  27   27  
+  28   28  import java.io.UnsupportedEncodingException;
+  29   29  import java.security.Provider;
+<span class='added'>       30 +import java.util.Map;
+</span>  30   31  import java.util.Vector;
+  31   32  import org.ietf.jgss.*;
+  32   33  import sun.security.jgss.GSSUtil;
+  33   34  import sun.security.jgss.GSSCaller;
+  34   35  import sun.security.jgss.GSSExceptionImpl;
+  35   36  import sun.security.jgss.spi.*;
+  36   37  
+  37   38  /**
+  38   39   * JGSS plugin for generic mechanisms provided through native GSS framework.
+  39   40   *
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  40   41   * @author Valerie Peng
+  41   42   */
+  42   43  
+  43   44  public final class NativeGSSFactory implements MechanismFactory {
+  44   45  
+  45   46      GSSLibStub cStub = null;
+  46   47      private final GSSCaller caller;
+  47   48  
+  48   49      private GSSCredElement getCredFromSubject(GSSNameElement name,
+  49   50                                                boolean initiate)
+  50   51          throws GSSException {
+  51   52          Oid mech = cStub.getMech();
+  52   53          Vector&lt;GSSCredElement&gt; creds = GSSUtil.searchSubject
+  53   54              (name, mech, initiate, GSSCredElement.class);
+  54   55  
+  55   56          // If Subject is present but no native creds available
+  56   57          if (creds != null &amp;&amp; creds.isEmpty()) {
+  57   58              if (GSSUtil.useSubjectCredsOnly(caller)) {
+  58   59                  throw new GSSException(GSSException.NO_CRED);
+  59   60              }
+  60   61          }
+  61   62  
+  62   63          GSSCredElement result = ((creds == null || creds.isEmpty()) ?
+  63   64                                   null : creds.firstElement());
+  64   65          // Force permission check before returning the cred to caller
+  65   66          if (result != null) {
+  66   67              result.doServicePermCheck();
+  67   68          }
+  68   69          return result;
+  69   70      }
+  70   71  
+  71   72      public NativeGSSFactory(GSSCaller caller) {
+  72   73          this.caller = caller;
+  73   74          // Have to call setMech(Oid) explicitly before calling other
+  74   75          // methods. Otherwise, NPE may be thrown unexpectantly
+  75   76      }
+  76   77  
+  77   78      public void setMech(Oid mech) throws GSSException {
+  78   79          cStub = GSSLibStub.getInstance(mech);
+  79   80      }
+  80   81  
+  81   82      public GSSNameSpi getNameElement(String nameStr, Oid nameType)
+  82   83          throws GSSException {
+  83   84          try {
+  84   85              byte[] nameBytes =
+  85   86                  (nameStr == null ? null : nameStr.getBytes("UTF-8"));
+  86   87              return new GSSNameElement(nameBytes, nameType, cStub);
+  87   88          } catch (UnsupportedEncodingException uee) {
+  88   89              // Shouldn't happen
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">49 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  89   90              throw new GSSExceptionImpl(GSSException.FAILURE, uee);
+  90   91          }
+  91   92      }
+  92   93  
+  93   94      public GSSNameSpi getNameElement(byte[] name, Oid nameType)
+  94   95          throws GSSException {
+  95   96          return new GSSNameElement(name, nameType, cStub);
+  96   97      }
+  97   98  
+  98   99      public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+<span class='added'>      100 +                                                 String password,
+</span>  99  101                                                   int initLifetime,
+ 100  102                                                   int acceptLifetime,
+ 101  103                                                   int usage)
+ 102  104          throws GSSException {
+ 103  105          GSSNameElement nname = null;
+ 104  106          if (name != null &amp;&amp; !(name instanceof GSSNameElement)) {
+ 105  107              nname = (GSSNameElement)
+ 106  108                  getNameElement(name.toString(), name.getStringNameType());
+ 107  109          } else nname = (GSSNameElement) name;
+ 108  110  
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 109  111          if (usage == GSSCredential.INITIATE_AND_ACCEPT) {
+ 110  112              // Force separate acqusition of cred element since
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">2 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 111  113              // MIT's impl does not correctly report NO_CRED error.
+ 112  114              usage = GSSCredential.INITIATE_ONLY;
+ 113  115          }
+ 114  116  
+ 115  117          GSSCredElement credElement =
+ 116  118              getCredFromSubject(nname, (usage == GSSCredential.INITIATE_ONLY));
+ 117  119  
+ 118  120          if (credElement == null) {
+ 119  121              // No cred in the Subject
+ 120  122              if (usage == GSSCredential.INITIATE_ONLY) {
+<span class='subtracted'> 121      -                credElement = new GSSCredElement(nname, initLifetime,
+ 122      -                                                 usage, cStub);
+</span><span class='added'>      123 +                if (password == null) {
+      124 +                    credElement = new GSSCredElement(nname, initLifetime,
+      125 +                                                     usage, cStub);
+      126 +                } else {
+      127 +                    credElement = new GSSCredElement(nname, password,
+      128 +                                                     initLifetime,
+      129 +                                                     usage, cStub);
+      130 +                }
+      131 +            } else if (usage == GSSCredential.ACCEPT_ONLY) {
+      132 +                if (nname == null) {
+      133 +                    nname = GSSNameElement.DEF_ACCEPTOR;
+      134 +                }
+      135 +                if (password == null) {
+      136 +                    credElement = new GSSCredElement(nname, acceptLifetime,
+      137 +                                                     usage, cStub);
+      138 +                } else {
+      139 +                    credElement = new GSSCredElement(nname, password,
+      140 +                                                     acceptLifetime,
+      141 +                                                     usage, cStub);
+      142 +                }
+      143 +            } else {
+      144 +                throw new GSSException(GSSException.FAILURE, -1,
+      145 +                                       "Unknown usage mode requested");
+      146 +            }
+      147 +        }
+      148 +        return credElement;
+      149 +    }
+      150 +
+      151 +    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+      152 +                                                 Map&lt;String,String&gt; store,
+      153 +                                                 int initLifetime,
+      154 +                                                 int acceptLifetime,
+      155 +                                                 int usage)
+      156 +        throws GSSException {
+      157 +        GSSNameElement nname = null;
+      158 +        if (name != null &amp;&amp; !(name instanceof GSSNameElement)) {
+      159 +            nname = (GSSNameElement)
+      160 +                getNameElement(name.toString(), name.getStringNameType());
+      161 +        } else nname = (GSSNameElement) name;
+      162 +
+      163 +        if (usage == GSSCredential.INITIATE_AND_ACCEPT) {
+      164 +            // Force separate acqusition of cred element since
+      165 +            // MIT's impl does not correctly report NO_CRED error.
+      166 +            usage = GSSCredential.INITIATE_ONLY;
+      167 +        }
+      168 +
+      169 +        GSSCredElement credElement =
+      170 +            getCredFromSubject(nname, (usage == GSSCredential.INITIATE_ONLY));
+      171 +
+      172 +        if (credElement == null) {
+      173 +            // No cred in the Subject
+      174 +            if (usage == GSSCredential.INITIATE_ONLY) {
+      175 +                if (store == null) {
+      176 +                    credElement = new GSSCredElement(nname, initLifetime,
+      177 +                                                     usage, cStub);
+      178 +                } else {
+      179 +                    credElement = new GSSCredElement(nname, store,
+      180 +                                                     initLifetime,
+      181 +                                                     usage, cStub);
+      182 +                }
+</span> 123  183              } else if (usage == GSSCredential.ACCEPT_ONLY) {
+ 124  184                  if (nname == null) {
+ 125  185                      nname = GSSNameElement.DEF_ACCEPTOR;
+ 126  186                  }
+<span class='subtracted'> 127      -                credElement = new GSSCredElement(nname, acceptLifetime,
+ 128      -                                                 usage, cStub);
+</span><span class='added'>      187 +                if (store == null) {
+      188 +                    credElement = new GSSCredElement(nname, acceptLifetime,
+      189 +                                                     usage, cStub);
+      190 +                } else {
+      191 +                    credElement = new GSSCredElement(nname, store,
+      192 +                                                     acceptLifetime,
+      193 +                                                     usage, cStub);
+      194 +                }
+</span> 129  195              } else {
+ 130  196                  throw new GSSException(GSSException.FAILURE, -1,
+ 131  197                                         "Unknown usage mode requested");
+ 132  198              }
+ 133  199          }
+ 134  200          return credElement;
+<span class='added'>      201 +    }
+      202 +
+      203 +    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+      204 +                                                 int initLifetime,
+      205 +                                                 int acceptLifetime,
+      206 +                                                 int usage)
+      207 +        throws GSSException {
+      208 +        return getCredentialElement(name, (String)null, initLifetime,
+      209 +                                    acceptLifetime, usage);
+</span> 135  210      }
+ 136  211  
+ 137  212      public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+ 138  213                                               GSSCredentialSpi myCred,
+ 139  214                                               int lifetime)
+ 140  215          throws GSSException {
+ 141  216          if (peer == null) {
+ 142  217              throw new GSSException(GSSException.BAD_NAME);
+ 143  218          } else if (!(peer instanceof GSSNameElement)) {
+ 144  219              peer = (GSSNameElement)
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 145  220                  getNameElement(peer.toString(), peer.getStringNameType());
+ 146  221          }
+ 147  222          if (myCred == null) {
+ 148  223              myCred = getCredFromSubject(null, true);
+ 149  224          } else if (!(myCred instanceof GSSCredElement)) {
+ 150  225              throw new GSSException(GSSException.NO_CRED);
+ 151  226          }
+ 152  227          return new NativeGSSContext((GSSNameElement) peer,
+ 153  228                                       (GSSCredElement) myCred,
+ 154  229                                       lifetime, cStub);
+ 155  230      }
+ 156  231  
+ 157  232      public GSSContextSpi getMechanismContext(GSSCredentialSpi myCred)
+ 158  233          throws GSSException {
+ 159  234          if (myCred == null) {
+ 160  235              myCred = getCredFromSubject(null, false);
+ 161  236          } else if (!(myCred instanceof GSSCredElement)) {
+ 162  237              throw new GSSException(GSSException.NO_CRED);
+ 163  238          }
+ 164  239          return new NativeGSSContext((GSSCredElement) myCred, cStub);
+ 165  240      }
+ 166  241  
+ 167  242      public GSSContextSpi getMechanismContext(byte[] exportedContext)
+ 168  243          throws GSSException {
+ 169  244          return cStub.importContext(exportedContext);
+ 170  245      }
+ 171  246  
+ 172  247      public final Oid getMechanismOid() {
+ 173  248          return cStub.getMech();
+ 174  249      }
+ 175  250  
+ 176  251      public Provider getProvider() {
+ 177  252          return SunNativeProvider.INSTANCE;
+ 178  253      }
+ 179  254  
+ 180  255      public Oid[] getNameTypes() throws GSSException {
+ 181  256          return cStub.inquireNamesForMech();
+ 182  257      }
+ 183  258  }
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">39 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 4; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 4; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,240 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws New src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package sun.security.jgss.wrapper;
+  27 
+  28 import java.util.Map;
+  29 import java.util.ArrayList;
+  30 import java.util.Hashtable;
+  31 import org.ietf.jgss.Oid;
+  32 import org.ietf.jgss.GSSName;
+  33 import org.ietf.jgss.ChannelBinding;
+  34 import org.ietf.jgss.MessageProp;
+  35 import org.ietf.jgss.GSSException;
+  36 import sun.security.jgss.GSSUtil;
+  37 
+  38 /**
+  39  * This class is essentially a JNI calling stub for all wrapper classes.
+  40  *
+  41  * @author Valerie Peng
+  42  * @since 1.6
+  43  */
+  44 
+  45 class GSSLibStub {
+  46 
+  47     private Oid mech;
+  48     private long pMech;
+  49 
+  50     /**
+  51      * Initialization routine to dynamically load function pointers.
+  52      *
+  53      * @param lib library name to dlopen
+  54      * @param debug set to true for reporting native debugging info
+  55      * @return true if succeeded, false otherwise.
+  56      */
+  57     static native boolean init(String lib, boolean debug);
+  58     private static native long getMechPtr(byte[] oidDerEncoding);
+  59 
+  60     // Miscellaneous routines
+  61     static native Oid[] indicateMechs();
+  62     native Oid[] inquireNamesForMech() throws GSSException;
+  63 
+  64     // Name related routines
+  65     native void releaseName(long pName);
+  66     native long importName(byte[] name, Oid type);
+  67     native boolean compareName(long pName1, long pName2);
+  68     native long canonicalizeName(long pName);
+  69     native byte[] exportName(long pName) throws GSSException;
+  70     native String localName(long pName, Oid mech) throws GSSException;
+  71     native Object[] displayName(long pName) throws GSSException;
+  72 
+  73     // Credential related routines
+  74     native long acquireCred(long pName, String password, String[] store,
+  75                             int lifetime, int usage) throws GSSException;
+  76     native long storeCred(long pCred, int usage, Oid mech,
+  77                           boolean overwrite, boolean defaultCred,
+  78                           String[] store) throws GSSException;
+  79     native long releaseCred(long pCred);
+  80     native long getCredName(long pCred);
+  81     native int getCredTime(long pCred);
+  82     native int getCredUsage(long pCred);
+  83 
+  84     // Context related routines
+  85     native NativeGSSContext importContext(byte[] interProcToken);
+  86     native byte[] initContext(long pCred, long targetName, ChannelBinding cb,
+  87                               byte[] inToken, NativeGSSContext context);
+  88     native byte[] acceptContext(long pCred, ChannelBinding cb,
+  89                                 byte[] inToken, NativeGSSContext context);
+  90     native long[] inquireContext(long pContext);
+  91     native Oid getContextMech(long pContext);
+  92     native long getContextName(long pContext, boolean isSrc);
+  93     native int getContextTime(long pContext);
+  94     native long deleteContext(long pContext);
+  95     native int wrapSizeLimit(long pContext, int flags, int qop, int outSize);
+  96     native byte[] exportContext(long pContext);
+  97     native byte[] getMic(long pContext, int qop, byte[] msg);
+  98     native void verifyMic(long pContext, byte[] token, byte[] msg,
+  99                           MessageProp prop) ;
+ 100     native byte[] wrap(long pContext, byte[] msg, MessageProp prop);
+ 101     native byte[] unwrap(long pContext, byte[] msgToken, MessageProp prop);
+ 102 
+ 103     private static Hashtable&lt;Oid, GSSLibStub&gt;
+ 104         table = new Hashtable&lt;Oid, GSSLibStub&gt;(5);
+ 105 
+ 106     static GSSLibStub getInstance(Oid mech) throws GSSException {
+ 107         GSSLibStub s = table.get(mech);
+ 108         if (s == null) {
+ 109             s = new GSSLibStub(mech);
+ 110             table.put(mech, s);
+ 111         }
+ 112         return s;
+ 113     }
+ 114     private GSSLibStub(Oid mech) throws GSSException {
+ 115         SunNativeProvider.debug("Created GSSLibStub for mech " + mech);
+ 116         this.mech = mech;
+ 117         this.pMech = getMechPtr(mech.getDER());
+ 118     }
+ 119     private static String[] map2array(Map&lt;String,String&gt; m) {
+ 120         if (m == null)
+ 121             return null;
+ 122         ArrayList&lt;String&gt; l = new ArrayList&lt;String&gt;();
+ 123         for (var e : m.entrySet()) {
+ 124             l.add(e.getKey());
+ 125             l.add(e.getValue());
+ 126         }
+ 127         return l.toArray(new String[0]);
+ 128     }
+ 129     public long acquireCred(long pName, String password,
+ 130                             Map&lt;String,String&gt; store,
+ 131                             int lifetime, int usage) throws GSSException {
+ 132         return acquireCred(pName, password, map2array(store), lifetime, usage);
+ 133     }
+ 134     public long storeCred(long pCred, int usage, Oid mech,
+ 135                           boolean overwrite, boolean defaultCred,
+ 136                           Map&lt;String,String&gt; store) throws GSSException {
+ 137         return storeCred(pCred, usage, mech, overwrite, defaultCred,
+ 138             map2array(store));
+ 139     }
+ 140     public boolean equals(Object obj) {
+ 141         if (obj == this) return true;
+ 142         if (!(obj instanceof GSSLibStub)) {
+ 143             return false;
+ 144         }
+ 145         return (mech.equals(((GSSLibStub) obj).getMech()));
+ 146     }
+ 147     public int hashCode() {
+ 148         return mech.hashCode();
+ 149     }
+ 150     Oid getMech() {
+ 151         return mech;
+ 152     }
+ 153 }
+</pre></body></html>

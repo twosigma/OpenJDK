@@ -1,0 +1,211 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Sdiff src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java</title>
+</head><body id="SUNWwebrev">
+<a class="print" href="javascript:print()">Print this page</a>
+<pre>Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method</pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+  83     public byte[] export() throws GSSException;
+  84 
+  85 
+  86     /**
+  87      * Get the mechanism type that this NameElement corresponds to.
+  88      *
+  89      * @return the Oid of the mechanism type
+  90      */
+  91     public Oid getMechanism();
+  92 
+  93     /**
+  94      * Returns a string representation for this name. The printed
+  95      * name type can be obtained by calling getStringNameType().
+  96      *
+  97      * @return string form of this name
+  98      * @see #getStringNameType()
+  99      * @overrides Object#toString
+ 100      */
+ 101     public String toString();
+ 102 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 103 
+ 104     /**
+ 105      * Returns the oid describing the format of the printable name.
+ 106      *
+ 107      * @return the Oid for the format of the printed name
+ 108      */
+ 109     public Oid getStringNameType();
+ 110 
+ 111     /**
+ 112      * Indicates if this name object represents an Anonymous name.
+ 113      */
+ 114     public boolean isAnonymousName();
+
+
+
+
+
+
+ 115 }
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+  83     public byte[] export() throws GSSException;
+  84 
+  85 
+  86     /**
+  87      * Get the mechanism type that this NameElement corresponds to.
+  88      *
+  89      * @return the Oid of the mechanism type
+  90      */
+  91     public Oid getMechanism();
+  92 
+  93     /**
+  94      * Returns a string representation for this name. The printed
+  95      * name type can be obtained by calling getStringNameType().
+  96      *
+  97      * @return string form of this name
+  98      * @see #getStringNameType()
+  99      * @overrides Object#toString
+ 100      */
+ 101     public String toString();
+ 102 
+<span class="new"> 103     /**</span>
+<span class="new"> 104      * Returns a local username (platform-specific) corresponding to the</span>
+<span class="new"> 105      * principal name, and may return null when no username is known for the</span>
+<span class="new"> 106      * principal name.</span>
+<span class="new"> 107      *</span>
+<span class="new"> 108      * @return username corresponding to this name, if any</span>
+<span class="new"> 109      */</span>
+<span class="new"> 110     public String getLocalName() throws GSSException;</span>
+<span class="new"> 111 </span>
+<span class="new"> 112     /**</span>
+<span class="new"> 113      * Returns a local username (platform-specific) corresponding to the</span>
+<span class="new"> 114      * principal name, and may return null when no username is known for the</span>
+<span class="new"> 115      * principal name.</span>
+<span class="new"> 116      *</span>
+<span class="new"> 117      * @return username corresponding to this name, if any</span>
+<span class="new"> 118      */</span>
+<span class="new"> 119     public String getLocalName(Oid mech) throws GSSException;</span>
+ 120 
+ 121     /**
+ 122      * Returns the oid describing the format of the printable name.
+ 123      *
+ 124      * @return the Oid for the format of the printed name
+ 125      */
+ 126     public Oid getStringNameType();
+ 127 
+ 128     /**
+ 129      * Indicates if this name object represents an Anonymous name.
+ 130      */
+ 131     public boolean isAnonymousName();
+<span class="new"> 132 </span>
+<span class="new"> 133     /**</span>
+<span class="new"> 134      * Indicates whether this name object refers to whatever name(s) the</span>
+<span class="new"> 135      * default credentials respond to.</span>
+<span class="new"> 136      */</span>
+<span class="new"> 137     public boolean isDefaultCredentialName();</span>
+ 138 }
+</pre></td>
+</tr></table>
+</body></html>

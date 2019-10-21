@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Udiff src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Make GSSName implement Principal (add getName())
+Add getLocalName() GSSName method</pre>
+        <pre>
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -446,11 +446,60 @@</span>
+         return retVal;
+     }
+ 
+     public String toString() {
+          return printableName;
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    public String getName() {</span>
+<span class="new">+        return printableName;</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    public String getName(Oid mech) throws GSSException {</span>
+<span class="new">+        GSSNameSpi element = elements.get(mech);</span>
+<span class="new">+        if (element == null) {</span>
+<span class="new">+            throw new GSSExceptionImpl(GSSException.UNAVAILABLE,</span>
+<span class="new">+                    "GSSName object does not have an element for the " +</span>
+<span class="new">+                    "given mechanism");</span>
+<span class="new">+        }</span>
+<span class="new">+        return element.toString();</span>
+<span class="new">+    }</span>
+ 
+<span class="new">+    public String getLocalName() throws GSSException {</span>
+<span class="new">+        String lname = null;</span>
+<span class="new">+        Oid mech = null;</span>
+<span class="new">+        Oid mech2 = null;</span>
+<span class="new">+</span>
+<span class="new">+        for (GSSNameSpi v : elements.values()) {</span>
+<span class="new">+            String mname = v.getLocalName();</span>
+<span class="new">+            if (mname == null)</span>
+<span class="new">+                continue;</span>
+<span class="new">+            if (lname == null) {</span>
+<span class="new">+                mech = v.getMechanism();</span>
+<span class="new">+                lname = mname;</span>
+<span class="new">+                continue;</span>
+<span class="new">+            }</span>
+<span class="new">+            if (!lname.equals(mname)) {</span>
+<span class="new">+                mech2 = v.getMechanism();</span>
+<span class="new">+                break;</span>
+<span class="new">+            }</span>
+<span class="new">+        }</span>
+<span class="new">+        if (mech2 == null)</span>
+<span class="new">+            return lname;</span>
+<span class="new">+        throw new GSSExceptionImpl(GSSException.UNAVAILABLE,</span>
+<span class="new">+                "Localname conflict between mechanisms " +</span>
+<span class="new">+                mech + " and " + mech2);</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    public String getLocalName(Oid mech) throws GSSException {</span>
+<span class="new">+        GSSNameSpi element = elements.get(mech);</span>
+<span class="new">+        if (element == null) {</span>
+<span class="new">+            throw new GSSExceptionImpl(GSSException.UNAVAILABLE,</span>
+<span class="new">+                    "GSSName object does not have an element for the " +</span>
+<span class="new">+                    "given mechanism");</span>
+<span class="new">+        }</span>
+<span class="new">+        return element.getLocalName();</span>
+     }
+ 
+     public Oid getStringNameType() throws GSSException {
+         return printableNameType;
+     }
+</pre></body></html>
+

@@ -1,0 +1,180 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Cdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java</title>
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method</pre>
+        <pre>
+<hr></hr><span class="oldmarker">*** 23,32 ****</span>
+<span class="newmarker">--- 23,34 ----</span>
+   * questions.
+   */
+  
+  package sun.security.jgss.wrapper;
+  
+<span class="new">+ import java.util.Map;</span>
+<span class="new">+ import java.util.ArrayList;</span>
+  import java.util.Hashtable;
+  import org.ietf.jgss.Oid;
+  import org.ietf.jgss.GSSName;
+  import org.ietf.jgss.ChannelBinding;
+  import org.ietf.jgss.MessageProp;
+<hr></hr><span class="oldmarker">*** 63,77 ****</span>
+      native void releaseName(long pName);
+      native long importName(byte[] name, Oid type);
+      native boolean compareName(long pName1, long pName2);
+      native long canonicalizeName(long pName);
+      native byte[] exportName(long pName) throws GSSException;
+      native Object[] displayName(long pName) throws GSSException;
+  
+      // Credential related routines
+<span class="changed">!     native long acquireCred(long pName, int lifetime, int usage)</span>
+<span class="changed">!                                         throws GSSException;</span>
+      native long releaseCred(long pCred);
+      native long getCredName(long pCred);
+      native int getCredTime(long pCred);
+      native int getCredUsage(long pCred);
+  
+<span class="newmarker">--- 65,83 ----</span>
+      native void releaseName(long pName);
+      native long importName(byte[] name, Oid type);
+      native boolean compareName(long pName1, long pName2);
+      native long canonicalizeName(long pName);
+      native byte[] exportName(long pName) throws GSSException;
+<span class="new">+     native String localName(long pName, Oid mech) throws GSSException;</span>
+      native Object[] displayName(long pName) throws GSSException;
+  
+      // Credential related routines
+<span class="changed">!     native long acquireCred(long pName, String password, String[] store,</span>
+<span class="changed">!                             int lifetime, int usage) throws GSSException;</span>
+<span class="changed">!     native long storeCred(long pCred, int usage, Oid mech,</span>
+<span class="changed">!                           boolean overwrite, boolean defaultCred,</span>
+<span class="changed">!                           String[] store) throws GSSException;</span>
+      native long releaseCred(long pCred);
+      native long getCredName(long pCred);
+      native int getCredTime(long pCred);
+      native int getCredUsage(long pCred);
+  
+<hr></hr><span class="oldmarker">*** 108,117 ****</span>
+<span class="newmarker">--- 114,144 ----</span>
+      private GSSLibStub(Oid mech) throws GSSException {
+          SunNativeProvider.debug("Created GSSLibStub for mech " + mech);
+          this.mech = mech;
+          this.pMech = getMechPtr(mech.getDER());
+      }
+<span class="new">+     private static String[] map2array(Map&lt;String,String&gt; m) {</span>
+<span class="new">+         if (m == null)</span>
+<span class="new">+             return null;</span>
+<span class="new">+         ArrayList&lt;String&gt; l = new ArrayList&lt;String&gt;();</span>
+<span class="new">+         for (var e : m.entrySet()) {</span>
+<span class="new">+             l.add(e.getKey());</span>
+<span class="new">+             l.add(e.getValue());</span>
+<span class="new">+         }</span>
+<span class="new">+         return l.toArray(new String[0]);</span>
+<span class="new">+     }</span>
+<span class="new">+     public long acquireCred(long pName, String password,</span>
+<span class="new">+                             Map&lt;String,String&gt; store,</span>
+<span class="new">+                             int lifetime, int usage) throws GSSException {</span>
+<span class="new">+         return acquireCred(pName, password, map2array(store), lifetime, usage);</span>
+<span class="new">+     }</span>
+<span class="new">+     public long storeCred(long pCred, int usage, Oid mech,</span>
+<span class="new">+                           boolean overwrite, boolean defaultCred,</span>
+<span class="new">+                           Map&lt;String,String&gt; store) throws GSSException {</span>
+<span class="new">+         return storeCred(pCred, usage, mech, overwrite, defaultCred,</span>
+<span class="new">+             map2array(store));</span>
+<span class="new">+     }</span>
+      public boolean equals(Object obj) {
+          if (obj == this) return true;
+          if (!(obj instanceof GSSLibStub)) {
+              return false;
+          }
+</pre></body></html>
+

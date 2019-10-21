@@ -1,0 +1,108 @@
+--- old/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java	2019-10-21 14:15:14.080480975 -0500
++++ new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java	2019-10-21 14:15:14.084480925 -0500
+@@ -53,6 +53,7 @@
+     long pName = 0; // Pointer to the gss_name_t structure
+     private String printableName;
+     private Oid printableType;
++    private Oid mech;
+     private GSSLibStub cStub;
+ 
+     static final GSSNameElement DEF_ACCEPTOR = new GSSNameElement();
+@@ -97,13 +98,14 @@
+         printableName = "<DEFAULT ACCEPTOR>";
+     }
+ 
+-    GSSNameElement(long pNativeName, GSSLibStub stub) throws GSSException {
++    GSSNameElement(long pNativeName, Oid mech, GSSLibStub stub) throws GSSException {
+         assert(stub != null);
+         if (pNativeName == 0) {
+             throw new GSSException(GSSException.BAD_NAME);
+         }
+         // Note: pNativeName is assumed to be a MN.
+         pName = pNativeName;
++        this.mech = mech;
+         cStub = stub;
+         setPrintables();
+     }
+@@ -116,6 +118,7 @@
+         }
+         cStub = stub;
+         byte[] name = nameBytes;
++        mech = cStub.getMech();
+ 
+         if (nameType != null) {
+             // Special handling the specified name type if
+@@ -128,7 +131,6 @@
+                 // method) for "NT_EXPORT_NAME"
+                 byte[] mechBytes = null;
+                 DerOutputStream dout = new DerOutputStream();
+-                Oid mech = cStub.getMech();
+                 try {
+                     dout.putOID(new ObjectIdentifier(mech.toString()));
+                 } catch (IOException e) {
+@@ -195,7 +197,28 @@
+     public String getKrbName() throws GSSException {
+         long mName = 0;
+         GSSLibStub stub = cStub;
+-        if (!GSSUtil.isKerberosMech(cStub.getMech())) {
++        if (!GSSUtil.isKerberosMech(mech)) {
++            // XXX We can't expect this to work generally.  We should
++            // generalize the permission checks so that they can deal
++            // with name forms other than those of Kerberos.
++            //
++            // Alternatively we could have a method in GSSLibStub for
++            // mapping a non-Kerberos MN to a Kerberos MN, but depending
++            // on the specifics of the non-Kerberos mechanism we would
++            // either end up needing new conventions for Kerberos naming
++            // or else having cases where we can end up failing to
++            // support unconventional name forms.
++            //
++            // Consider a SAML assertion with a variety of identifying
++            // attributes and a variety of non-identifying attributes
++            // that are relevant to authorization.  How should a
++            // Kerberos-equivalent be constructed?  GSS does have
++            // extensions for decorating name objects with attributes,
++            // so that's not an issue, but if there are multiple
++            // identifying attributes then we'd have to pick one.  Now,
++            // suppose the identifying attribute has a form like
++            // <phone-number> -- we'd need a Kerberos convention for
++            // that, which might be PHONE/<number>@<ASSERTION-SIGNER>.
+             stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
+         }
+         mName = stub.canonicalizeName(pName);
+@@ -267,13 +290,23 @@
+     }
+ 
+     public Oid getMechanism() {
+-        return cStub.getMech();
++        return (mech != null) ? mech : cStub.getMech();
+     }
+ 
+     public String toString() {
+         return printableName;
+     }
+ 
++    public String getLocalName() throws GSSException {
++        return cStub.localName(pName, mech);
++    }
++
++    public String getLocalName(Oid mech) throws GSSException {
++        if (mech.equals(this.mech))
++            return cStub.localName(pName, mech);
++        throw new GSSException(GSSException.BAD_MECH);
++    }
++
+     public Oid getStringNameType() {
+         return printableType;
+     }
+@@ -282,6 +315,10 @@
+         return (GSSName.NT_ANONYMOUS.equals(printableType));
+     }
+ 
++    public boolean isDefaultCredentialName() {
++        return (this == DEF_ACCEPTOR);
++    }
++
+     public void dispose() {
+         if (pName != 0) {
+             cStub.releaseName(pName);

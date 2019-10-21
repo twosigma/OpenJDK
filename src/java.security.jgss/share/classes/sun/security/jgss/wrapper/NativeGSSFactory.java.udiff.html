@@ -1,0 +1,231 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Udiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().</pre>
+        <pre>
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -25,10 +25,11 @@</span>
+ 
+ package sun.security.jgss.wrapper;
+ 
+ import java.io.UnsupportedEncodingException;
+ import java.security.Provider;
+<span class="new">+import java.util.Map;</span>
+ import java.util.Vector;
+ import org.ietf.jgss.*;
+ import sun.security.jgss.GSSUtil;
+ import sun.security.jgss.GSSCaller;
+ import sun.security.jgss.GSSExceptionImpl;
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -94,10 +95,11 @@</span>
+         throws GSSException {
+         return new GSSNameElement(name, nameType, cStub);
+     }
+ 
+     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+<span class="new">+                                                 String password,</span>
+                                                  int initLifetime,
+                                                  int acceptLifetime,
+                                                  int usage)
+         throws GSSException {
+         GSSNameElement nname = null;
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -116,26 +118,99 @@</span>
+             getCredFromSubject(nname, (usage == GSSCredential.INITIATE_ONLY));
+ 
+         if (credElement == null) {
+             // No cred in the Subject
+             if (usage == GSSCredential.INITIATE_ONLY) {
+<span class="new">+                if (password == null) {</span>
+                 credElement = new GSSCredElement(nname, initLifetime,
+                                                  usage, cStub);
+<span class="new">+                } else {</span>
+<span class="new">+                    credElement = new GSSCredElement(nname, password,</span>
+<span class="new">+                                                     initLifetime,</span>
+<span class="new">+                                                     usage, cStub);</span>
+<span class="new">+                }</span>
+<span class="new">+            } else if (usage == GSSCredential.ACCEPT_ONLY) {</span>
+<span class="new">+                if (nname == null) {</span>
+<span class="new">+                    nname = GSSNameElement.DEF_ACCEPTOR;</span>
+<span class="new">+                }</span>
+<span class="new">+                if (password == null) {</span>
+<span class="new">+                    credElement = new GSSCredElement(nname, acceptLifetime,</span>
+<span class="new">+                                                     usage, cStub);</span>
+<span class="new">+                } else {</span>
+<span class="new">+                    credElement = new GSSCredElement(nname, password,</span>
+<span class="new">+                                                     acceptLifetime,</span>
+<span class="new">+                                                     usage, cStub);</span>
+<span class="new">+                }</span>
+<span class="new">+            } else {</span>
+<span class="new">+                throw new GSSException(GSSException.FAILURE, -1,</span>
+<span class="new">+                                       "Unknown usage mode requested");</span>
+<span class="new">+            }</span>
+<span class="new">+        }</span>
+<span class="new">+        return credElement;</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,</span>
+<span class="new">+                                                 Map&lt;String,String&gt; store,</span>
+<span class="new">+                                                 int initLifetime,</span>
+<span class="new">+                                                 int acceptLifetime,</span>
+<span class="new">+                                                 int usage)</span>
+<span class="new">+        throws GSSException {</span>
+<span class="new">+        GSSNameElement nname = null;</span>
+<span class="new">+        if (name != null &amp;&amp; !(name instanceof GSSNameElement)) {</span>
+<span class="new">+            nname = (GSSNameElement)</span>
+<span class="new">+                getNameElement(name.toString(), name.getStringNameType());</span>
+<span class="new">+        } else nname = (GSSNameElement) name;</span>
+<span class="new">+</span>
+<span class="new">+        if (usage == GSSCredential.INITIATE_AND_ACCEPT) {</span>
+<span class="new">+            // Force separate acqusition of cred element since</span>
+<span class="new">+            // MIT's impl does not correctly report NO_CRED error.</span>
+<span class="new">+            usage = GSSCredential.INITIATE_ONLY;</span>
+<span class="new">+        }</span>
+<span class="new">+</span>
+<span class="new">+        GSSCredElement credElement =</span>
+<span class="new">+            getCredFromSubject(nname, (usage == GSSCredential.INITIATE_ONLY));</span>
+<span class="new">+</span>
+<span class="new">+        if (credElement == null) {</span>
+<span class="new">+            // No cred in the Subject</span>
+<span class="new">+            if (usage == GSSCredential.INITIATE_ONLY) {</span>
+<span class="new">+                if (store == null) {</span>
+<span class="new">+                    credElement = new GSSCredElement(nname, initLifetime,</span>
+<span class="new">+                                                     usage, cStub);</span>
+<span class="new">+                } else {</span>
+<span class="new">+                    credElement = new GSSCredElement(nname, store,</span>
+<span class="new">+                                                     initLifetime,</span>
+<span class="new">+                                                     usage, cStub);</span>
+<span class="new">+                }</span>
+             } else if (usage == GSSCredential.ACCEPT_ONLY) {
+                 if (nname == null) {
+                     nname = GSSNameElement.DEF_ACCEPTOR;
+                 }
+<span class="new">+                if (store == null) {</span>
+                 credElement = new GSSCredElement(nname, acceptLifetime,
+                                                  usage, cStub);
+             } else {
+<span class="new">+                    credElement = new GSSCredElement(nname, store,</span>
+<span class="new">+                                                     acceptLifetime,</span>
+<span class="new">+                                                     usage, cStub);</span>
+<span class="new">+                }</span>
+<span class="new">+            } else {</span>
+                 throw new GSSException(GSSException.FAILURE, -1,
+                                        "Unknown usage mode requested");
+             }
+         }
+         return credElement;
+     }
+ 
+<span class="new">+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,</span>
+<span class="new">+                                                 int initLifetime,</span>
+<span class="new">+                                                 int acceptLifetime,</span>
+<span class="new">+                                                 int usage)</span>
+<span class="new">+        throws GSSException {</span>
+<span class="new">+        return getCredentialElement(name, (String)null, initLifetime,</span>
+<span class="new">+                                    acceptLifetime, usage);</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+                                              GSSCredentialSpi myCred,
+                                              int lifetime)
+         throws GSSException {
+         if (peer == null) {
+</pre></body></html>
+

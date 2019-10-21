@@ -1,0 +1,11 @@
+--- old/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java	2019-10-21 14:15:13.624486707 -0500
++++ new/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoCredElement.java	2019-10-21 14:15:13.628486657 -0500
+@@ -91,4 +91,8 @@
+     public GSSCredentialSpi impersonate(GSSNameSpi name) throws GSSException {
+         return cred.impersonate(name);
+     }
++
++    public boolean isDefaultCredential() {
++        return cred.isDefaultCredential();
++    }
+ }

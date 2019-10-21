@@ -1,0 +1,506 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre>Make GSSName implement Principal (add getName())
+Add getLocalName() GSSName method</pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package org.ietf.jgss;
+<a name="1" id="anc1"></a>
+  27 
+  28 /**
+  29  * This interface encapsulates a single GSS-API principal entity. The
+  30  * application obtains an implementation of this interface
+  31  * through one of the &lt;code&gt;createName&lt;/code&gt; methods that exist in the {@link
+  32  * GSSManager GSSManager} class. Conceptually a GSSName contains many
+  33  * representations of the entity or many primitive name elements, one for
+  34  * each supported underlying mechanism. In GSS terminology, a GSSName that
+  35  * contains an element from just one mechanism is called a Mechanism Name
+  36  * (MN)&lt;p&gt;
+  37  *
+  38  * Since different authentication mechanisms may employ different
+  39  * namespaces for identifying their principals, GSS-API's naming support is
+  40  * necessarily complex in multi-mechanism environments (or even in some
+  41  * single-mechanism environments where the underlying mechanism supports
+  42  * multiple namespaces). Different name formats and their definitions are
+  43  * identified with {@link Oid Oid's} and some standard types
+  44  * are defined in this interface. The format of the names can be derived
+  45  * based on the unique &lt;code&gt;Oid&lt;/code&gt; of its name type.&lt;p&gt;
+  46  *
+  47  * Included below are code examples utilizing the &lt;code&gt;GSSName&lt;/code&gt; interface.
+  48  * The code below creates a &lt;code&gt;GSSName&lt;/code&gt;, converts it to an MN, performs a
+  49  * comparison, obtains a printable representation of the name, exports it
+  50  * to a byte array and then re-imports to obtain a
+  51  * new &lt;code&gt;GSSName&lt;/code&gt;.
+  52  * &lt;pre&gt;
+  53  *      GSSManager manager = GSSManager.getInstance();
+  54  *
+  55  *      // create a host based service name
+  56  *      GSSName name = manager.createName("service@host",
+  57  *                   GSSName.NT_HOSTBASED_SERVICE);
+  58  *
+  59  *      Oid krb5 = new Oid("1.2.840.113554.1.2.2");
+  60  *
+  61  *      GSSName mechName = name.canonicalize(krb5);
+  62  *
+  63  *      // the above two steps are equivalent to the following
+  64  *      GSSName mechName = manager.createName("service@host",
+  65  *                      GSSName.NT_HOSTBASED_SERVICE, krb5);
+  66  *
+  67  *      // perform name comparison
+  68  *      if (name.equals(mechName))
+  69  *              print("Names are equals.");
+  70  *
+  71  *      // obtain textual representation of name and its printable
+  72  *      // name type
+  73  *      print(mechName.toString() +
+  74  *                      mechName.getStringNameType().toString());
+  75  *
+  76  *      // export and re-import the name
+  77  *      byte [] exportName = mechName.export();
+  78  *
+  79  *      // create a new name object from the exported buffer
+  80  *      GSSName newName = manager.createName(exportName,
+  81  *                      GSSName.NT_EXPORT_NAME);
+  82  *
+  83  * &lt;/pre&gt;
+  84  * If a security manager is installed, in order to create a {@code GSSName}
+  85  * that contains a Kerberos name element without providing its realm,
+  86  * a {@link javax.security.auth.kerberos.ServicePermission ServicePermission}
+  87  * must be granted and the service principal of the permission must minimally
+  88  * be inside the Kerberos name element's realm. For example, if the result of
+  89  * {@link GSSManager#createName(String, Oid) createName("user", NT_USER_NAME)}
+  90  * contains a Kerberos name element {@code user@EXAMPLE.COM}, then
+  91  * a {@code ServicePermission} with service principal
+  92  * {@code host/www.example.com@EXAMPLE.COM} (and any action) must be granted.
+  93  * Otherwise, the creation will throw a {@link GSSException} containing the
+  94  * {@code GSSException.FAILURE} error code.
+  95  *
+  96  * @see #export()
+  97  * @see #equals(GSSName)
+  98  * @see GSSManager#createName(String, Oid)
+  99  * @see GSSManager#createName(String, Oid, Oid)
+ 100  * @see GSSManager#createName(byte[], Oid)
+ 101  *
+ 102  * @author Mayank Upadhyay
+ 103  * @since 1.4
+ 104  */
+<a name="2" id="anc2"></a><span class="changed"> 105 public interface GSSName {</span>
+ 106 
+ 107     /**
+ 108      * Oid indicating a host-based service name form.  It is used to
+ 109      * represent services associated with host computers.  This name form
+ 110      * is constructed using two elements, "service" and "hostname", as
+ 111      * follows: service@hostname.&lt;p&gt;
+ 112      *
+ 113      * It represents the following Oid value:&lt;br&gt;
+ 114      *  &lt;code&gt;{ iso(1) member-body(2) United
+ 115      * States(840) mit(113554) infosys(1) gssapi(2) generic(1) service_name(4)
+ 116      * }&lt;/code&gt;
+ 117      */
+ 118     public static final Oid NT_HOSTBASED_SERVICE
+ 119         = Oid.getInstance("1.2.840.113554.1.2.1.4");
+ 120 
+ 121     /**
+ 122      * Name type to indicate a named user on a local system.&lt;p&gt;
+ 123      * It represents the following Oid value:&lt;br&gt;
+ 124      *  &lt;code&gt;{ iso(1) member-body(2) United
+ 125      * States(840) mit(113554) infosys(1) gssapi(2) generic(1) user_name(1)
+ 126      * }&lt;/code&gt;
+ 127      */
+ 128     public static final Oid NT_USER_NAME
+ 129         = Oid.getInstance("1.2.840.113554.1.2.1.1");
+ 130 
+ 131     /**
+ 132      * Name type to indicate a numeric user identifier corresponding to a
+ 133      * user on a local system. (e.g. Uid).&lt;p&gt;
+ 134      *
+ 135      *  It represents the following Oid value:&lt;br&gt;
+ 136      * &lt;code&gt;{ iso(1) member-body(2) United States(840) mit(113554)
+ 137      * infosys(1) gssapi(2) generic(1) machine_uid_name(2) }&lt;/code&gt;
+ 138      */
+ 139     public static final Oid NT_MACHINE_UID_NAME
+ 140         = Oid.getInstance("1.2.840.113554.1.2.1.2");
+ 141 
+ 142     /**
+ 143      * Name type to indicate a string of digits representing the numeric
+ 144      * user identifier of a user on a local system.&lt;p&gt;
+ 145      *
+ 146      * It represents the following Oid value:&lt;br&gt;
+ 147      * &lt;code&gt;{ iso(1) member-body(2) United
+ 148      * States(840) mit(113554) infosys(1) gssapi(2) generic(1)
+ 149      * string_uid_name(3) }&lt;/code&gt;
+ 150      */
+ 151     public static final Oid NT_STRING_UID_NAME
+ 152         = Oid.getInstance("1.2.840.113554.1.2.1.3");
+ 153 
+ 154     /**
+ 155      * Name type for representing an anonymous entity.&lt;p&gt;
+ 156      * It represents the following Oid value:&lt;br&gt;
+ 157      * &lt;code&gt;{ 1(iso), 3(org), 6(dod), 1(internet),
+ 158      * 5(security), 6(nametypes), 3(gss-anonymous-name) }&lt;/code&gt;
+ 159      */
+ 160     public static final Oid NT_ANONYMOUS
+ 161         = Oid.getInstance("1.3.6.1.5.6.3");
+ 162 
+ 163     /**
+ 164      * Name type used to indicate an exported name produced by the export
+ 165      * method.&lt;p&gt;
+ 166      *
+ 167      * It represents the following Oid value:&lt;br&gt; &lt;code&gt;{ 1(iso),
+ 168      * 3(org), 6(dod), 1(internet), 5(security), 6(nametypes),
+ 169      * 4(gss-api-exported-name) }&lt;/code&gt;
+ 170      */
+ 171     public static final Oid NT_EXPORT_NAME
+ 172         = Oid.getInstance("1.3.6.1.5.6.4");
+ 173 
+ 174     /**
+ 175      * Compares two &lt;code&gt;GSSName&lt;/code&gt; objects to determine if they refer to the
+ 176      * same entity.
+ 177      *
+ 178      * @param another the &lt;code&gt;GSSName&lt;/code&gt; to compare this name with
+ 179      * @return true if the two names contain at least one primitive element
+ 180      * in common. If either of the names represents an anonymous entity, the
+ 181      * method will return false.
+ 182      *
+ 183      * @throws GSSException when the names cannot be compared, containing the following
+ 184      * major error codes:
+ 185      *         {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 186      *         {@link GSSException#FAILURE GSSException.FAILURE}
+ 187      */
+ 188     public boolean equals(GSSName another) throws GSSException;
+ 189 
+ 190     /**
+ 191      * Compares this &lt;code&gt;GSSName&lt;/code&gt; object to another Object that might be a
+ 192      * &lt;code&gt;GSSName&lt;/code&gt;. The behaviour is exactly the same as in {@link
+ 193      * #equals(GSSName) equals} except that no GSSException is thrown;
+ 194      * instead, false will be returned in the situation where an error
+ 195      * occurs.
+ 196      * @return true if the object to compare to is also a &lt;code&gt;GSSName&lt;/code&gt; and the two
+ 197      * names refer to the same entity.
+ 198      * @param another the object to compare this name to
+ 199      * @see #equals(GSSName)
+ 200      */
+ 201     public boolean equals(Object another);
+ 202 
+ 203     /**
+ 204      * Returns a hashcode value for this GSSName.
+ 205      *
+ 206      * @return a hashCode value
+ 207      */
+ 208     public int hashCode();
+ 209 
+ 210     /**
+ 211      * Creates a name that is canonicalized for some
+ 212      * mechanism.
+ 213      *
+ 214      * @return a &lt;code&gt;GSSName&lt;/code&gt; that contains just one primitive
+ 215      * element representing this name in a canonicalized form for the desired
+ 216      * mechanism.
+ 217      * @param mech the oid for the mechanism for which the canonical form of
+ 218      * the name is requested.
+ 219      *
+ 220      * @throws GSSException containing the following
+ 221      * major error codes:
+ 222      *         {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+ 223      *         {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 224      *         {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 225      *         {@link GSSException#FAILURE GSSException.FAILURE}
+ 226      */
+ 227     public GSSName canonicalize(Oid mech) throws GSSException;
+ 228 
+ 229     /**
+ 230      * Returns a canonical contiguous byte representation of a mechanism name
+ 231      * (MN), suitable for direct, byte by byte comparison by authorization
+ 232      * functions.  If the name is not an MN, implementations may throw a
+ 233      * GSSException with the NAME_NOT_MN status code.  If an implementation
+ 234      * chooses not to throw an exception, it should use some system specific
+ 235      * default mechanism to canonicalize the name and then export
+ 236      * it. Structurally, an exported name object consists of a header
+ 237      * containing an OID identifying the mechanism that authenticated the
+ 238      * name, and a trailer containing the name itself, where the syntax of
+ 239      * the trailer is defined by the individual mechanism specification. The
+ 240      * format of the header of the output buffer is specified in RFC 2743.&lt;p&gt;
+ 241      *
+ 242      * The exported name is useful when used in large access control lists
+ 243      * where the overhead of creating a &lt;code&gt;GSSName&lt;/code&gt; object on each
+ 244      * name and invoking the equals method on each name from the ACL may be
+ 245      * prohibitive.&lt;p&gt;
+ 246      *
+ 247      * Exported names may be re-imported by using the byte array factory
+ 248      * method {@link GSSManager#createName(byte[], Oid)
+ 249      * GSSManager.createName} and specifying the NT_EXPORT_NAME as the name
+ 250      * type object identifier. The resulting &lt;code&gt;GSSName&lt;/code&gt; name will
+ 251      * also be a MN.
+ 252      *
+ 253      * @return a byte[] containing the exported name. RFC 2743 defines the
+ 254      * "Mechanism-Independent Exported Name Object Format" for these bytes.
+ 255      *
+ 256      * @throws GSSException containing the following
+ 257      * major error codes:
+ 258      *         {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 259      *         {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 260      *         {@link GSSException#FAILURE GSSException.FAILURE}
+ 261      */
+ 262     public byte[] export() throws GSSException;
+ 263 
+ 264     /**
+<a name="3" id="anc3"></a>
+
+
+
+
+
+
+
+
+
+ 265      * Returns a textual representation of the &lt;code&gt;GSSName&lt;/code&gt; object.  To retrieve
+ 266      * the printed name format, which determines the syntax of the returned
+ 267      * string, use the {@link #getStringNameType() getStringNameType}
+ 268      * method.
+ 269      *
+ 270      * @return a String representing this name in printable form.
+ 271      */
+ 272     public String toString();
+<a name="4" id="anc4"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 273 
+ 274     /**
+ 275      * Returns the name type of the printable
+ 276      * representation of this name that can be obtained from the &lt;code&gt;
+ 277      * toString&lt;/code&gt; method.
+ 278      *
+ 279      * @return an Oid representing the namespace of the name returned
+ 280      * from the toString method.
+ 281      *
+ 282      * @throws GSSException containing the following
+ 283      * major error codes:
+ 284      *         {@link GSSException#FAILURE GSSException.FAILURE}
+ 285      */
+ 286     public Oid getStringNameType() throws GSSException;
+ 287 
+ 288     /**
+ 289      * Tests if this name object represents an anonymous entity.
+ 290      *
+ 291      * @return true if this is an anonymous name, false otherwise.
+ 292      */
+ 293     public boolean isAnonymous();
+ 294 
+ 295     /**
+ 296      * Tests if this name object represents a Mechanism Name (MN). An MN is
+ 297      * a GSSName the contains exactly one mechanism's primitive name
+ 298      * element.
+ 299      *
+ 300      * @return true if this is an MN, false otherwise.
+ 301      */
+ 302     public boolean isMN();
+ 303 
+ 304 }
+<a name="5" id="anc5"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="5" type="hidden"></input></form></body></html>

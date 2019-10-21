@@ -1,0 +1,481 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method</pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 #include &lt;stdio.h&gt;
+  27 #include &lt;stdlib.h&gt;
+  28 #include "NativeFunc.h"
+  29 
+  30 /* standard GSS method names (ordering is from mapfile) */
+  31 static const char RELEASE_NAME[]                = "gss_release_name";
+  32 static const char IMPORT_NAME[]                 = "gss_import_name";
+  33 static const char COMPARE_NAME[]                = "gss_compare_name";
+  34 static const char CANONICALIZE_NAME[]           = "gss_canonicalize_name";
+  35 static const char EXPORT_NAME[]                 = "gss_export_name";
+  36 static const char DISPLAY_NAME[]                = "gss_display_name";
+<a name="1" id="anc1"></a><span class="new">  37 static const char LOCAL_NAME[]                  = "gss_localname";</span>
+  38 static const char ACQUIRE_CRED[]                = "gss_acquire_cred";
+<a name="2" id="anc2"></a><span class="new">  39 static const char ACQUIRE_CRED_WITH_PASSWORD[]  = "gss_acquire_cred_with_password";</span>
+<span class="new">  40 static const char ACQUIRE_CRED_FROM[]           = "gss_acquire_cred_from";</span>
+<span class="new">  41 static const char STORE_CRED_INTO[]             = "gss_store_cred_into";</span>
+  42 static const char RELEASE_CRED[]                = "gss_release_cred";
+  43 static const char INQUIRE_CRED[]                = "gss_inquire_cred";
+  44 static const char IMPORT_SEC_CONTEXT[]          = "gss_import_sec_context";
+  45 static const char INIT_SEC_CONTEXT[]            = "gss_init_sec_context";
+  46 static const char ACCEPT_SEC_CONTEXT[]          = "gss_accept_sec_context";
+  47 static const char INQUIRE_CONTEXT[]             = "gss_inquire_context";
+  48 static const char DELETE_SEC_CONTEXT[]          = "gss_delete_sec_context";
+  49 static const char CONTEXT_TIME[]                = "gss_context_time";
+  50 static const char WRAP_SIZE_LIMIT[]             = "gss_wrap_size_limit";
+  51 static const char EXPORT_SEC_CONTEXT[]          = "gss_export_sec_context";
+  52 static const char GET_MIC[]                     = "gss_get_mic";
+  53 static const char VERIFY_MIC[]                  = "gss_verify_mic";
+  54 static const char WRAP[]                        = "gss_wrap";
+  55 static const char UNWRAP[]                      = "gss_unwrap";
+  56 static const char INDICATE_MECHS[]              = "gss_indicate_mechs";
+  57 static const char INQUIRE_NAMES_FOR_MECH[]      = "gss_inquire_names_for_mech";
+  58 
+  59 /* additional GSS methods not public thru mapfile */
+  60 
+  61 static const char ADD_OID_SET_MEMBER[]          = "gss_add_oid_set_member";
+  62 static const char DISPLAY_STATUS[]              = "gss_display_status";
+  63 static const char CREATE_EMPTY_OID_SET[]        = "gss_create_empty_oid_set";
+  64 static const char RELEASE_OID_SET[]             = "gss_release_oid_set";
+  65 static const char RELEASE_BUFFER[]              = "gss_release_buffer";
+  66 
+  67 /**
+  68  * Initialize native GSS function pointers
+  69  */
+  70 int loadNative(const char *libName) {
+  71 
+  72     void *gssLib;
+  73     int failed;
+  74     OM_uint32 minor, major;
+  75 
+  76     ftab = NULL;
+  77     failed = FALSE;
+  78 
+  79     gssLib = GETLIB(libName);
+  80     if (gssLib == NULL) {
+  81         failed = TRUE;
+  82         goto out;
+  83     }
+  84 
+  85     /* global function table instance */
+  86     ftab = (GSS_FUNCTION_TABLE_PTR)malloc(sizeof(GSS_FUNCTION_TABLE));
+  87     if (ftab == NULL) {
+  88         failed = TRUE;
+  89         goto out;
+  90     }
+  91 
+  92     ftab-&gt;releaseName = (RELEASE_NAME_FN_PTR)GETFUNC(gssLib, RELEASE_NAME);
+  93     if (ftab-&gt;releaseName == NULL) {
+  94         failed = TRUE;
+  95         goto out;
+  96     }
+  97 
+  98     ftab-&gt;importName = (IMPORT_NAME_FN_PTR)GETFUNC(gssLib, IMPORT_NAME);
+  99     if (ftab-&gt;importName == NULL) {
+ 100         failed = TRUE;
+ 101         goto out;
+ 102     }
+ 103 
+ 104     ftab-&gt;compareName = (COMPARE_NAME_FN_PTR)GETFUNC(gssLib, COMPARE_NAME);
+ 105     if (ftab-&gt;compareName == NULL) {
+ 106         failed = TRUE;
+ 107         goto out;
+ 108     }
+ 109 
+ 110     ftab-&gt;canonicalizeName = (CANONICALIZE_NAME_FN_PTR)
+ 111                                 GETFUNC(gssLib, CANONICALIZE_NAME);
+ 112     if (ftab-&gt;canonicalizeName == NULL) {
+ 113         failed = TRUE;
+ 114         goto out;
+ 115     }
+ 116 
+ 117     ftab-&gt;exportName = (EXPORT_NAME_FN_PTR)GETFUNC(gssLib, EXPORT_NAME);
+ 118     if (ftab-&gt;exportName == NULL) {
+ 119         failed = TRUE;
+ 120         goto out;
+ 121     }
+ 122 
+ 123     ftab-&gt;displayName = (DISPLAY_NAME_FN_PTR)GETFUNC(gssLib, DISPLAY_NAME);
+ 124     if (ftab-&gt;displayName == NULL) {
+ 125         failed = TRUE;
+ 126         goto out;
+ 127     }
+ 128 
+<a name="3" id="anc3"></a><span class="new"> 129     /*</span>
+<span class="new"> 130      * This one may not be available for a given GSS library, as it's an</span>
+<span class="new"> 131      * extension, therefore we don't fail if it's missing.</span>
+<span class="new"> 132      */</span>
+<span class="new"> 133     ftab-&gt;localName = (LOCAL_NAME_FN_PTR)GETFUNC(gssLib, LOCAL_NAME);</span>
+<span class="new"> 134 </span>
+ 135     ftab-&gt;acquireCred = (ACQUIRE_CRED_FN_PTR)GETFUNC(gssLib, ACQUIRE_CRED);
+ 136     if (ftab-&gt;acquireCred == NULL) {
+ 137         failed = TRUE;
+ 138         goto out;
+ 139     }
+<a name="4" id="anc4"></a><span class="new"> 140 </span>
+<span class="new"> 141     /*</span>
+<span class="new"> 142      * These may not be available for a given GSS library, as they are</span>
+<span class="new"> 143      * extensions, therefore we don't fail if it's missing.</span>
+<span class="new"> 144      */</span>
+<span class="new"> 145     ftab-&gt;acquireCredWithPassword = (ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)</span>
+<span class="new"> 146                         GETFUNC(gssLib, ACQUIRE_CRED_WITH_PASSWORD);</span>
+<span class="new"> 147     ftab-&gt;acquireCredFrom = (ACQUIRE_CRED_FROM_FN_PTR)</span>
+<span class="new"> 148                         GETFUNC(gssLib, ACQUIRE_CRED_FROM);</span>
+<span class="new"> 149     ftab-&gt;storeCredInto = (STORE_CRED_INTO_FN_PTR)</span>
+<span class="new"> 150                         GETFUNC(gssLib, STORE_CRED_INTO);</span>
+ 151 
+ 152     ftab-&gt;releaseCred = (RELEASE_CRED_FN_PTR)GETFUNC(gssLib, RELEASE_CRED);
+ 153     if (ftab-&gt;releaseCred == NULL) {
+ 154         failed = TRUE;
+ 155         goto out;
+ 156     }
+ 157 
+ 158     ftab-&gt;inquireCred = (INQUIRE_CRED_FN_PTR)GETFUNC(gssLib, INQUIRE_CRED);
+ 159     if (ftab-&gt;inquireCred == NULL) {
+ 160         failed = TRUE;
+ 161         goto out;
+ 162     }
+ 163 
+ 164     ftab-&gt;importSecContext = (IMPORT_SEC_CONTEXT_FN_PTR)
+ 165                         GETFUNC(gssLib, IMPORT_SEC_CONTEXT);
+ 166     if (ftab-&gt;importSecContext == NULL) {
+ 167         failed = TRUE;
+ 168         goto out;
+ 169     }
+ 170 
+ 171     ftab-&gt;initSecContext = (INIT_SEC_CONTEXT_FN_PTR)
+ 172                         GETFUNC(gssLib, INIT_SEC_CONTEXT);
+ 173     if (ftab-&gt;initSecContext == NULL) {
+ 174         failed = TRUE;
+ 175         goto out;
+ 176     }
+ 177 
+ 178     ftab-&gt;acceptSecContext = (ACCEPT_SEC_CONTEXT_FN_PTR)
+ 179                         GETFUNC(gssLib, ACCEPT_SEC_CONTEXT);
+ 180     if (ftab-&gt;acceptSecContext == NULL) {
+ 181         failed = TRUE;
+ 182         goto out;
+ 183     }
+ 184 
+ 185     ftab-&gt;inquireContext = (INQUIRE_CONTEXT_FN_PTR)
+ 186                         GETFUNC(gssLib, INQUIRE_CONTEXT);
+ 187     if (ftab-&gt;inquireContext == NULL) {
+ 188         failed = TRUE;
+ 189         goto out;
+ 190     }
+ 191 
+ 192     ftab-&gt;deleteSecContext = (DELETE_SEC_CONTEXT_FN_PTR)
+ 193                         GETFUNC(gssLib, DELETE_SEC_CONTEXT);
+ 194     if (ftab-&gt;deleteSecContext == NULL) {
+ 195         failed = TRUE;
+ 196         goto out;
+ 197     }
+ 198 
+ 199     ftab-&gt;contextTime = (CONTEXT_TIME_FN_PTR)GETFUNC(gssLib, CONTEXT_TIME);
+ 200     if (ftab-&gt;contextTime == NULL) {
+ 201         failed = TRUE;
+ 202         goto out;
+ 203     }
+ 204 
+ 205     ftab-&gt;wrapSizeLimit = (WRAP_SIZE_LIMIT_FN_PTR)
+ 206                         GETFUNC(gssLib, WRAP_SIZE_LIMIT);
+ 207     if (ftab-&gt;wrapSizeLimit == NULL) {
+ 208         failed = TRUE;
+ 209         goto out;
+ 210     }
+ 211 
+ 212     ftab-&gt;exportSecContext = (EXPORT_SEC_CONTEXT_FN_PTR)
+ 213                         GETFUNC(gssLib, EXPORT_SEC_CONTEXT);
+ 214     if (ftab-&gt;exportSecContext == NULL) {
+ 215         failed = TRUE;
+ 216         goto out;
+ 217     }
+ 218 
+ 219     ftab-&gt;getMic = (GET_MIC_FN_PTR)GETFUNC(gssLib, GET_MIC);
+ 220     if (ftab-&gt;getMic == NULL) {
+ 221         failed = TRUE;
+ 222         goto out;
+ 223     }
+ 224 
+ 225     ftab-&gt;verifyMic = (VERIFY_MIC_FN_PTR)GETFUNC(gssLib, VERIFY_MIC);
+ 226     if (ftab-&gt;verifyMic == NULL) {
+ 227         failed = TRUE;
+ 228         goto out;
+ 229     }
+ 230 
+ 231     ftab-&gt;wrap = (WRAP_FN_PTR)GETFUNC(gssLib, WRAP);
+ 232     if (ftab-&gt;wrap == NULL) {
+ 233         failed = TRUE;
+ 234         goto out;
+ 235     }
+ 236 
+ 237     ftab-&gt;unwrap = (UNWRAP_FN_PTR)GETFUNC(gssLib, UNWRAP);
+ 238     if (ftab-&gt;unwrap == NULL) {
+ 239         failed = TRUE;
+ 240         goto out;
+ 241     }
+ 242 
+ 243     ftab-&gt;indicateMechs = (INDICATE_MECHS_FN_PTR)GETFUNC(gssLib, INDICATE_MECHS);
+ 244     if (ftab-&gt;indicateMechs == NULL) {
+ 245         failed = TRUE;
+ 246         goto out;
+ 247     }
+ 248 
+ 249     ftab-&gt;inquireNamesForMech = (INQUIRE_NAMES_FOR_MECH_FN_PTR)
+ 250                         GETFUNC(gssLib, INQUIRE_NAMES_FOR_MECH);
+ 251     if (ftab-&gt;inquireNamesForMech == NULL) {
+ 252         failed = TRUE;
+ 253         goto out;
+ 254     }
+ 255 
+ 256     ftab-&gt;addOidSetMember = (ADD_OID_SET_MEMBER_FN_PTR)
+ 257                         GETFUNC(gssLib, ADD_OID_SET_MEMBER);
+ 258     if (ftab-&gt;addOidSetMember == NULL) {
+ 259         failed = TRUE;
+ 260         goto out;
+ 261     }
+ 262 
+ 263     ftab-&gt;displayStatus = (DISPLAY_STATUS_FN_PTR)
+ 264                         GETFUNC(gssLib, DISPLAY_STATUS);
+ 265     if (ftab-&gt;displayStatus == NULL) {
+ 266         failed = TRUE;
+ 267         goto out;
+ 268     }
+ 269 
+ 270     ftab-&gt;createEmptyOidSet = (CREATE_EMPTY_OID_SET_FN_PTR)
+ 271                         GETFUNC(gssLib, CREATE_EMPTY_OID_SET);
+ 272     if (ftab-&gt;createEmptyOidSet == NULL) {
+ 273         failed = TRUE;
+ 274         goto out;
+ 275     }
+ 276 
+ 277     ftab-&gt;releaseOidSet = (RELEASE_OID_SET_FN_PTR)
+ 278                         GETFUNC(gssLib, RELEASE_OID_SET);
+ 279     if (ftab-&gt;releaseOidSet == NULL) {
+ 280         failed = TRUE;
+ 281         goto out;
+ 282     }
+ 283 
+ 284     ftab-&gt;releaseBuffer = (RELEASE_BUFFER_FN_PTR)
+ 285                         GETFUNC(gssLib, RELEASE_BUFFER);
+ 286     if (ftab-&gt;releaseBuffer == NULL) {
+ 287         failed = TRUE;
+ 288         goto out;
+ 289     }
+ 290 
+ 291     ftab-&gt;mechs = GSS_C_NO_OID_SET;
+ 292     major = (*ftab-&gt;indicateMechs)(&amp;minor, &amp;(ftab-&gt;mechs));
+ 293     if (ftab-&gt;mechs == NULL || ftab-&gt;mechs == GSS_C_NO_OID_SET) {
+ 294         failed = TRUE;
+ 295         goto out;
+ 296     }
+ 297 
+ 298 
+ 299 out:
+ 300     if (failed == TRUE) {
+ 301         if (gssLib != NULL) CLOSELIB(gssLib);
+ 302         if (ftab != NULL) free(ftab);
+ 303     }
+ 304     return failed;
+ 305 }
+<a name="5" id="anc5"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="5" type="hidden"></input></form></body></html>

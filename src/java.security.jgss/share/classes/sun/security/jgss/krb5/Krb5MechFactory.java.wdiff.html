@@ -1,0 +1,542 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">24 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  25   25  
+  26   26  package sun.security.jgss.krb5;
+  27   27  
+  28   28  import org.ietf.jgss.*;
+  29   29  import sun.security.jgss.GSSUtil;
+  30   30  import sun.security.jgss.GSSCaller;
+  31   31  import sun.security.jgss.spi.*;
+  32   32  import javax.security.auth.kerberos.ServicePermission;
+  33   33  import java.security.Provider;
+  34   34  import java.util.Vector;
+<span class='added'>       35 +import java.util.Map;
+</span>  35   36  
+  36   37  /**
+  37   38   * Krb5 Mechanism plug in for JGSS
+  38   39   * This is the properties object required by the JGSS framework.
+  39   40   * All mechanism specific information is defined here.
+  40   41   *
+  41   42   * @author Mayank Upadhyay
+  42   43   */
+  43   44  
+  44   45  public final class Krb5MechFactory implements MechanismFactory {
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  45   46  
+  46   47      private static final boolean DEBUG = Krb5Util.DEBUG;
+  47   48  
+  48   49      static final Provider PROVIDER =
+  49   50          new sun.security.jgss.SunProvider();
+  50   51  
+  51   52      static final Oid GSS_KRB5_MECH_OID =
+  52   53          createOid("1.2.840.113554.1.2.2");
+  53   54  
+  54   55      static final Oid NT_GSS_KRB5_PRINCIPAL =
+  55   56          createOid("1.2.840.113554.1.2.2.1");
+  56   57  
+  57   58      private static Oid[] nameTypes =
+  58   59          new Oid[] { GSSName.NT_USER_NAME,
+  59   60                          GSSName.NT_HOSTBASED_SERVICE,
+  60   61                          GSSName.NT_EXPORT_NAME,
+  61   62                          NT_GSS_KRB5_PRINCIPAL};
+  62   63  
+  63   64      final private GSSCaller caller;
+  64   65  
+  65   66      private static Krb5CredElement getCredFromSubject(GSSNameSpi name,
+  66   67                                                        boolean initiate)
+  67   68          throws GSSException {
+  68   69          Vector&lt;Krb5CredElement&gt; creds =
+  69   70              GSSUtil.searchSubject(name, GSS_KRB5_MECH_OID, initiate,
+  70   71                                    (initiate ?
+  71   72                                     Krb5InitCredential.class :
+  72   73                                     Krb5AcceptCredential.class));
+  73   74  
+  74   75          Krb5CredElement result = ((creds == null || creds.isEmpty()) ?
+  75   76                                    null : creds.firstElement());
+  76   77  
+  77   78          // Force permission check before returning the cred to caller
+  78   79          if (result != null) {
+  79   80              if (initiate) {
+  80   81                  checkInitCredPermission((Krb5NameElement) result.getName());
+  81   82              } else {
+  82   83                  checkAcceptCredPermission
+  83   84                      ((Krb5NameElement) result.getName(), name);
+  84   85              }
+  85   86          }
+  86   87          return result;
+  87   88      }
+  88   89  
+  89   90      public Krb5MechFactory() {
+  90   91          this(GSSCaller.CALLER_UNKNOWN);
+  91   92      }
+  92   93  
+  93   94      public Krb5MechFactory(GSSCaller caller) {
+  94   95          this.caller = caller;
+  95   96      }
+  96   97  
+  97   98      public GSSNameSpi getNameElement(String nameStr, Oid nameType)
+  98   99          throws GSSException {
+  99  100          return Krb5NameElement.getInstance(nameStr, nameType);
+ 100  101      }
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">56 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 101  102  
+ 102  103      public GSSNameSpi getNameElement(byte[] name, Oid nameType)
+ 103  104          throws GSSException {
+ 104  105          // At this point, even an exported name is stripped down to safe
+ 105  106          // bytes only
+ 106  107          // XXX Use encoding here
+ 107  108          return Krb5NameElement.getInstance(new String(name), nameType);
+ 108  109      }
+ 109  110  
+ 110  111      public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+<span class='subtracted'> 111      -           int initLifetime, int acceptLifetime,
+</span><span class='added'>      112 +           String password, int initLifetime, int acceptLifetime,
+</span> 112  113             int usage) throws GSSException {
+ 113  114  
+<span class='added'>      115 +        if (password != null) {
+      116 +            // XXX Implement!  Shouldn't be too hard...
+      117 +            throw new GSSException(GSSException.UNAVAILABLE, -1,
+      118 +                    "The Kerberos mechanism Java implementation does not " +
+      119 +                    "currently support acquiring GSS credentials handle " +
+      120 +                    "elements with a password");
+      121 +        }
+      122 +
+</span> 114  123          if (name != null &amp;&amp; !(name instanceof Krb5NameElement)) {
+ 115  124              name = Krb5NameElement.getInstance(name.toString(),
+ 116  125                                         name.getStringNameType());
+ 117  126          }
+ 118  127  
+ 119  128          Krb5CredElement credElement = getCredFromSubject
+ 120  129              (name, (usage != GSSCredential.ACCEPT_ONLY));
+ 121  130  
+ 122  131          if (credElement == null) {
+ 123  132              if (usage == GSSCredential.INITIATE_ONLY ||
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 124  133                  usage == GSSCredential.INITIATE_AND_ACCEPT) {
+ 125  134                  credElement = Krb5InitCredential.getInstance
+ 126  135                      (caller, (Krb5NameElement) name, initLifetime);
+ 127  136                  credElement = Krb5ProxyCredential.tryImpersonation(
+ 128  137                          caller, (Krb5InitCredential)credElement);
+ 129  138                  checkInitCredPermission
+ 130  139                      ((Krb5NameElement) credElement.getName());
+ 131  140              } else if (usage == GSSCredential.ACCEPT_ONLY) {
+ 132  141                  credElement =
+ 133  142                      Krb5AcceptCredential.getInstance(caller,
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">10 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 134  143                                                       (Krb5NameElement) name);
+ 135  144                  checkAcceptCredPermission
+ 136  145                      ((Krb5NameElement) credElement.getName(), name);
+ 137  146              } else
+ 138  147                  throw new GSSException(GSSException.FAILURE, -1,
+ 139  148                                         "Unknown usage mode requested");
+ 140  149          }
+ 141  150          return credElement;
+ 142  151      }
+ 143  152  
+<span class='added'>      153 +    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+      154 +           Map&lt;String,String&gt; store, int initLifetime, int acceptLifetime,
+      155 +           int usage) throws GSSException {
+      156 +
+      157 +        if (store != null) {
+      158 +            // XXX Implement!  Shouldn't be too hard...
+      159 +            throw new GSSException(GSSException.UNAVAILABLE, -1,
+      160 +                    "The Kerberos mechanism Java implementation does not " +
+      161 +                    "currently support acquiring GSS credentials handle " +
+      162 +                    "elements using a \"credential store\"");
+      163 +        }
+      164 +
+      165 +        if (name != null &amp;&amp; !(name instanceof Krb5NameElement)) {
+      166 +            name = Krb5NameElement.getInstance(name.toString(),
+      167 +                                       name.getStringNameType());
+      168 +        }
+      169 +
+      170 +        Krb5CredElement credElement = getCredFromSubject
+      171 +            (name, (usage != GSSCredential.ACCEPT_ONLY));
+      172 +
+      173 +        if (credElement == null) {
+      174 +            if (usage == GSSCredential.INITIATE_ONLY ||
+      175 +                usage == GSSCredential.INITIATE_AND_ACCEPT) {
+      176 +                credElement = Krb5InitCredential.getInstance
+      177 +                    (caller, (Krb5NameElement) name, initLifetime);
+      178 +                checkInitCredPermission
+      179 +                    ((Krb5NameElement) credElement.getName());
+      180 +            } else if (usage == GSSCredential.ACCEPT_ONLY) {
+      181 +                credElement =
+      182 +                    Krb5AcceptCredential.getInstance(caller,
+      183 +                                                     (Krb5NameElement) name);
+      184 +                checkAcceptCredPermission
+      185 +                    ((Krb5NameElement) credElement.getName(), name);
+      186 +            } else
+      187 +                throw new GSSException(GSSException.FAILURE, -1,
+      188 +                                       "Unknown usage mode requested");
+      189 +        }
+      190 +        return credElement;
+      191 +    }
+      192 +
+      193 +    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+      194 +            int initLifetime, int acceptLifetime, int usage)
+      195 +        throws GSSException {
+      196 +        return getCredentialElement(name, initLifetime, acceptLifetime,
+      197 +            usage);
+      198 +    }
+      199 +
+      200 +    public void storeCredInto(GSSCredentialSpi cred, int usage,
+      201 +                              boolean overwrite, boolean defaultCred,
+      202 +                              Map&lt;String,String&gt; store) throws GSSException {
+      203 +        throw new GSSException(GSSException.UNAVAILABLE, -1,
+      204 +                "The Kerberos mechanism Java implementation does not " +
+      205 +                "currently support storing GSS credentials handle " +
+      206 +                "elements into a \"credential store\"");
+      207 +    }
+      208 +
+</span> 144  209      public static void checkInitCredPermission(Krb5NameElement name) {
+ 145  210          SecurityManager sm = System.getSecurityManager();
+ 146  211          if (sm != null) {
+ 147  212              String realm = (name.getKrb5PrincipalName()).getRealmAsString();
+ 148  213              String tgsPrincipal =
+ 149  214                  new String("krbtgt/" + realm + '@' + realm);
+ 150  215              ServicePermission perm =
+ 151  216                  new ServicePermission(tgsPrincipal, "initiate");
+ 152  217              try {
+ 153  218                  sm.checkPermission(perm);
+ 154  219              } catch (SecurityException e) {
+ 155  220                  if (DEBUG) {
+<span class='subtracted'> 156      -                    System.out.println("Permission to initiate" +
+</span><span class='added'>      221 +                    System.out.println("Permission to initiate " +
+</span> 157  222                          "kerberos init credential" + e.getMessage());
+ 158  223                  }
+ 159  224                  throw e;
+ 160  225              }
+ 161  226          }
+ 162  227      }
+ 163  228  
+ 164  229      public static void checkAcceptCredPermission(Krb5NameElement name,
+ 165  230                                             GSSNameSpi originalName) {
+ 166  231          SecurityManager sm = System.getSecurityManager();
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 167  232          if (sm != null &amp;&amp; name != null) {
+ 168  233              ServicePermission perm = new ServicePermission
+ 169  234                  (name.getKrb5PrincipalName().getName(), "accept");
+ 170  235              try {
+ 171  236                  sm.checkPermission(perm);
+ 172  237              } catch (SecurityException e) {
+ 173  238                  if (originalName == null) {
+ 174  239                      // Don't disclose the name of the principal
+ 175  240                      e = new SecurityException("No permission to acquire "
+ 176  241                                        + "Kerberos accept credential");
+ 177  242                      // Don't call e.initCause() with caught exception
+ 178  243                  }
+ 179  244                  throw e;
+ 180  245              }
+ 181  246          }
+ 182  247      }
+ 183  248  
+ 184  249      public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+ 185  250                               GSSCredentialSpi myInitiatorCred, int lifetime)
+ 186  251          throws GSSException {
+ 187  252          if (peer != null &amp;&amp; !(peer instanceof Krb5NameElement)) {
+ 188  253              peer = Krb5NameElement.getInstance(peer.toString(),
+ 189  254                                         peer.getStringNameType());
+ 190  255          }
+ 191  256          // XXX Convert myInitiatorCred to Krb5CredElement
+ 192  257          if (myInitiatorCred == null) {
+ 193  258              myInitiatorCred = getCredentialElement(null, lifetime, 0,
+ 194  259                  GSSCredential.INITIATE_ONLY);
+ 195  260          }
+ 196  261          return new Krb5Context(caller, (Krb5NameElement)peer,
+ 197  262                                 (Krb5CredElement)myInitiatorCred, lifetime);
+ 198  263      }
+ 199  264  
+ 200  265      public GSSContextSpi getMechanismContext(GSSCredentialSpi myAcceptorCred)
+ 201  266          throws GSSException {
+ 202  267          // XXX Convert myAcceptorCred to Krb5CredElement
+ 203  268          if (myAcceptorCred == null) {
+ 204  269              myAcceptorCred = getCredentialElement(null, 0,
+ 205  270                  GSSCredential.INDEFINITE_LIFETIME, GSSCredential.ACCEPT_ONLY);
+ 206  271          }
+ 207  272          return new Krb5Context(caller, (Krb5CredElement)myAcceptorCred);
+ 208  273      }
+ 209  274  
+ 210  275      public GSSContextSpi getMechanismContext(byte[] exportedContext)
+ 211  276          throws GSSException {
+ 212  277          return new Krb5Context(caller, exportedContext);
+ 213  278      }
+ 214  279  
+ 215  280  
+ 216  281      public final Oid getMechanismOid() {
+ 217  282          return GSS_KRB5_MECH_OID;
+ 218  283      }
+ 219  284  
+ 220  285      public Provider getProvider() {
+ 221  286          return PROVIDER;
+ 222  287      }
+ 223  288  
+ 224  289      public Oid[] getNameTypes() {
+ 225  290          // nameTypes is cloned in GSSManager.getNamesForMech
+ 226  291          return nameTypes;
+ 227  292      }
+ 228  293  
+ 229  294      private static Oid createOid(String oidStr) {
+ 230  295          Oid retVal = null;
+ 231  296          try {
+ 232  297              retVal = new Oid(oidStr);
+ 233  298          } catch (GSSException e) {
+ 234  299              // Should not happen!
+ 235  300          }
+ 236  301          return retVal;
+ 237  302      }
+ 238  303  }
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">72 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 4; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 4; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

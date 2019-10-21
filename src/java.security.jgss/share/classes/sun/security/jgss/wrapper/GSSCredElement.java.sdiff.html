@@ -1,0 +1,454 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Sdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java</title>
+</head><body id="SUNWwebrev">
+<a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+FIXME commentary
+Add isDefaultCredential() method to GSSCredentialSpi
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add actual mechanism to native GSSNameElement state</pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 package sun.security.jgss.wrapper;
+  26 
+  27 import org.ietf.jgss.*;
+  28 import java.security.Provider;
+
+
+
+  29 import sun.security.jgss.GSSUtil;
+  30 import sun.security.jgss.spi.GSSCredentialSpi;
+  31 import sun.security.jgss.spi.GSSNameSpi;
+  32 
+  33 /**
+  34  * This class is essentially a wrapper class for the gss_cred_id_t
+  35  * structure of the native GSS library.
+  36  * @author Valerie Peng
+  37  * @since 1.6
+  38  */
+  39 public class GSSCredElement implements GSSCredentialSpi {
+  40 
+  41     private int usage;
+  42     long pCred; // Pointer to the gss_cred_id_t structure
+  43     private GSSNameElement name = null;
+  44     private GSSLibStub cStub;
+
+  45 
+  46     // Perform the necessary ServicePermission check on this cred
+
+  47     void doServicePermCheck() throws GSSException {
+
+
+
+  48         if (GSSUtil.isKerberosMech(cStub.getMech())) {
+  49             if (System.getSecurityManager() != null) {
+  50                 if (isInitiatorCredential()) {
+  51                     String tgsName = Krb5Util.getTGSName(name);
+  52                     Krb5Util.checkServicePermission(tgsName, "initiate");
+  53                 }
+  54                 if (isAcceptorCredential() &amp;&amp;
+  55                     name != GSSNameElement.DEF_ACCEPTOR) {
+  56                     String krbName = name.getKrbName();
+  57                     Krb5Util.checkServicePermission(krbName, "accept");
+  58                 }
+  59             }
+  60         }
+  61     }
+  62 
+  63     // Construct delegation cred using the actual context mech and srcName
+  64     GSSCredElement(long pCredentials, GSSNameElement srcName, Oid mech)
+  65         throws GSSException {
+  66         pCred = pCredentials;
+  67         cStub = GSSLibStub.getInstance(mech);
+  68         usage = GSSCredential.INITIATE_ONLY;
+  69         name = srcName;
+  70     }
+  71 
+<span class="changed">  72     GSSCredElement(GSSNameElement name, int lifetime, int usage,</span>
+
+  73                    GSSLibStub stub) throws GSSException {
+  74         cStub = stub;
+  75         this.usage = usage;
+  76 
+  77         if (name != null) { // Could be GSSNameElement.DEF_ACCEPTOR
+  78             this.name = name;
+  79             doServicePermCheck();
+<span class="changed">  80             pCred = cStub.acquireCred(this.name.pName, lifetime, usage);</span>
+
+
+
+  81         } else {
+<span class="changed">  82             pCred = cStub.acquireCred(0, lifetime, usage);</span>
+<span class="changed">  83             this.name = new GSSNameElement(cStub.getCredName(pCred), cStub);</span>
+  84             doServicePermCheck();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  85         }
+
+
+
+
+
+
+  86     }
+  87 
+  88     public Provider getProvider() {
+  89         return SunNativeProvider.INSTANCE;
+  90     }
+  91 
+  92     public void dispose() throws GSSException {
+  93         name = null;
+  94         if (pCred != 0) {
+  95             pCred = cStub.releaseCred(pCred);
+  96         }
+  97     }
+  98 
+  99     public GSSNameElement getName() throws GSSException {
+ 100         return (name == GSSNameElement.DEF_ACCEPTOR ?
+ 101             null : name);
+ 102     }
+ 103 
+ 104     public int getInitLifetime() throws GSSException {
+ 105         if (isInitiatorCredential()) {
+ 106             return cStub.getCredTime(pCred);
+ 107         } else return 0;
+ 108     }
+ 109 
+ 110     public int getAcceptLifetime() throws GSSException {
+ 111         if (isAcceptorCredential()) {
+ 112             return cStub.getCredTime(pCred);
+ 113         } else return 0;
+ 114     }
+ 115 
+ 116     public boolean isInitiatorCredential() {
+ 117         return (usage != GSSCredential.ACCEPT_ONLY);
+ 118     }
+ 119 
+ 120     public boolean isAcceptorCredential() {
+ 121         return (usage != GSSCredential.INITIATE_ONLY);
+ 122     }
+ 123 
+ 124     public Oid getMechanism() {
+ 125         return cStub.getMech();
+
+
+
+
+ 126     }
+ 127 
+ 128     public String toString() {
+ 129         // No hex bytes available for native impl
+ 130         return "N/A";
+ 131     }
+ 132 
+ 133     @SuppressWarnings("deprecation")
+ 134     protected void finalize() throws Throwable {
+ 135         dispose();
+ 136     }
+ 137 
+ 138     @Override
+ 139     public GSSCredentialSpi impersonate(GSSNameSpi name) throws GSSException {
+ 140         throw new GSSException(GSSException.FAILURE, -1,
+ 141                 "Not supported yet");
+ 142     }
+ 143 }
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 package sun.security.jgss.wrapper;
+  26 
+  27 import org.ietf.jgss.*;
+  28 import java.security.Provider;
+<span class="new">  29 import java.util.Map;</span>
+<span class="new">  30 import java.util.List;</span>
+<span class="new">  31 import java.util.ArrayList;</span>
+  32 import sun.security.jgss.GSSUtil;
+  33 import sun.security.jgss.spi.GSSCredentialSpi;
+  34 import sun.security.jgss.spi.GSSNameSpi;
+  35 
+  36 /**
+  37  * This class is essentially a wrapper class for the gss_cred_id_t
+  38  * structure of the native GSS library.
+  39  * @author Valerie Peng
+  40  * @since 1.6
+  41  */
+  42 public class GSSCredElement implements GSSCredentialSpi {
+  43 
+  44     private int usage;
+  45     long pCred; // Pointer to the gss_cred_id_t structure
+  46     private GSSNameElement name = null;
+  47     private GSSLibStub cStub;
+<span class="new">  48     public boolean isDefCred;</span>
+  49 
+  50     // Perform the necessary ServicePermission check on this cred
+<span class="new">  51     // FIXME Don't use any Krb5-specific code here.</span>
+  52     void doServicePermCheck() throws GSSException {
+<span class="new">  53         // FIXME We need only do this check in initSecContext() and</span>
+<span class="new">  54         // acceptSecContext(), so gut this here, and never ever do the</span>
+<span class="new">  55         // Krb5Util.getTGSName(name) check.</span>
+  56         if (GSSUtil.isKerberosMech(cStub.getMech())) {
+  57             if (System.getSecurityManager() != null) {
+  58                 if (isInitiatorCredential()) {
+  59                     String tgsName = Krb5Util.getTGSName(name);
+  60                     Krb5Util.checkServicePermission(tgsName, "initiate");
+  61                 }
+  62                 if (isAcceptorCredential() &amp;&amp;
+  63                     name != GSSNameElement.DEF_ACCEPTOR) {
+  64                     String krbName = name.getKrbName();
+  65                     Krb5Util.checkServicePermission(krbName, "accept");
+  66                 }
+  67             }
+  68         }
+  69     }
+  70 
+  71     // Construct delegation cred using the actual context mech and srcName
+  72     GSSCredElement(long pCredentials, GSSNameElement srcName, Oid mech)
+  73         throws GSSException {
+  74         pCred = pCredentials;
+  75         cStub = GSSLibStub.getInstance(mech);
+  76         usage = GSSCredential.INITIATE_ONLY;
+  77         name = srcName;
+  78     }
+  79 
+<span class="changed">  80     private GSSCredElement(GSSNameElement name, String password,</span>
+<span class="changed">  81                            Map&lt;String,String&gt; store, int lifetime, int usage,</span>
+  82                            GSSLibStub stub) throws GSSException {
+  83         cStub = stub;
+  84         this.usage = usage;
+  85 
+  86         if (name != null) { // Could be GSSNameElement.DEF_ACCEPTOR
+  87             this.name = name;
+  88             doServicePermCheck();
+<span class="changed">  89             pCred = cStub.acquireCred(this.name.pName, password, store,</span>
+<span class="changed">  90                 lifetime, usage);</span>
+<span class="changed">  91             if (name == GSSNameElement.DEF_ACCEPTOR)</span>
+<span class="changed">  92                 isDefCred = true;</span>
+  93         } else {
+<span class="changed">  94             pCred = cStub.acquireCred(0, password, store, lifetime, usage);</span>
+<span class="changed">  95             this.name = new GSSNameElement(cStub.getCredName(pCred), cStub.getMech(), cStub);</span>
+  96             doServicePermCheck();
+<span class="new">  97             isDefCred = true;</span>
+<span class="new">  98         }</span>
+<span class="new">  99     }</span>
+<span class="new"> 100 </span>
+<span class="new"> 101     GSSCredElement(GSSNameElement name, Map&lt;String,String&gt; store, int lifetime,</span>
+<span class="new"> 102                    int usage, GSSLibStub stub) throws GSSException {</span>
+<span class="new"> 103         this(name, (String)null, store, lifetime, usage, stub);</span>
+<span class="new"> 104     }</span>
+<span class="new"> 105 </span>
+<span class="new"> 106     GSSCredElement(GSSNameElement name, String password, int lifetime,</span>
+<span class="new"> 107                    int usage, GSSLibStub stub) throws GSSException {</span>
+<span class="new"> 108         this(name, password, (Map&lt;String,String&gt;)null, lifetime, usage, stub);</span>
+<span class="new"> 109     }</span>
+<span class="new"> 110 </span>
+<span class="new"> 111     GSSCredElement(GSSNameElement name, int lifetime, int usage,</span>
+<span class="new"> 112                    GSSLibStub stub) throws GSSException {</span>
+<span class="new"> 113         this(name, (String)null, lifetime, usage, stub);</span>
+ 114     }
+<span class="new"> 115 </span>
+<span class="new"> 116     public void storeInto(int usage, boolean overwrite, boolean defaultCred,</span>
+<span class="new"> 117                           Map&lt;String,String&gt; store)</span>
+<span class="new"> 118             throws GSSException {</span>
+<span class="new"> 119         cStub.storeCred(pCred, usage, getMechanism(), overwrite,</span>
+<span class="new"> 120                         defaultCred, store);</span>
+ 121     }
+ 122 
+ 123     public Provider getProvider() {
+ 124         return SunNativeProvider.INSTANCE;
+ 125     }
+ 126 
+ 127     public void dispose() throws GSSException {
+ 128         name = null;
+ 129         if (pCred != 0) {
+ 130             pCred = cStub.releaseCred(pCred);
+ 131         }
+ 132     }
+ 133 
+ 134     public GSSNameElement getName() throws GSSException {
+ 135         return (name == GSSNameElement.DEF_ACCEPTOR ?
+ 136             null : name);
+ 137     }
+ 138 
+ 139     public int getInitLifetime() throws GSSException {
+ 140         if (isInitiatorCredential()) {
+ 141             return cStub.getCredTime(pCred);
+ 142         } else return 0;
+ 143     }
+ 144 
+ 145     public int getAcceptLifetime() throws GSSException {
+ 146         if (isAcceptorCredential()) {
+ 147             return cStub.getCredTime(pCred);
+ 148         } else return 0;
+ 149     }
+ 150 
+ 151     public boolean isInitiatorCredential() {
+ 152         return (usage != GSSCredential.ACCEPT_ONLY);
+ 153     }
+ 154 
+ 155     public boolean isAcceptorCredential() {
+ 156         return (usage != GSSCredential.INITIATE_ONLY);
+ 157     }
+ 158 
+ 159     public Oid getMechanism() {
+ 160         return cStub.getMech();
+<span class="new"> 161     }</span>
+<span class="new"> 162 </span>
+<span class="new"> 163     public boolean isDefaultCredential() {</span>
+<span class="new"> 164         return isDefCred;</span>
+ 165     }
+ 166 
+ 167     public String toString() {
+ 168         // No hex bytes available for native impl
+ 169         return "N/A";
+ 170     }
+ 171 
+ 172     @SuppressWarnings("deprecation")
+ 173     protected void finalize() throws Throwable {
+ 174         dispose();
+ 175     }
+ 176 
+ 177     @Override
+ 178     public GSSCredentialSpi impersonate(GSSNameSpi name) throws GSSException {
+ 179         throw new GSSException(GSSException.FAILURE, -1,
+ 180                 "Not supported yet");
+ 181     }
+ 182 }
+</pre></td>
+</tr></table>
+</body></html>

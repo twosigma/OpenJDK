@@ -1,0 +1,283 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Sdiff src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java</title>
+</head><body id="SUNWwebrev">
+<a class="print" href="javascript:print()">Print this page</a>
+<pre>Make GSSName implement Principal (add getName())
+Add getLocalName() GSSName method</pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+ 431         byte[] retVal = new byte[2
+ 432                                 + 2 + oidBytes.length
+ 433                                 + 4 + mechPortion.length];
+ 434         int pos = 0;
+ 435         retVal[pos++] = 0x04;
+ 436         retVal[pos++] = 0x01;
+ 437         retVal[pos++] = (byte) (oidBytes.length&gt;&gt;&gt;8);
+ 438         retVal[pos++] = (byte) oidBytes.length;
+ 439         System.arraycopy(oidBytes, 0, retVal, pos, oidBytes.length);
+ 440         pos += oidBytes.length;
+ 441         retVal[pos++] = (byte) (mechPortion.length&gt;&gt;&gt;24);
+ 442         retVal[pos++] = (byte) (mechPortion.length&gt;&gt;&gt;16);
+ 443         retVal[pos++] = (byte) (mechPortion.length&gt;&gt;&gt;8);
+ 444         retVal[pos++] = (byte)  mechPortion.length;
+ 445         System.arraycopy(mechPortion, 0, retVal, pos, mechPortion.length);
+ 446         return retVal;
+ 447     }
+ 448 
+ 449     public String toString() {
+ 450          return printableName;
+
+ 451 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 452     }
+ 453 
+ 454     public Oid getStringNameType() throws GSSException {
+ 455         return printableNameType;
+ 456     }
+ 457 
+ 458     public boolean isAnonymous() {
+ 459         if (printableNameType == null) {
+ 460             return false;
+ 461         } else {
+ 462             return GSSName.NT_ANONYMOUS.equals(printableNameType);
+ 463         }
+ 464     }
+ 465 
+ 466     public boolean isMN() {
+ 467         return true; // Since always canonicalized for some mech
+ 468     }
+ 469 
+ 470     public synchronized GSSNameSpi getElement(Oid mechOid)
+ 471         throws GSSException {
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+ 431         byte[] retVal = new byte[2
+ 432                                 + 2 + oidBytes.length
+ 433                                 + 4 + mechPortion.length];
+ 434         int pos = 0;
+ 435         retVal[pos++] = 0x04;
+ 436         retVal[pos++] = 0x01;
+ 437         retVal[pos++] = (byte) (oidBytes.length&gt;&gt;&gt;8);
+ 438         retVal[pos++] = (byte) oidBytes.length;
+ 439         System.arraycopy(oidBytes, 0, retVal, pos, oidBytes.length);
+ 440         pos += oidBytes.length;
+ 441         retVal[pos++] = (byte) (mechPortion.length&gt;&gt;&gt;24);
+ 442         retVal[pos++] = (byte) (mechPortion.length&gt;&gt;&gt;16);
+ 443         retVal[pos++] = (byte) (mechPortion.length&gt;&gt;&gt;8);
+ 444         retVal[pos++] = (byte)  mechPortion.length;
+ 445         System.arraycopy(mechPortion, 0, retVal, pos, mechPortion.length);
+ 446         return retVal;
+ 447     }
+ 448 
+ 449     public String toString() {
+ 450         return printableName;
+<span class="new"> 451     }</span>
+ 452 
+<span class="new"> 453     public String getName() {</span>
+<span class="new"> 454         return printableName;</span>
+<span class="new"> 455     }</span>
+<span class="new"> 456 </span>
+<span class="new"> 457     public String getName(Oid mech) throws GSSException {</span>
+<span class="new"> 458         GSSNameSpi element = elements.get(mech);</span>
+<span class="new"> 459         if (element == null) {</span>
+<span class="new"> 460             throw new GSSExceptionImpl(GSSException.UNAVAILABLE,</span>
+<span class="new"> 461                     "GSSName object does not have an element for the " +</span>
+<span class="new"> 462                     "given mechanism");</span>
+<span class="new"> 463         }</span>
+<span class="new"> 464         return element.toString();</span>
+<span class="new"> 465     }</span>
+<span class="new"> 466 </span>
+<span class="new"> 467     public String getLocalName() throws GSSException {</span>
+<span class="new"> 468         String lname = null;</span>
+<span class="new"> 469         Oid mech = null;</span>
+<span class="new"> 470         Oid mech2 = null;</span>
+<span class="new"> 471 </span>
+<span class="new"> 472         for (GSSNameSpi v : elements.values()) {</span>
+<span class="new"> 473             String mname = v.getLocalName();</span>
+<span class="new"> 474             if (mname == null)</span>
+<span class="new"> 475                 continue;</span>
+<span class="new"> 476             if (lname == null) {</span>
+<span class="new"> 477                 mech = v.getMechanism();</span>
+<span class="new"> 478                 lname = mname;</span>
+<span class="new"> 479                 continue;</span>
+<span class="new"> 480             }</span>
+<span class="new"> 481             if (!lname.equals(mname)) {</span>
+<span class="new"> 482                 mech2 = v.getMechanism();</span>
+<span class="new"> 483                 break;</span>
+<span class="new"> 484             }</span>
+<span class="new"> 485         }</span>
+<span class="new"> 486         if (mech2 == null)</span>
+<span class="new"> 487             return lname;</span>
+<span class="new"> 488         throw new GSSExceptionImpl(GSSException.UNAVAILABLE,</span>
+<span class="new"> 489                 "Localname conflict between mechanisms " +</span>
+<span class="new"> 490                 mech + " and " + mech2);</span>
+<span class="new"> 491     }</span>
+<span class="new"> 492 </span>
+<span class="new"> 493     public String getLocalName(Oid mech) throws GSSException {</span>
+<span class="new"> 494         GSSNameSpi element = elements.get(mech);</span>
+<span class="new"> 495         if (element == null) {</span>
+<span class="new"> 496             throw new GSSExceptionImpl(GSSException.UNAVAILABLE,</span>
+<span class="new"> 497                     "GSSName object does not have an element for the " +</span>
+<span class="new"> 498                     "given mechanism");</span>
+<span class="new"> 499         }</span>
+<span class="new"> 500         return element.getLocalName();</span>
+ 501     }
+ 502 
+ 503     public Oid getStringNameType() throws GSSException {
+ 504         return printableNameType;
+ 505     }
+ 506 
+ 507     public boolean isAnonymous() {
+ 508         if (printableNameType == null) {
+ 509             return false;
+ 510         } else {
+ 511             return GSSName.NT_ANONYMOUS.equals(printableNameType);
+ 512         }
+ 513     }
+ 514 
+ 515     public boolean isMN() {
+ 516         return true; // Since always canonicalized for some mech
+ 517     }
+ 518 
+ 519     public synchronized GSSNameSpi getElement(Oid mechOid)
+ 520         throws GSSException {
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

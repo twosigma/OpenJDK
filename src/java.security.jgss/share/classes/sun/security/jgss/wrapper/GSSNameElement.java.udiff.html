@@ -1,0 +1,239 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Udiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add commentary about permissions checks
+Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method
+Add actual mechanism to native GSSNameElement state</pre>
+        <pre>
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -51,10 +51,11 @@</span>
+ public class GSSNameElement implements GSSNameSpi {
+ 
+     long pName = 0; // Pointer to the gss_name_t structure
+     private String printableName;
+     private Oid printableType;
+<span class="new">+    private Oid mech;</span>
+     private GSSLibStub cStub;
+ 
+     static final GSSNameElement DEF_ACCEPTOR = new GSSNameElement();
+ 
+     private static Oid getNativeNameType(Oid nameType, GSSLibStub stub) {
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -95,17 +96,18 @@</span>
+ 
+     private GSSNameElement() {
+         printableName = "&lt;DEFAULT ACCEPTOR&gt;";
+     }
+ 
+<span class="removed">-    GSSNameElement(long pNativeName, GSSLibStub stub) throws GSSException {</span>
+<span class="new">+    GSSNameElement(long pNativeName, Oid mech, GSSLibStub stub) throws GSSException {</span>
+         assert(stub != null);
+         if (pNativeName == 0) {
+             throw new GSSException(GSSException.BAD_NAME);
+         }
+         // Note: pNativeName is assumed to be a MN.
+         pName = pNativeName;
+<span class="new">+        this.mech = mech;</span>
+         cStub = stub;
+         setPrintables();
+     }
+ 
+     GSSNameElement(byte[] nameBytes, Oid nameType, GSSLibStub stub)
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -114,10 +116,11 @@</span>
+         if (nameBytes == null) {
+             throw new GSSException(GSSException.BAD_NAME);
+         }
+         cStub = stub;
+         byte[] name = nameBytes;
+<span class="new">+        mech = cStub.getMech();</span>
+ 
+         if (nameType != null) {
+             // Special handling the specified name type if
+             // necessary
+             nameType = getNativeNameType(nameType, stub);
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -126,11 +129,10 @@</span>
+                 // Need to add back the mech Oid portion (stripped
+                 // off by GSSNameImpl class prior to calling this
+                 // method) for "NT_EXPORT_NAME"
+                 byte[] mechBytes = null;
+                 DerOutputStream dout = new DerOutputStream();
+<span class="removed">-                Oid mech = cStub.getMech();</span>
+                 try {
+                     dout.putOID(new ObjectIdentifier(mech.toString()));
+                 } catch (IOException e) {
+                     throw new GSSExceptionImpl(GSSException.FAILURE, e);
+                 }
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -193,11 +195,32 @@</span>
+ 
+     // Need to be public for GSSUtil.getSubject()
+     public String getKrbName() throws GSSException {
+         long mName = 0;
+         GSSLibStub stub = cStub;
+<span class="removed">-        if (!GSSUtil.isKerberosMech(cStub.getMech())) {</span>
+<span class="new">+        if (!GSSUtil.isKerberosMech(mech)) {</span>
+<span class="new">+            // XXX We can't expect this to work generally.  We should</span>
+<span class="new">+            // generalize the permission checks so that they can deal</span>
+<span class="new">+            // with name forms other than those of Kerberos.</span>
+<span class="new">+            //</span>
+<span class="new">+            // Alternatively we could have a method in GSSLibStub for</span>
+<span class="new">+            // mapping a non-Kerberos MN to a Kerberos MN, but depending</span>
+<span class="new">+            // on the specifics of the non-Kerberos mechanism we would</span>
+<span class="new">+            // either end up needing new conventions for Kerberos naming</span>
+<span class="new">+            // or else having cases where we can end up failing to</span>
+<span class="new">+            // support unconventional name forms.</span>
+<span class="new">+            //</span>
+<span class="new">+            // Consider a SAML assertion with a variety of identifying</span>
+<span class="new">+            // attributes and a variety of non-identifying attributes</span>
+<span class="new">+            // that are relevant to authorization.  How should a</span>
+<span class="new">+            // Kerberos-equivalent be constructed?  GSS does have</span>
+<span class="new">+            // extensions for decorating name objects with attributes,</span>
+<span class="new">+            // so that's not an issue, but if there are multiple</span>
+<span class="new">+            // identifying attributes then we'd have to pick one.  Now,</span>
+<span class="new">+            // suppose the identifying attribute has a form like</span>
+<span class="new">+            // &lt;phone-number&gt; -- we'd need a Kerberos convention for</span>
+<span class="new">+            // that, which might be PHONE/&lt;number&gt;@&lt;ASSERTION-SIGNER&gt;.</span>
+             stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
+         }
+         mName = stub.canonicalizeName(pName);
+         Object[] printables2 = stub.displayName(mName);
+         stub.releaseName(mName);
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -265,25 +288,39 @@</span>
+         System.arraycopy(nameVal, pos, mechPortion, 0, mechPortionLen);
+         return mechPortion;
+     }
+ 
+     public Oid getMechanism() {
+<span class="removed">-        return cStub.getMech();</span>
+<span class="new">+        return (mech != null) ? mech : cStub.getMech();</span>
+     }
+ 
+     public String toString() {
+         return printableName;
+     }
+ 
+<span class="new">+    public String getLocalName() throws GSSException {</span>
+<span class="new">+        return cStub.localName(pName, mech);</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    public String getLocalName(Oid mech) throws GSSException {</span>
+<span class="new">+        if (mech.equals(this.mech))</span>
+<span class="new">+            return cStub.localName(pName, mech);</span>
+<span class="new">+        throw new GSSException(GSSException.BAD_MECH);</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+     public Oid getStringNameType() {
+         return printableType;
+     }
+ 
+     public boolean isAnonymousName() {
+         return (GSSName.NT_ANONYMOUS.equals(printableType));
+     }
+ 
+<span class="new">+    public boolean isDefaultCredentialName() {</span>
+<span class="new">+        return (this == DEF_ACCEPTOR);</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+     public void dispose() {
+         if (pName != 0) {
+             cStub.releaseName(pName);
+             pName = 0;
+         }
+</pre></body></html>
+

@@ -1,0 +1,44 @@
+From b81971809c9677259c78bf670b3c16ed0faafdc8 Mon Sep 17 00:00:00 2001
+From: Nico Williams <nico@twosigma.com>
+Date: Thu, 27 Sep 2018 12:41:48 -0500
+Subject: [PATCH 18/24] Add commentary about permissions checks
+
+---
+ .../security/jgss/wrapper/GSSNameElement.java | 21 +++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
+index d066de5e96..2027f58377 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java
+@@ -198,6 +198,27 @@ public class GSSNameElement implements GSSNameSpi {
+         long mName = 0;
+         GSSLibStub stub = cStub;
+         if (!GSSUtil.isKerberosMech(mech)) {
++            // XXX We can't expect this to work generally.  We should
++            // generalize the permission checks so that they can deal
++            // with name forms other than those of Kerberos.
++            //
++            // Alternatively we could have a method in GSSLibStub for
++            // mapping a non-Kerberos MN to a Kerberos MN, but depending
++            // on the specifics of the non-Kerberos mechanism we would
++            // either end up needing new conventions for Kerberos naming
++            // or else having cases where we can end up failing to
++            // support unconventional name forms.
++            //
++            // Consider a SAML assertion with a variety of identifying
++            // attributes and a variety of non-identifying attributes
++            // that are relevant to authorization.  How should a
++            // Kerberos-equivalent be constructed?  GSS does have
++            // extensions for decorating name objects with attributes,
++            // so that's not an issue, but if there are multiple
++            // identifying attributes then we'd have to pick one.  Now,
++            // suppose the identifying attribute has a form like
++            // <phone-number> -- we'd need a Kerberos convention for
++            // that, which might be PHONE/<number>@<ASSERTION-SIGNER>.
+             stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
+         }
+         mName = stub.canonicalizeName(pName);
+-- 
+2.17.1
+

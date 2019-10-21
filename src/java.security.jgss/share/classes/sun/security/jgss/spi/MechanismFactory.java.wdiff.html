@@ -1,0 +1,568 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2000, 2006, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">19 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package sun.security.jgss.spi;
+  27   27  
+  28   28  import org.ietf.jgss.*;
+  29   29  import java.security.Provider;
+<span class='added'>       30 +import java.util.Map;
+</span>  30   31  
+  31   32  /**
+  32   33   * This interface is implemented by the factory class for every
+  33   34   * plugin mechanism. The GSSManager locates an implementation of this
+  34   35   * interface by querying the security providers installed on the
+  35   36   * system. For a provider to support a mechanism defined by Oid x.y.z,
+  36   37   * the provider master file would have to contain a mapping from the
+  37   38   * property "GssApiMechanism.x.y.z" to an implementation class that serves
+  38   39   * as the factory for that mechanism.
+  39   40   * &lt;p&gt;
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  40   41   * e.g., If a provider master file contained the a mapping from the
+  41   42   * property "GssApiMechanism.1.2.840.113554.1.2.2" to the class name
+  42   43   * "com.foo.krb5.Krb5GssFactory", then the GSS-API framework would assume
+  43   44   * that com.foo.krb5.Krb5GssFactory implements the MechanismFactory
+  44   45   * interface and that it can be used to obtain elements required by for
+  45   46   * supporting this mechanism.
+  46   47   *
+  47   48   * @author Mayank Upadhyay
+  48   49   */
+  49   50  
+  50   51  public interface MechanismFactory {
+  51   52  
+  52   53      /**
+  53   54       * Returns the Oid of the mechanism that this factory supports.
+  54   55       * @return the Oid
+  55   56       */
+  56   57      public Oid getMechanismOid();
+  57   58  
+  58   59      /**
+  59   60       * Returns the provider that this factory came from.
+  60   61       * @return the provider
+  61   62       */
+  62   63      public Provider getProvider();
+  63   64  
+  64   65      /**
+  65   66       * Returns the GSS-API nametypes that this mechanism can
+  66   67       * support. Having this method helps the GSS-Framework decide quickly
+  67   68       * if a certain mechanism can be skipped when importing a name.
+  68   69       * @return an array of the Oid's corresponding to the different GSS-API
+  69   70       * nametypes supported
+  70   71       * @see org.ietf.jgss.GSSName
+  71   72       */
+  72   73      public Oid[] getNameTypes() throws GSSException;
+  73   74  
+  74   75      /**
+  75   76       * Creates a credential element for this mechanism to be included as
+  76   77       * part of a GSSCredential implementation. A GSSCredential is
+  77   78       * conceptually a container class of several credential elements from
+  78   79       * different mechanisms. A GSS-API credential can be used either for
+  79   80       * initiating GSS security contexts or for accepting them. This method
+  80   81       * also accepts parameters that indicate what usage is expected and how
+  81   82       * long the life of the credential should be. It is not necessary that
+  82   83       * the mechanism honor the request for lifetime. An application will
+  83   84       * always query an acquired GSSCredential to determine what lifetime it
+  84   85       * got back.&lt;p&gt;
+  85   86       *
+  86   87       * &lt;b&gt;Not all mechanisms support the concept of one credential element
+  87   88       * that can be used for both initiating and accepting a context. In the
+  88   89       * event that an application requests usage INITIATE_AND_ACCEPT for a
+  89   90       * credential from such a mechanism, the GSS framework will need to
+  90   91       * obtain two different credential elements from the mechanism, one
+  91   92       * that will have usage INITIATE_ONLY and another that will have usage
+  92   93       * ACCEPT_ONLY. The mechanism will help the GSS-API realize this by
+  93   94       * returning a credential element with usage INITIATE_ONLY or
+  94   95       * ACCEPT_ONLY prompting it to make another call to
+  95   96       * getCredentialElement, this time with the other usage mode. The
+  96   97       * mechanism indicates the missing mode by returning a 0 lifetime for
+  97   98       * it.&lt;/b&gt;
+  98   99       *
+  99  100       * @param name the mechanism level name element for the entity whose
+ 100  101       * credential is desired. A null value indicates that a mechanism
+ 101  102       * dependent default choice is to be made.
+ 102  103       * @param initLifetime indicates the lifetime (in seconds) that is
+ 103  104       * requested for this credential to be used at the context initiator's
+ 104  105       * end. This value should be ignored if the usage is
+ 105  106       * ACCEPT_ONLY. Predefined contants are available in the
+ 106  107       * org.ietf.jgss.GSSCredential interface.
+ 107  108       * @param acceptLifetime indicates the lifetime (in seconds) that is
+ 108  109       * requested for this credential to be used at the context acceptor's
+ 109  110       * end. This value should be ignored if the usage is
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">70 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 110  111       * INITIATE_ONLY. Predefined contants are available in the
+ 111  112       * org.ietf.jgss.GSSCredential interface.
+ 112  113       * @param usage One of the values GSSCredential.INIATE_ONLY,
+ 113  114       * GSSCredential.ACCEPT_ONLY, and GSSCredential.INITIATE_AND_ACCEPT.
+ 114  115       * @see org.ietf.jgss.GSSCredential
+ 115  116       * @throws GSSException if one of the error situations described in RFC
+ 116  117       * 2743 with the GSS_Acquire_Cred or GSS_Add_Cred calls occurs.
+ 117  118       */
+ 118  119      public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+ 119  120        int initLifetime, int acceptLifetime, int usage) throws GSSException;
+<span class='added'>      121 +
+      122 +    /**
+      123 +     * Creates a credential element using a password for this mechanism to be
+      124 +     * included as part of a GSSCredential implementation. A GSSCredential is
+      125 +     * conceptually a container class of several credential elements from
+      126 +     * different mechanisms. A GSS-API credential can be used either for
+      127 +     * initiating GSS security contexts or for accepting them. This method
+      128 +     * also accepts parameters that indicate what usage is expected and how
+      129 +     * long the life of the credential should be. It is not necessary that
+      130 +     * the mechanism honor the request for lifetime. An application will
+      131 +     * always query an acquired GSSCredential to determine what lifetime it
+      132 +     * got back.&lt;p&gt;
+      133 +     *
+      134 +     * &lt;b&gt;Not all mechanisms support the concept of one credential element
+      135 +     * that can be used for both initiating and accepting a context. In the
+      136 +     * event that an application requests usage INITIATE_AND_ACCEPT for a
+      137 +     * credential from such a mechanism, the GSS framework will need to
+      138 +     * obtain two different credential elements from the mechanism, one
+      139 +     * that will have usage INITIATE_ONLY and another that will have usage
+      140 +     * ACCEPT_ONLY. The mechanism will help the GSS-API realize this by
+      141 +     * returning a credential element with usage INITIATE_ONLY or
+      142 +     * ACCEPT_ONLY prompting it to make another call to
+      143 +     * getCredentialElement, this time with the other usage mode. The
+      144 +     * mechanism indicates the missing mode by returning a 0 lifetime for
+      145 +     * it.&lt;/b&gt;
+      146 +     *
+      147 +     * @param name the mechanism level name element for the entity whose
+      148 +     * credential is desired. A null value indicates that a mechanism
+      149 +     * dependent default choice is to be made.
+      150 +     * @param password is the password for the entity whose credential
+      151 +     * is desired.
+      152 +     * @param initLifetime indicates the lifetime (in seconds) that is
+      153 +     * requested for this credential to be used at the context initiator's
+      154 +     * end. This value should be ignored if the usage is
+      155 +     * ACCEPT_ONLY. Predefined contants are available in the
+      156 +     * org.ietf.jgss.GSSCredential interface.
+      157 +     * @param acceptLifetime indicates the lifetime (in seconds) that is
+      158 +     * requested for this credential to be used at the context acceptor's
+      159 +     * end. This value should be ignored if the usage is
+      160 +     * INITIATE_ONLY. Predefined contants are available in the
+      161 +     * org.ietf.jgss.GSSCredential interface.
+      162 +     * @param usage One of the values GSSCredential.INIATE_ONLY,
+      163 +     * GSSCredential.ACCEPT_ONLY, and GSSCredential.INITIATE_AND_ACCEPT.
+      164 +     * @see org.ietf.jgss.GSSCredential
+      165 +     * @throws GSSException if one of the error situations described in RFC
+      166 +     * 2743 with the GSS_Acquire_Cred or GSS_Add_Cred calls occurs.
+      167 +     */
+      168 +    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+      169 +      String password, int initLifetime, int acceptLifetime, int usage)
+      170 +        throws GSSException;
+      171 +
+      172 +    /**
+      173 +     * Creates a credential element using a "credential store" for this
+      174 +     * mechanism to be included as part of a GSSCredential
+      175 +     * implementation. A GSSCredential is conceptually a container class
+      176 +     * of several credential elements from different mechanisms. A
+      177 +     * GSS-API credential can be used either for initiating GSS security
+      178 +     * contexts or for accepting them. This method also accepts
+      179 +     * parameters that indicate what usage is expected and how long the
+      180 +     * life of the credential should be. It is not necessary that the
+      181 +     * mechanism honor the request for lifetime. An application will
+      182 +     * always query an acquired GSSCredential to determine what lifetime
+      183 +     * it got back.&lt;p&gt;
+      184 +     *
+      185 +     * &lt;b&gt;Not all mechanisms support the concept of one credential element
+      186 +     * that can be used for both initiating and accepting a context. In the
+      187 +     * event that an application requests usage INITIATE_AND_ACCEPT for a
+      188 +     * credential from such a mechanism, the GSS framework will need to
+      189 +     * obtain two different credential elements from the mechanism, one
+      190 +     * that will have usage INITIATE_ONLY and another that will have usage
+      191 +     * ACCEPT_ONLY. The mechanism will help the GSS-API realize this by
+      192 +     * returning a credential element with usage INITIATE_ONLY or
+      193 +     * ACCEPT_ONLY prompting it to make another call to
+      194 +     * getCredentialElement, this time with the other usage mode. The
+      195 +     * mechanism indicates the missing mode by returning a 0 lifetime for
+      196 +     * it.&lt;/b&gt;
+      197 +     *
+      198 +     * @param name the mechanism level name element for the entity whose
+      199 +     * credential is desired. A null value indicates that a mechanism
+      200 +     * dependent default choice is to be made.
+      201 +     * @param store is an array of even length whose elements at even
+      202 +     * indices are keys, and whose elements at any odd index are the
+      203 +     * values for the preceding keys. Keys supported by mechanisms
+      204 +     * vary. This is mostly intended for use with the platform's native
+      205 +     * GSS-API providers. Common keys include "keytab", "client_keytab",
+      206 +     * "ccache", and "rcache". Consult the documentation for the
+      207 +     * platform's native GSS-API providers.
+      208 +     * @param initLifetime indicates the lifetime (in seconds) that is
+      209 +     * requested for this credential to be used at the context initiator's
+      210 +     * end. This value should be ignored if the usage is
+      211 +     * ACCEPT_ONLY. Predefined contants are available in the
+      212 +     * org.ietf.jgss.GSSCredential interface.
+      213 +     * @param acceptLifetime indicates the lifetime (in seconds) that is
+      214 +     * requested for this credential to be used at the context acceptor's
+      215 +     * end. This value should be ignored if the usage is
+      216 +     * INITIATE_ONLY. Predefined contants are available in the
+      217 +     * org.ietf.jgss.GSSCredential interface.
+      218 +     * @param usage One of the values GSSCredential.INIATE_ONLY,
+      219 +     * GSSCredential.ACCEPT_ONLY, and GSSCredential.INITIATE_AND_ACCEPT.
+      220 +     * @see org.ietf.jgss.GSSCredential
+      221 +     * @throws GSSException if one of the error situations described in RFC
+      222 +     * 2743 with the GSS_Acquire_Cred or GSS_Add_Cred calls occurs.
+      223 +     */
+      224 +    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+      225 +                                                 Map&lt;String,String&gt; store,
+      226 +                                                 int initLifetime,
+      227 +                                                 int acceptLifetime,
+      228 +                                                 int usage)
+      229 +        throws GSSException;
+      230 +
+      231 +    /**
+      232 +     * Stores a credential element into a specified location.
+      233 +     *
+      234 +     * @param cred The credential element to store.
+      235 +     * @param usage The credential usage to store.
+      236 +     * @param overwrite Whether to overwrite credentials found at the specified
+      237 +     * location.
+      238 +     * @param @defaultCred Whether to store the credentials as the default
+      239 +     * credentials in the specified location.
+      240 +     * @param store The location into which to store the credentials.
+      241 +     */
+      242 +    default void storeCredInto(GSSCredentialSpi cred, int usage,
+      243 +                              boolean overwrite, boolean defaultCred,
+      244 +                              Map&lt;String,String&gt; store) throws GSSException {
+      245 +        throw new GSSException(GSSException.UNAVAILABLE, -1,
+      246 +                "The " + getMechanismOid() + "mechanism does not " +
+      247 +                "currently support storing GSS credentials handle " +
+      248 +                "elements into a \"credential store\"");
+      249 +    }
+</span> 120  250  
+ 121  251      /**
+ 122  252       * Creates a name element for this mechanism to be included as part of
+ 123  253       * a GSSName implementation. A GSSName is conceptually a container
+ 124  254       * class of several name elements from different mechanisms. A GSSName
+ 125  255       * can be created either with a String or with a sequence of
+ 126  256       * bytes. This factory method accepts the name in a String. Such a name
+ 127  257       * can generally be assumed to be printable and may be returned from
+ 128  258       * the name element's toString() method.
+ 129  259       *
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 130  260       * @param nameStr a string containing the characters describing this
+ 131  261       * entity to the mechanism
+ 132  262       * @param nameType an Oid serving as a clue as to how the mechanism should
+ 133  263       * interpret the nameStr
+ 134  264       * @throws GSSException if any of the errors described in RFC 2743 for
+ 135  265       * the GSS_Import_Name or GSS_Canonicalize_Name calls occur.
+ 136  266       */
+ 137  267      public GSSNameSpi getNameElement(String nameStr, Oid nameType)
+ 138  268          throws GSSException;
+ 139  269  
+ 140  270      /**
+ 141  271       * This is a variation of the factory method that accepts a String for
+ 142  272       * the characters that make up the name. Usually the String characters
+ 143  273       * are assumed to be printable. The bytes passed in to this method have
+ 144  274       * to be converted to characters using some encoding of the mechanism's
+ 145  275       * choice. It is recommended that UTF-8 be used. (Note that UTF-8
+ 146  276       * preserves the encoding for 7-bit ASCII characters.)
+ 147  277       * &lt;p&gt;
+ 148  278       * An exported name will generally be passed in using this method.
+ 149  279       *
+ 150  280       * @param name the bytes describing this entity to the mechanism
+ 151  281       * @param nameType an Oid serving as a clue as to how the mechanism should
+ 152  282       * interpret the nameStr
+ 153  283       * @throws GSSException if any of the errors described in RFC 2743 for
+ 154  284       * the GSS_Import_Name or GSS_Canonicalize_Name calls occur.
+ 155  285       */
+ 156  286      public GSSNameSpi getNameElement(byte[] name, Oid nameType)
+ 157  287          throws GSSException;
+ 158  288  
+ 159  289      /**
+ 160  290       * Creates a security context for this mechanism so that it can be used
+ 161  291       * on the context initiator's side.
+ 162  292       *
+ 163  293       * @param peer the name element from this mechanism that represents the
+ 164  294       * peer
+ 165  295       * @param myInitiatorCred a credential element for the context
+ 166  296       * initiator obtained previously from this mechanism. The identity of
+ 167  297       * the context initiator can be obtained from this credential. Passing
+ 168  298       * a value of null here indicates that a default entity of the
+ 169  299       * mechanism's choice should be assumed to be the context initiator and
+ 170  300       * that default credentials should be applied.
+ 171  301       * @param lifetime the requested lifetime (in seconds) for the security
+ 172  302       * context. Predefined contants are available in the
+ 173  303       * org.ietf.jgss.GSSContext interface.
+ 174  304       * @throws GSSException if any of the errors described in RFC 2743 in
+ 175  305       * the GSS_Init_Sec_Context call occur.
+ 176  306       */
+ 177  307      public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+ 178  308                                               GSSCredentialSpi myInitiatorCred,
+ 179  309                                               int lifetime) throws GSSException;
+ 180  310  
+ 181  311      /**
+ 182  312       * Creates a security context for this mechanism so thatit can be used
+ 183  313       * on the context acceptor's side.
+ 184  314       *
+ 185  315       * @param myAcceptorCred a credential element for the context acceptor
+ 186  316       * obtained previously from this mechanism. The identity of the context
+ 187  317       * acceptor cna be obtained from this credential. Passing a value of
+ 188  318       * null here indicates that tha default entity of the mechanism's
+ 189  319       * choice should be assumed to be the context acceptor and default
+ 190  320       * credentials should be applied.
+ 191  321       *
+ 192  322       * @throws GSSException if any of the errors described in RFC 2743 in
+ 193  323       * the GSS_Accept_Sec_Context call occur.
+ 194  324       */
+ 195  325      public GSSContextSpi getMechanismContext(GSSCredentialSpi myAcceptorCred)
+ 196  326          throws GSSException;
+ 197  327  
+ 198  328      /**
+ 199  329       * Creates a security context from a previously exported (serialized)
+ 200  330       * security context. Note that this is different from Java
+ 201  331       * serialization and is defined at a mechanism level to interoperate
+ 202  332       * over the wire with non-Java implementations. Either the initiator or
+ 203  333       * the acceptor can export and then import a security context.
+ 204  334       * Implementations of mechanism contexts are not required to implement
+ 205  335       * exporting and importing.
+ 206  336       *
+ 207  337       * @param exportedContext the bytes representing this security context
+ 208  338       * @throws GSSException is any of the errors described in RFC 2743 in
+ 209  339       * the GSS_Import_Sec_Context call occur.
+ 210  340       */
+ 211  341      public GSSContextSpi getMechanismContext(byte[] exportedContext)
+ 212  342          throws GSSException;
+ 213  343  
+ 214  344  }
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">85 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 3; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 3; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

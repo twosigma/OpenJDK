@@ -1,0 +1,485 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().</pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package sun.security.jgss;
+  27 
+<a name="1" id="anc1"></a><span class="new">  28 import java.util.Map;</span>
+  29 import org.ietf.jgss.*;
+  30 import sun.security.action.GetBooleanAction;
+  31 import sun.security.jgss.spi.*;
+  32 import java.security.Provider;
+  33 
+  34 /**
+  35  * This class provides the default implementation of the GSSManager
+  36  * interface.
+  37  */
+  38 public class GSSManagerImpl extends GSSManager {
+  39 
+  40     // Undocumented property
+  41     private static final Boolean USE_NATIVE = GetBooleanAction
+  42             .privilegedGetProperty("sun.security.jgss.native");
+  43 
+  44     private ProviderList list;
+  45 
+  46     // Used by java SPNEGO impl to make sure native is disabled
+  47     public GSSManagerImpl(GSSCaller caller, boolean useNative) {
+  48         list = new ProviderList(caller, useNative);
+  49     }
+  50 
+  51     // Used by HTTP/SPNEGO NegotiatorImpl
+  52     public GSSManagerImpl(GSSCaller caller) {
+  53         list = new ProviderList(caller, USE_NATIVE);
+  54     }
+  55 
+  56     public GSSManagerImpl() {
+  57         list = new ProviderList(GSSCaller.CALLER_UNKNOWN, USE_NATIVE);
+  58     }
+  59 
+  60     public Oid[] getMechs(){
+  61         return list.getMechs();
+  62     }
+  63 
+  64     public Oid[] getNamesForMech(Oid mech)
+  65         throws GSSException {
+  66         MechanismFactory factory = list.getMechFactory(mech);
+  67         return factory.getNameTypes().clone();
+  68     }
+  69 
+  70     public Oid[] getMechsForName(Oid nameType){
+  71         Oid[] mechs = list.getMechs();
+  72         Oid[] retVal = new Oid[mechs.length];
+  73         int pos = 0;
+  74 
+  75         // Compatibility with RFC 2853 old NT_HOSTBASED_SERVICE value.
+  76         if (nameType.equals(GSSNameImpl.oldHostbasedServiceName)) {
+  77             nameType = GSSName.NT_HOSTBASED_SERVICE;
+  78         }
+  79 
+  80         // Iterate thru all mechs in GSS
+  81         for (int i = 0; i &lt; mechs.length; i++) {
+  82             // what nametypes does this mech support?
+  83             Oid mech = mechs[i];
+  84             try {
+  85                 Oid[] namesForMech = getNamesForMech(mech);
+  86                 // Is the desired Oid present in that list?
+  87                 if (nameType.containedIn(namesForMech)) {
+  88                     retVal[pos++] = mech;
+  89                 }
+  90             } catch (GSSException e) {
+  91                 // Squelch it and just skip over this mechanism
+  92                 GSSUtil.debug("Skip " + mech +
+  93                               ": error retrieving supported name types");
+  94             }
+  95         }
+  96 
+  97         // Trim the list if needed
+  98         if (pos &lt; retVal.length) {
+  99             Oid[] temp = new Oid[pos];
+ 100             for (int i = 0; i &lt; pos; i++)
+ 101                 temp[i] = retVal[i];
+ 102             retVal = temp;
+ 103         }
+ 104 
+ 105         return retVal;
+ 106     }
+ 107 
+ 108     public GSSName createName(String nameStr, Oid nameType)
+ 109         throws GSSException {
+ 110         return new GSSNameImpl(this, nameStr, nameType);
+ 111     }
+ 112 
+ 113     public GSSName createName(byte[] name, Oid nameType)
+ 114         throws GSSException {
+ 115         return new GSSNameImpl(this, name, nameType);
+ 116     }
+ 117 
+ 118     public GSSName createName(String nameStr, Oid nameType,
+ 119                               Oid mech) throws GSSException {
+ 120         return new GSSNameImpl(this, nameStr, nameType, mech);
+ 121     }
+ 122 
+ 123     public GSSName createName(byte[] name, Oid nameType, Oid mech)
+ 124         throws GSSException {
+ 125         return new GSSNameImpl(this, name, nameType, mech);
+ 126     }
+ 127 
+ 128     public GSSCredential createCredential(int usage)
+ 129         throws GSSException {
+ 130         return wrap(new GSSCredentialImpl(this, usage));
+ 131     }
+ 132 
+ 133     public GSSCredential createCredential(GSSName aName,
+ 134                                           int lifetime, Oid mech, int usage)
+ 135         throws GSSException {
+ 136         return wrap(new GSSCredentialImpl(this, aName, lifetime, mech, usage));
+ 137     }
+ 138 
+ 139     public GSSCredential createCredential(GSSName aName,
+<a name="2" id="anc2"></a><span class="new"> 140                                           Map&lt;String,String&gt; store,</span>
+<span class="new"> 141                                           int lifetime, Oid mech, int usage)</span>
+<span class="new"> 142         throws GSSException {</span>
+<span class="new"> 143         return new GSSCredentialImpl(this, aName, store, lifetime, mech,</span>
+<span class="new"> 144             usage);</span>
+<span class="new"> 145     }</span>
+<span class="new"> 146 </span>
+<span class="new"> 147     public GSSCredential createCredential(GSSName aName, String password,</span>
+<span class="new"> 148                                           int lifetime, Oid mech, int usage)</span>
+<span class="new"> 149         throws GSSException {</span>
+<span class="new"> 150         return new GSSCredentialImpl(this, aName, password,</span>
+<span class="new"> 151                 lifetime, mech, usage);</span>
+<span class="new"> 152     }</span>
+<span class="new"> 153 </span>
+<span class="new"> 154     public GSSCredential createCredential(GSSName aName,</span>
+ 155                                           int lifetime, Oid[] mechs, int usage)
+ 156         throws GSSException {
+ 157         return wrap(new GSSCredentialImpl(this, aName, lifetime, mechs, usage));
+ 158     }
+ 159 
+<a name="3" id="anc3"></a><span class="new"> 160     public GSSCredential createCredential(GSSName aName, String password,</span>
+<span class="new"> 161                                           int lifetime, Oid mechs[], int usage)</span>
+<span class="new"> 162         throws GSSException {</span>
+<span class="new"> 163         return new GSSCredentialImpl(this, aName, password,</span>
+<span class="new"> 164                 lifetime, mechs, usage);</span>
+<span class="new"> 165     }</span>
+<span class="new"> 166 </span>
+<span class="new"> 167     public GSSCredential createCredential(GSSName aName,</span>
+<span class="new"> 168                                           Map&lt;String,String&gt; store,</span>
+<span class="new"> 169                                           int lifetime, Oid mechs[], int usage)</span>
+<span class="new"> 170         throws GSSException {</span>
+<span class="new"> 171         return new GSSCredentialImpl(this, aName, store,</span>
+<span class="new"> 172                 lifetime, mechs, usage);</span>
+<span class="new"> 173     }</span>
+<span class="new"> 174 </span>
+ 175     public GSSContext createContext(GSSName peer, Oid mech,
+ 176                                     GSSCredential myCred, int lifetime)
+ 177         throws GSSException {
+ 178         return wrap(new GSSContextImpl(this, peer, mech, myCred, lifetime));
+ 179     }
+ 180 
+ 181     public GSSContext createContext(GSSCredential myCred)
+ 182         throws GSSException {
+ 183         return wrap(new GSSContextImpl(this, myCred));
+ 184     }
+ 185 
+ 186     public GSSContext createContext(byte[] interProcessToken)
+ 187         throws GSSException {
+ 188         return wrap(new GSSContextImpl(this, interProcessToken));
+ 189     }
+ 190 
+ 191     public void addProviderAtFront(Provider p, Oid mech)
+ 192         throws GSSException {
+ 193         list.addProviderAtFront(p, mech);
+ 194     }
+ 195 
+ 196     public void addProviderAtEnd(Provider p, Oid mech)
+ 197         throws GSSException {
+ 198         list.addProviderAtEnd(p, mech);
+ 199     }
+ 200 
+ 201     public GSSCredentialSpi getCredentialElement(GSSNameSpi name, int initLifetime,
+ 202                                           int acceptLifetime, Oid mech, int usage)
+ 203         throws GSSException {
+ 204         MechanismFactory factory = list.getMechFactory(mech);
+ 205         return factory.getCredentialElement(name, initLifetime,
+<a name="4" id="anc4"></a><span class="new"> 206                                             acceptLifetime, usage);</span>
+<span class="new"> 207     }</span>
+<span class="new"> 208 </span>
+<span class="new"> 209     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,</span>
+<span class="new"> 210                                                  String password,</span>
+<span class="new"> 211                                                  int initLifetime,</span>
+<span class="new"> 212                                                  int acceptLifetime,</span>
+<span class="new"> 213                                                  Oid mech, int usage)</span>
+<span class="new"> 214         throws GSSException {</span>
+<span class="new"> 215         MechanismFactory factory = list.getMechFactory(mech);</span>
+<span class="new"> 216         return factory.getCredentialElement(name, password, initLifetime,</span>
+<span class="new"> 217                                             acceptLifetime, usage);</span>
+<span class="new"> 218     }</span>
+<span class="new"> 219 </span>
+<span class="new"> 220     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,</span>
+<span class="new"> 221                                                  Map&lt;String,String&gt; store,</span>
+<span class="new"> 222                                                  int initLifetime,</span>
+<span class="new"> 223                                                  int acceptLifetime,</span>
+<span class="new"> 224                                                  Oid mech, int usage)</span>
+<span class="new"> 225         throws GSSException {</span>
+<span class="new"> 226         MechanismFactory factory = list.getMechFactory(mech);</span>
+<span class="new"> 227         return factory.getCredentialElement(name, store, initLifetime,</span>
+ 228                                             acceptLifetime, usage);
+ 229     }
+ 230 
+ 231     // Used by java SPNEGO impl
+ 232     public GSSNameSpi getNameElement(String name, Oid nameType, Oid mech)
+ 233         throws GSSException {
+ 234         // Just use the most preferred MF impl assuming GSSNameSpi
+ 235         // objects are interoperable among providers
+ 236         MechanismFactory factory = list.getMechFactory(mech);
+ 237         return factory.getNameElement(name, nameType);
+ 238     }
+ 239 
+ 240     // Used by java SPNEGO impl
+ 241     public GSSNameSpi getNameElement(byte[] name, Oid nameType, Oid mech)
+ 242         throws GSSException {
+ 243         // Just use the most preferred MF impl assuming GSSNameSpi
+ 244         // objects are interoperable among providers
+ 245         MechanismFactory factory = list.getMechFactory(mech);
+ 246         return factory.getNameElement(name, nameType);
+ 247     }
+ 248 
+ 249     GSSContextSpi getMechanismContext(GSSNameSpi peer,
+ 250                                       GSSCredentialSpi myInitiatorCred,
+ 251                                       int lifetime, Oid mech)
+ 252         throws GSSException {
+ 253         Provider p = null;
+ 254         if (myInitiatorCred != null) {
+ 255             p = myInitiatorCred.getProvider();
+ 256         }
+ 257         MechanismFactory factory = list.getMechFactory(mech, p);
+ 258         return factory.getMechanismContext(peer, myInitiatorCred, lifetime);
+ 259     }
+ 260 
+ 261     GSSContextSpi getMechanismContext(GSSCredentialSpi myAcceptorCred,
+ 262                                       Oid mech)
+ 263         throws GSSException {
+ 264         Provider p = null;
+ 265         if (myAcceptorCred != null) {
+ 266             p = myAcceptorCred.getProvider();
+ 267         }
+ 268         MechanismFactory factory = list.getMechFactory(mech, p);
+ 269         return factory.getMechanismContext(myAcceptorCred);
+ 270     }
+ 271 
+ 272     GSSContextSpi getMechanismContext(byte[] exportedContext)
+ 273         throws GSSException {
+ 274         if ((exportedContext == null) || (exportedContext.length == 0)) {
+ 275             throw new GSSException(GSSException.NO_CONTEXT);
+ 276         }
+ 277         GSSContextSpi result = null;
+ 278 
+ 279         // Only allow context import with native provider since JGSS
+ 280         // still has not defined its own interprocess token format
+ 281         Oid[] mechs = list.getMechs();
+ 282         for (int i = 0; i &lt; mechs.length; i++) {
+ 283             MechanismFactory factory = list.getMechFactory(mechs[i]);
+ 284             if (factory.getProvider().getName().equals("SunNativeGSS")) {
+ 285                 result = factory.getMechanismContext(exportedContext);
+ 286                 if (result != null) break;
+ 287             }
+ 288         }
+ 289         if (result == null) {
+ 290             throw new GSSException(GSSException.UNAVAILABLE);
+ 291         }
+ 292         return result;
+ 293     }
+ 294 
+ 295     static {
+ 296         // Load the extended JGSS interfaces if exist
+ 297         try {
+ 298             Class.forName("com.sun.security.jgss.Extender");
+ 299         } catch (Exception e) {
+ 300         }
+ 301     }
+ 302 
+ 303     static GSSCredential wrap(GSSCredentialImpl cred) {
+ 304         return sun.security.jgss.JgssExtender.getExtender().wrap(cred);
+ 305     }
+ 306 
+ 307     static GSSContext wrap(GSSContextImpl ctxt) {
+ 308         return sun.security.jgss.JgssExtender.getExtender().wrap(ctxt);
+ 309     }
+ 310 }
+<a name="5" id="anc5"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="5" type="hidden"></input></form></body></html>

@@ -1,0 +1,257 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Sdiff src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5NameElement.java</title>
+</head><body id="SUNWwebrev">
+<a class="print" href="javascript:print()">Print this page</a>
+<pre>Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method</pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+ 300      * @return the Oid of the mechanism type
+ 301      */
+ 302     public Oid getMechanism() {
+ 303         return (Krb5MechFactory.GSS_KRB5_MECH_OID);
+ 304     }
+ 305 
+ 306     /**
+ 307      * Returns a string representation for this name. The printed
+ 308      * name type can be obtained by calling getStringNameType().
+ 309      *
+ 310      * @return string form of this name
+ 311      * @see #getStringNameType()
+ 312      * @overrides Object#toString
+ 313      */
+ 314     public String toString() {
+ 315         return (gssNameStr);
+ 316         // For testing: return (super.toString());
+ 317     }
+ 318 
+ 319     /**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 320      * Returns the name type oid.
+ 321      */
+ 322     public Oid getGSSNameType() {
+ 323         return (gssNameType);
+ 324     }
+ 325 
+ 326     /**
+ 327      * Returns the oid describing the format of the printable name.
+ 328      *
+ 329      * @return the Oid for the format of the printed name
+ 330      */
+ 331     public Oid getStringNameType() {
+ 332         // XXX For NT_EXPORT_NAME return a different name type. Infact,
+ 333         // don't even store NT_EXPORT_NAME in the cons.
+ 334         return (gssNameType);
+ 335     }
+ 336 
+ 337     /**
+ 338      * Indicates if this name object represents an Anonymous name.
+ 339      */
+ 340     public boolean isAnonymousName() {
+ 341         return (gssNameType.equals(GSSName.NT_ANONYMOUS));
+
+
+
+
+ 342     }
+ 343 
+ 344     public Provider getProvider() {
+ 345         return Krb5MechFactory.PROVIDER;
+ 346     }
+ 347 
+ 348 }
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+ 300      * @return the Oid of the mechanism type
+ 301      */
+ 302     public Oid getMechanism() {
+ 303         return (Krb5MechFactory.GSS_KRB5_MECH_OID);
+ 304     }
+ 305 
+ 306     /**
+ 307      * Returns a string representation for this name. The printed
+ 308      * name type can be obtained by calling getStringNameType().
+ 309      *
+ 310      * @return string form of this name
+ 311      * @see #getStringNameType()
+ 312      * @overrides Object#toString
+ 313      */
+ 314     public String toString() {
+ 315         return (gssNameStr);
+ 316         // For testing: return (super.toString());
+ 317     }
+ 318 
+ 319     /**
+<span class="new"> 320      * Returns a local username (platform-specific) corresponding to the</span>
+<span class="new"> 321      * principal name, and may return null when no username is known for the</span>
+<span class="new"> 322      * principal name.</span>
+<span class="new"> 323      *</span>
+<span class="new"> 324      * @return username corresponding to this principal name, if any</span>
+<span class="new"> 325      */</span>
+<span class="new"> 326     public String getLocalName() throws GSSException {</span>
+<span class="new"> 327         throw new GSSException(GSSException.UNAVAILABLE, -1,</span>
+<span class="new"> 328                 "Mapping Kerberos principal names to usernames is not " +</span>
+<span class="new"> 329                 "currently supported");</span>
+<span class="new"> 330     }</span>
+<span class="new"> 331 </span>
+<span class="new"> 332     /**</span>
+<span class="new"> 333      * Returns a local username (platform-specific) corresponding to the</span>
+<span class="new"> 334      * principal name, and may return null when no username is known for the</span>
+<span class="new"> 335      * principal name.</span>
+<span class="new"> 336      *</span>
+<span class="new"> 337      * @return username corresponding to this principal name, if any</span>
+<span class="new"> 338      */</span>
+<span class="new"> 339     public String getLocalName(Oid mech) throws GSSException {</span>
+<span class="new"> 340         throw new GSSException(GSSException.UNAVAILABLE, -1,</span>
+<span class="new"> 341                 "Mapping Kerberos principal names to usernames is not " +</span>
+<span class="new"> 342                 "currently supported");</span>
+<span class="new"> 343     }</span>
+<span class="new"> 344 </span>
+<span class="new"> 345     /**</span>
+ 346      * Returns the name type oid.
+ 347      */
+ 348     public Oid getGSSNameType() {
+ 349         return (gssNameType);
+ 350     }
+ 351 
+ 352     /**
+ 353      * Returns the oid describing the format of the printable name.
+ 354      *
+ 355      * @return the Oid for the format of the printed name
+ 356      */
+ 357     public Oid getStringNameType() {
+ 358         // XXX For NT_EXPORT_NAME return a different name type. Infact,
+ 359         // don't even store NT_EXPORT_NAME in the cons.
+ 360         return (gssNameType);
+ 361     }
+ 362 
+ 363     /**
+ 364      * Indicates if this name object represents an Anonymous name.
+ 365      */
+ 366     public boolean isAnonymousName() {
+ 367         return (gssNameType.equals(GSSName.NT_ANONYMOUS));
+<span class="new"> 368     }</span>
+<span class="new"> 369 </span>
+<span class="new"> 370     public boolean isDefaultCredentialName() {</span>
+<span class="new"> 371         return false;</span>
+ 372     }
+ 373 
+ 374     public Provider getProvider() {
+ 375         return Krb5MechFactory.PROVIDER;
+ 376     }
+ 377 
+ 378 }
+</pre></td>
+</tr></table>
+</body></html>

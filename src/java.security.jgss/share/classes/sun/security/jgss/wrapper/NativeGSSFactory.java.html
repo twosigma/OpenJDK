@@ -1,0 +1,345 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws New src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package sun.security.jgss.wrapper;
+  27 
+  28 import java.io.UnsupportedEncodingException;
+  29 import java.security.Provider;
+  30 import java.util.Map;
+  31 import java.util.Vector;
+  32 import org.ietf.jgss.*;
+  33 import sun.security.jgss.GSSUtil;
+  34 import sun.security.jgss.GSSCaller;
+  35 import sun.security.jgss.GSSExceptionImpl;
+  36 import sun.security.jgss.spi.*;
+  37 
+  38 /**
+  39  * JGSS plugin for generic mechanisms provided through native GSS framework.
+  40  *
+  41  * @author Valerie Peng
+  42  */
+  43 
+  44 public final class NativeGSSFactory implements MechanismFactory {
+  45 
+  46     GSSLibStub cStub = null;
+  47     private final GSSCaller caller;
+  48 
+  49     private GSSCredElement getCredFromSubject(GSSNameElement name,
+  50                                               boolean initiate)
+  51         throws GSSException {
+  52         Oid mech = cStub.getMech();
+  53         Vector&lt;GSSCredElement&gt; creds = GSSUtil.searchSubject
+  54             (name, mech, initiate, GSSCredElement.class);
+  55 
+  56         // If Subject is present but no native creds available
+  57         if (creds != null &amp;&amp; creds.isEmpty()) {
+  58             if (GSSUtil.useSubjectCredsOnly(caller)) {
+  59                 throw new GSSException(GSSException.NO_CRED);
+  60             }
+  61         }
+  62 
+  63         GSSCredElement result = ((creds == null || creds.isEmpty()) ?
+  64                                  null : creds.firstElement());
+  65         // Force permission check before returning the cred to caller
+  66         if (result != null) {
+  67             result.doServicePermCheck();
+  68         }
+  69         return result;
+  70     }
+  71 
+  72     public NativeGSSFactory(GSSCaller caller) {
+  73         this.caller = caller;
+  74         // Have to call setMech(Oid) explicitly before calling other
+  75         // methods. Otherwise, NPE may be thrown unexpectantly
+  76     }
+  77 
+  78     public void setMech(Oid mech) throws GSSException {
+  79         cStub = GSSLibStub.getInstance(mech);
+  80     }
+  81 
+  82     public GSSNameSpi getNameElement(String nameStr, Oid nameType)
+  83         throws GSSException {
+  84         try {
+  85             byte[] nameBytes =
+  86                 (nameStr == null ? null : nameStr.getBytes("UTF-8"));
+  87             return new GSSNameElement(nameBytes, nameType, cStub);
+  88         } catch (UnsupportedEncodingException uee) {
+  89             // Shouldn't happen
+  90             throw new GSSExceptionImpl(GSSException.FAILURE, uee);
+  91         }
+  92     }
+  93 
+  94     public GSSNameSpi getNameElement(byte[] name, Oid nameType)
+  95         throws GSSException {
+  96         return new GSSNameElement(name, nameType, cStub);
+  97     }
+  98 
+  99     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+ 100                                                  String password,
+ 101                                                  int initLifetime,
+ 102                                                  int acceptLifetime,
+ 103                                                  int usage)
+ 104         throws GSSException {
+ 105         GSSNameElement nname = null;
+ 106         if (name != null &amp;&amp; !(name instanceof GSSNameElement)) {
+ 107             nname = (GSSNameElement)
+ 108                 getNameElement(name.toString(), name.getStringNameType());
+ 109         } else nname = (GSSNameElement) name;
+ 110 
+ 111         if (usage == GSSCredential.INITIATE_AND_ACCEPT) {
+ 112             // Force separate acqusition of cred element since
+ 113             // MIT's impl does not correctly report NO_CRED error.
+ 114             usage = GSSCredential.INITIATE_ONLY;
+ 115         }
+ 116 
+ 117         GSSCredElement credElement =
+ 118             getCredFromSubject(nname, (usage == GSSCredential.INITIATE_ONLY));
+ 119 
+ 120         if (credElement == null) {
+ 121             // No cred in the Subject
+ 122             if (usage == GSSCredential.INITIATE_ONLY) {
+ 123                 if (password == null) {
+ 124                     credElement = new GSSCredElement(nname, initLifetime,
+ 125                                                      usage, cStub);
+ 126                 } else {
+ 127                     credElement = new GSSCredElement(nname, password,
+ 128                                                      initLifetime,
+ 129                                                      usage, cStub);
+ 130                 }
+ 131             } else if (usage == GSSCredential.ACCEPT_ONLY) {
+ 132                 if (nname == null) {
+ 133                     nname = GSSNameElement.DEF_ACCEPTOR;
+ 134                 }
+ 135                 if (password == null) {
+ 136                     credElement = new GSSCredElement(nname, acceptLifetime,
+ 137                                                      usage, cStub);
+ 138                 } else {
+ 139                     credElement = new GSSCredElement(nname, password,
+ 140                                                      acceptLifetime,
+ 141                                                      usage, cStub);
+ 142                 }
+ 143             } else {
+ 144                 throw new GSSException(GSSException.FAILURE, -1,
+ 145                                        "Unknown usage mode requested");
+ 146             }
+ 147         }
+ 148         return credElement;
+ 149     }
+ 150 
+ 151     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+ 152                                                  Map&lt;String,String&gt; store,
+ 153                                                  int initLifetime,
+ 154                                                  int acceptLifetime,
+ 155                                                  int usage)
+ 156         throws GSSException {
+ 157         GSSNameElement nname = null;
+ 158         if (name != null &amp;&amp; !(name instanceof GSSNameElement)) {
+ 159             nname = (GSSNameElement)
+ 160                 getNameElement(name.toString(), name.getStringNameType());
+ 161         } else nname = (GSSNameElement) name;
+ 162 
+ 163         if (usage == GSSCredential.INITIATE_AND_ACCEPT) {
+ 164             // Force separate acqusition of cred element since
+ 165             // MIT's impl does not correctly report NO_CRED error.
+ 166             usage = GSSCredential.INITIATE_ONLY;
+ 167         }
+ 168 
+ 169         GSSCredElement credElement =
+ 170             getCredFromSubject(nname, (usage == GSSCredential.INITIATE_ONLY));
+ 171 
+ 172         if (credElement == null) {
+ 173             // No cred in the Subject
+ 174             if (usage == GSSCredential.INITIATE_ONLY) {
+ 175                 if (store == null) {
+ 176                     credElement = new GSSCredElement(nname, initLifetime,
+ 177                                                      usage, cStub);
+ 178                 } else {
+ 179                     credElement = new GSSCredElement(nname, store,
+ 180                                                      initLifetime,
+ 181                                                      usage, cStub);
+ 182                 }
+ 183             } else if (usage == GSSCredential.ACCEPT_ONLY) {
+ 184                 if (nname == null) {
+ 185                     nname = GSSNameElement.DEF_ACCEPTOR;
+ 186                 }
+ 187                 if (store == null) {
+ 188                     credElement = new GSSCredElement(nname, acceptLifetime,
+ 189                                                      usage, cStub);
+ 190                 } else {
+ 191                     credElement = new GSSCredElement(nname, store,
+ 192                                                      acceptLifetime,
+ 193                                                      usage, cStub);
+ 194                 }
+ 195             } else {
+ 196                 throw new GSSException(GSSException.FAILURE, -1,
+ 197                                        "Unknown usage mode requested");
+ 198             }
+ 199         }
+ 200         return credElement;
+ 201     }
+ 202 
+ 203     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+ 204                                                  int initLifetime,
+ 205                                                  int acceptLifetime,
+ 206                                                  int usage)
+ 207         throws GSSException {
+ 208         return getCredentialElement(name, (String)null, initLifetime,
+ 209                                     acceptLifetime, usage);
+ 210     }
+ 211 
+ 212     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+ 213                                              GSSCredentialSpi myCred,
+ 214                                              int lifetime)
+ 215         throws GSSException {
+ 216         if (peer == null) {
+ 217             throw new GSSException(GSSException.BAD_NAME);
+ 218         } else if (!(peer instanceof GSSNameElement)) {
+ 219             peer = (GSSNameElement)
+ 220                 getNameElement(peer.toString(), peer.getStringNameType());
+ 221         }
+ 222         if (myCred == null) {
+ 223             myCred = getCredFromSubject(null, true);
+ 224         } else if (!(myCred instanceof GSSCredElement)) {
+ 225             throw new GSSException(GSSException.NO_CRED);
+ 226         }
+ 227         return new NativeGSSContext((GSSNameElement) peer,
+ 228                                      (GSSCredElement) myCred,
+ 229                                      lifetime, cStub);
+ 230     }
+ 231 
+ 232     public GSSContextSpi getMechanismContext(GSSCredentialSpi myCred)
+ 233         throws GSSException {
+ 234         if (myCred == null) {
+ 235             myCred = getCredFromSubject(null, false);
+ 236         } else if (!(myCred instanceof GSSCredElement)) {
+ 237             throw new GSSException(GSSException.NO_CRED);
+ 238         }
+ 239         return new NativeGSSContext((GSSCredElement) myCred, cStub);
+ 240     }
+ 241 
+ 242     public GSSContextSpi getMechanismContext(byte[] exportedContext)
+ 243         throws GSSException {
+ 244         return cStub.importContext(exportedContext);
+ 245     }
+ 246 
+ 247     public final Oid getMechanismOid() {
+ 248         return cStub.getMech();
+ 249     }
+ 250 
+ 251     public Provider getProvider() {
+ 252         return SunNativeProvider.INSTANCE;
+ 253     }
+ 254 
+ 255     public Oid[] getNameTypes() throws GSSException {
+ 256         return cStub.inquireNamesForMech();
+ 257     }
+ 258 }
+</pre></body></html>

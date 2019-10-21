@@ -1,0 +1,518 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Udiff src/java.security.jgss/share/native/libj2gss/NativeUtil.c</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add actual mechanism to native GSSNameElement state
+Revert initGSSBuffer to JDK7 non-copy behaviour
+Implement String to gss_buffer_t import
+Fix error handling in GSSLibStub
+Also improve object size handling in NativeUtil.</pre>
+        <pre>
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -269,13 +269,13 @@</span>
+     printf("Couldn't find InetAddress.getAddress() method\n");
+     return JNI_ERR;
+   }
+   MID_GSSNameElement_ctor =
+     (*env)-&gt;GetMethodID(env, CLS_GSSNameElement,
+<span class="removed">-                        "&lt;init&gt;", "(JLsun/security/jgss/wrapper/GSSLibStub;)V");</span>
+<span class="new">+                        "&lt;init&gt;", "(JLorg/ietf/jgss/Oid;Lsun/security/jgss/wrapper/GSSLibStub;)V");</span>
+   if (MID_GSSNameElement_ctor == NULL) {
+<span class="removed">-    printf("Couldn't find GSSNameElement(long, GSSLibStub) constructor\n");</span>
+<span class="new">+    printf("Couldn't find GSSNameElement(long, Oid, GSSLibStub) constructor\n");</span>
+     return JNI_ERR;
+   }
+   MID_GSSCredElement_ctor =
+     (*env)-&gt;GetMethodID(env, CLS_GSSCredElement, "&lt;init&gt;",
+         "(JLsun/security/jgss/wrapper/GSSNameElement;Lorg/ietf/jgss/Oid;)V");
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -453,43 +453,53 @@</span>
+ 
+ void throwOutOfMemoryError(JNIEnv *env, const char *message) {
+     throwByName(env, "java/lang/OutOfMemoryError", message);
+ }
+ 
+<span class="new">+static jsize</span>
+<span class="new">+safe_jsize(size_t n)</span>
+<span class="new">+{</span>
+<span class="new">+    jsize res = (jsize)n;</span>
+<span class="new">+</span>
+<span class="new">+    return (res &gt;= 0 &amp;&amp; (size_t)res == n) ? res : -1;</span>
+<span class="new">+}</span>
+<span class="new">+</span>
+ /*
+  * Utility routine for creating a java.lang.String object
+  * using the specified gss_buffer_t structure. The specified
+  * gss_buffer_t structure is always released.
+  */
+ jstring getJavaString(JNIEnv *env, gss_buffer_t bytes) {
+   jstring result = NULL;
+   OM_uint32 minor;
+<span class="removed">-  int len;</span>
+<span class="new">+  jsize len;</span>
+   jbyteArray jbytes;
+ 
+<span class="removed">-  if (bytes != NULL) {</span>
+<span class="removed">-    /* constructs the String object with new String(byte[])</span>
+<span class="removed">-       NOTE: do NOT include the trailing NULL */</span>
+<span class="removed">-    len = (int) bytes-&gt;length;</span>
+<span class="new">+  if (bytes == NULL) {</span>
+<span class="new">+    return NULL;</span>
+<span class="new">+  }</span>
+<span class="new">+</span>
+<span class="new">+  /* constructs the String object with new String(byte[]) */</span>
+<span class="new">+  if ((len = safe_jsize(bytes-&gt;length)) &lt; 0) {</span>
+<span class="new">+    (*ftab-&gt;releaseBuffer)(&amp;minor, bytes);</span>
+<span class="new">+    return NULL;</span>
+<span class="new">+  }</span>
+     jbytes = (*env)-&gt;NewByteArray(env, len);
+     if (jbytes == NULL) {
+<span class="removed">-      goto finish;</span>
+<span class="new">+    (*ftab-&gt;releaseBuffer)(&amp;minor, bytes);</span>
+<span class="new">+    return NULL;</span>
+     }
+ 
+     (*env)-&gt;SetByteArrayRegion(env, jbytes, 0, len, (jbyte *) bytes-&gt;value);
+<span class="removed">-    if ((*env)-&gt;ExceptionCheck(env)) {</span>
+<span class="removed">-      goto finish;</span>
+<span class="removed">-    }</span>
+<span class="removed">-</span>
+<span class="new">+  if ((*env)-&gt;ExceptionCheck(env) == JNI_FALSE) {</span>
+     result = (*env)-&gt;NewObject(env, CLS_String, MID_String_ctor,
+                                jbytes);
+<span class="removed">-  finish:</span>
+<span class="new">+  }</span>
+<span class="new">+</span>
+     (*env)-&gt;DeleteLocalRef(env, jbytes);
+     (*ftab-&gt;releaseBuffer)(&amp;minor, bytes);
+     return result;
+<span class="removed">-  } /* else fall through */</span>
+<span class="removed">-  return NULL;</span>
+ }
+ /*
+  * Utility routine for generate message for the specified minor
+  * status code.
+  */
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -517,11 +527,11 @@</span>
+  * Utility routine checking the specified major and minor
+  * status codes. GSSExceptions will be thrown if they are
+  * not GSS_S_COMPLETE (i.e. 0).
+  */
+ void checkStatus(JNIEnv *env, jobject jstub, OM_uint32 major,
+<span class="removed">-                 OM_uint32 minor, char* methodName) {</span>
+<span class="new">+                 OM_uint32 minor, const char *methodName) {</span>
+   int callingErr, routineErr, supplementaryInfo;
+   jint jmajor, jminor;
+   char* msg;
+   jstring jmsg;
+   jthrowable gssEx;
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -578,80 +588,203 @@</span>
+ 
+ /*
+  * Utility routine for initializing gss_buffer_t structure
+  * with the byte[] in the specified jbyteArray object.
+  * NOTE: must call resetGSSBuffer() to free up the resources
+<span class="removed">- * inside the gss_buffer_t structure.</span>
+  */
+ void initGSSBuffer(JNIEnv *env, jbyteArray jbytes,
+<span class="removed">-                     gss_buffer_t cbytes) {</span>
+<span class="removed">-</span>
+<span class="removed">-  int len;</span>
+<span class="new">+                     gss_buffer_t cbytes, jboolean wantCopy)</span>
+<span class="new">+{</span>
+<span class="new">+  jboolean isCopy;</span>
+<span class="new">+  jint len;</span>
+   void* value;
+ 
+<span class="removed">-  if (jbytes != NULL) {</span>
+<span class="removed">-    len = (*env)-&gt;GetArrayLength(env, jbytes);</span>
+<span class="new">+  cbytes-&gt;length = 0;</span>
+<span class="new">+  cbytes-&gt;value = NULL;</span>
+<span class="new">+</span>
+<span class="new">+  if (jbytes == NULL ||</span>
+<span class="new">+      (len = (*env)-&gt;GetArrayLength(env, jbytes)) == 0)</span>
+<span class="new">+    return;</span>
+<span class="new">+</span>
+<span class="new">+  cbytes-&gt;length = len;</span>
+<span class="new">+</span>
+<span class="new">+  if (wantCopy == JNI_FALSE) {</span>
+<span class="new">+    cbytes-&gt;value = (*env)-&gt;GetByteArrayElements(env, jbytes, &amp;isCopy);</span>
+<span class="new">+    if (cbytes-&gt;value == NULL) {</span>
+<span class="new">+      throwOutOfMemoryError(env, NULL);</span>
+<span class="new">+    }</span>
+<span class="new">+    return;</span>
+<span class="new">+  }</span>
+<span class="new">+</span>
+     value = malloc(len);
+     if (value == NULL) {
+       throwOutOfMemoryError(env, NULL);
+       return;
+<span class="removed">-    } else {</span>
+<span class="new">+  }</span>
+<span class="new">+</span>
+       (*env)-&gt;GetByteArrayRegion(env, jbytes, 0, len, value);
+       if ((*env)-&gt;ExceptionCheck(env)) {
+         free(value);
+         return;
+<span class="removed">-      } else {</span>
+<span class="removed">-        cbytes-&gt;length = len;</span>
+<span class="removed">-        cbytes-&gt;value = value;</span>
+       }
+<span class="new">+  cbytes-&gt;value = value;</span>
+<span class="new">+}</span>
+<span class="new">+</span>
+<span class="new">+/*</span>
+<span class="new">+ * Utility routine for freeing the buffer obtained via initGSSBuffer().</span>
+<span class="new">+ * If jbytes is null this is a malloced copy.</span>
+<span class="new">+ */</span>
+<span class="new">+void resetGSSBuffer(JNIEnv *env, jbyteArray jbytes, gss_buffer_t cbytes)</span>
+<span class="new">+{</span>
+<span class="new">+  if (cbytes-&gt;value == NULL)</span>
+<span class="new">+    return;</span>
+<span class="new">+  if (jbytes != NULL) {</span>
+<span class="new">+    (*env)-&gt;ReleaseByteArrayElements(env, jbytes, cbytes-&gt;value, JNI_ABORT);</span>
+<span class="new">+  } else if (cbytes-&gt;length &gt; 0) {</span>
+<span class="new">+    free(cbytes-&gt;value);</span>
+<span class="new">+    cbytes-&gt;value = NULL;</span>
+<span class="new">+    cbytes-&gt;length = 0;</span>
+     }
+<span class="new">+}</span>
+<span class="new">+</span>
+<span class="new">+/*</span>
+<span class="new">+ * Utility routine for initializing gss_buffer_t structure</span>
+<span class="new">+ * with a String.</span>
+<span class="new">+ * NOTE: need to call resetGSSBufferString(...) to free up</span>
+<span class="new">+ * the resources.</span>
+<span class="new">+ */</span>
+<span class="new">+void initGSSBufferString(JNIEnv* env, jstring jstr, gss_buffer_t buf)</span>
+<span class="new">+{</span>
+<span class="new">+  const char *s;</span>
+<span class="new">+</span>
+<span class="new">+  buf-&gt;length = 0;</span>
+<span class="new">+  buf-&gt;value = NULL;</span>
+<span class="new">+  if (jstr != NULL) {</span>
+<span class="new">+    s = (*env)-&gt;GetStringUTFChars(env, jstr, NULL);</span>
+<span class="new">+    if (s == NULL) {</span>
+<span class="new">+      throwOutOfMemoryError(env, NULL);</span>
+   } else {
+<span class="removed">-    cbytes-&gt;length = 0;</span>
+<span class="removed">-    cbytes-&gt;value = NULL;</span>
+<span class="new">+      buf-&gt;length = strlen(s);</span>
+<span class="new">+      buf-&gt;value = (char *)s; /* Drop const */</span>
+<span class="new">+    }</span>
+   }
+ }
+ 
+ /*
+<span class="removed">- * Utility routine for freeing the bytes malloc'ed</span>
+<span class="removed">- * in initGSSBuffer() method.</span>
+<span class="removed">- * NOTE: used in conjunction with initGSSBuffer(...).</span>
+<span class="new">+ * Utility routine for unpinning/releasing the String</span>
+<span class="new">+ * associated with the specified jstring object.</span>
+<span class="new">+ * NOTE: used in conjunction with initGSSBufferString(...).</span>
+  */
+<span class="removed">-void resetGSSBuffer(gss_buffer_t cbytes) {</span>
+<span class="removed">-  if ((cbytes != NULL) &amp;&amp; (cbytes != GSS_C_NO_BUFFER)) {</span>
+<span class="removed">-    free(cbytes-&gt;value);</span>
+<span class="removed">-    cbytes-&gt;length = 0;</span>
+<span class="removed">-    cbytes-&gt;value = NULL;</span>
+<span class="new">+void resetGSSBufferString(JNIEnv *env, jstring jstr, gss_buffer_t buf)</span>
+<span class="new">+{</span>
+<span class="new">+  if (jstr != NULL &amp;&amp; buf-&gt;value != NULL)</span>
+<span class="new">+    (*env)-&gt;ReleaseStringUTFChars(env, jstr, buf-&gt;value);</span>
+<span class="new">+}</span>
+<span class="new">+</span>
+<span class="new">+void initGSSCredStore(JNIEnv *env, jarray jstore,</span>
+<span class="new">+                      gss_key_value_set_desc *store) {</span>
+<span class="new">+  jsize nelements = 0;</span>
+<span class="new">+  jsize n, i, k;</span>
+<span class="new">+</span>
+<span class="new">+  store-&gt;count = 0;</span>
+<span class="new">+  store-&gt;elements = NULL;</span>
+<span class="new">+  if (jstore == NULL) {</span>
+<span class="new">+    return;</span>
+<span class="new">+  }</span>
+<span class="new">+  n = (*env)-&gt;GetArrayLength(env, jstore);</span>
+<span class="new">+  for (i = 0; i &lt; n; i += 2) {</span>
+<span class="new">+    jobject jkey = (*env)-&gt;GetObjectArrayElement(env, jstore, i);</span>
+<span class="new">+    jobject jval = (*env)-&gt;GetObjectArrayElement(env, jstore, i + 1);</span>
+<span class="new">+    </span>
+<span class="new">+    if (!jkey || !jval) {</span>
+<span class="new">+      break;</span>
+<span class="new">+    }</span>
+<span class="new">+    if (!(*env)-&gt;IsInstanceOf(env, jkey, CLS_String) ||</span>
+<span class="new">+        !(*env)-&gt;IsInstanceOf(env, jval, CLS_String)) {</span>
+<span class="new">+      throwByName(env, "java/lang/IllegalArgumentException",</span>
+<span class="new">+                  "invalid GSS credential store element type; must be String");</span>
+<span class="new">+      store-&gt;count = 0;</span>
+<span class="new">+      return;</span>
+<span class="new">+    }</span>
+<span class="new">+    store-&gt;count += 1;</span>
+<span class="new">+    nelements += 2;</span>
+<span class="new">+  }</span>
+<span class="new">+  if (nelements &lt; 0 || nelements &gt; INT32_MAX) {</span>
+<span class="new">+    throwOutOfMemoryError(env,NULL);</span>
+<span class="new">+    store-&gt;count = 0;</span>
+<span class="new">+    return;</span>
+<span class="new">+  }</span>
+<span class="new">+  store-&gt;elements = calloc(store-&gt;count, sizeof(store-&gt;elements[0]));</span>
+<span class="new">+  if (store-&gt;elements == NULL) {</span>
+<span class="new">+    throwOutOfMemoryError(env,NULL);</span>
+<span class="new">+    store-&gt;count = 0;</span>
+<span class="new">+    return;</span>
+<span class="new">+  }</span>
+<span class="new">+  for (i = 0, k = 0; i &lt; nelements; i += 2, k++) {</span>
+<span class="new">+    jobject jkey = (*env)-&gt;GetObjectArrayElement(env, jstore, i);</span>
+<span class="new">+    jobject jval = (*env)-&gt;GetObjectArrayElement(env, jstore, i + 1);</span>
+<span class="new">+    store-&gt;elements[k].key = (*env)-&gt;GetStringUTFChars(env, jkey, NULL);</span>
+<span class="new">+    store-&gt;elements[k].value = (*env)-&gt;GetStringUTFChars(env, jval, NULL);</span>
+<span class="new">+    TRACE2("[GSSLibStub initGSSCredStore] element %ld key %s",</span>
+<span class="new">+           (long)k, store-&gt;elements[k].key);</span>
+<span class="new">+    TRACE2("[GSSLibStub initGSSCredStore] element %ld value %s",</span>
+<span class="new">+           (long)k, store-&gt;elements[k].value);</span>
+<span class="new">+  }</span>
+<span class="new">+}</span>
+<span class="new">+</span>
+<span class="new">+void resetGSSCredStore(JNIEnv *env,</span>
+<span class="new">+                       jarray jstore,</span>
+<span class="new">+                       gss_key_value_set_desc *store) {</span>
+<span class="new">+  jobject jstr;</span>
+<span class="new">+  jsize i;</span>
+<span class="new">+</span>
+<span class="new">+  for (i = 0; i &lt; (jsize)store-&gt;count; i++) {</span>
+<span class="new">+    jstr = (*env)-&gt;GetObjectArrayElement(env, jstore, i);</span>
+<span class="new">+    if (!(i &amp; 0x01)) {</span>
+<span class="new">+      (*env)-&gt;ReleaseStringUTFChars(env, jstr, store-&gt;elements[i].key);</span>
+<span class="new">+    } else {</span>
+<span class="new">+      (*env)-&gt;ReleaseStringUTFChars(env, jstr, store-&gt;elements[i].value);</span>
+   }
+<span class="new">+  }</span>
+<span class="new">+  free(store-&gt;elements);</span>
+<span class="new">+  store-&gt;elements = NULL;</span>
+<span class="new">+  store-&gt;count = 0;</span>
+ }
+ 
+<span class="new">+</span>
+ /*
+  * Utility routine for creating a jbyteArray object using
+  * the byte[] value in specified gss_buffer_t structure.
+  * NOTE: the specified gss_buffer_t structure is always
+  * released.
+  */
+<span class="removed">-jbyteArray getJavaBuffer(JNIEnv *env, gss_buffer_t cbytes) {</span>
+<span class="new">+jbyteArray getJavaBuffer(JNIEnv *env, gss_buffer_t cbytes, jboolean isToken) {</span>
+   jbyteArray result = NULL;
+<span class="removed">-  OM_uint32 minor; // don't care, just so it compiles</span>
+<span class="new">+  OM_uint32 dummy;</span>
+<span class="new">+</span>
+<span class="new">+  /*</span>
+<span class="new">+   * Zero length tokens map to NULL outputs, but otherwise to a zero-length</span>
+<span class="new">+   * Java byte array.</span>
+<span class="new">+   */</span>
+<span class="new">+  if (cbytes != GSS_C_NO_BUFFER &amp;&amp;</span>
+<span class="new">+      (isToken == JNI_FALSE || cbytes-&gt;length &gt; 0)) {</span>
+<span class="new">+    jsize len = safe_jsize(cbytes-&gt;length);</span>
+ 
+<span class="removed">-  if (cbytes != NULL) {</span>
+<span class="removed">-    if ((cbytes != GSS_C_NO_BUFFER) &amp;&amp; (cbytes-&gt;length != 0)) {</span>
+<span class="removed">-      result = (*env)-&gt;NewByteArray(env, (int) cbytes-&gt;length);</span>
+<span class="removed">-      if (result == NULL) {</span>
+<span class="removed">-        goto finish;</span>
+<span class="new">+    if (len &gt;= 0) {</span>
+<span class="new">+      result = (*env)-&gt;NewByteArray(env, len);</span>
+       }
+<span class="removed">-      (*env)-&gt;SetByteArrayRegion(env, result, 0, (int) cbytes-&gt;length,</span>
+<span class="new">+    if (result != NULL) {</span>
+<span class="new">+      (*env)-&gt;SetByteArrayRegion(env, result, 0, len,</span>
+                                  cbytes-&gt;value);
+       if ((*env)-&gt;ExceptionCheck(env)) {
+<span class="new">+        (*env)-&gt;DeleteLocalRef(env, result);</span>
+         result = NULL;
+       }
+     }
+<span class="removed">-  finish:</span>
+<span class="removed">-    (*ftab-&gt;releaseBuffer)(&amp;minor, cbytes);</span>
+<span class="removed">-    return result;</span>
+   }
+<span class="removed">-  return NULL;</span>
+<span class="new">+  (void) (*ftab-&gt;releaseBuffer)(&amp;dummy, cbytes);</span>
+<span class="new">+  return result;</span>
+ }
+ 
+ /*
+  * Utility routine for creating a non-mech gss_OID using
+  * the specified org.ietf.jgss.Oid object.
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -735,54 +868,38 @@</span>
+   }
+   (*env)-&gt;DeleteLocalRef(env, jbytes);
+   return result;
+ }
+ /*
+<span class="removed">- * Utility routine for creating a gss_OID_set structure</span>
+<span class="removed">- * using the specified gss_OID.</span>
+<span class="removed">- * NOTE: need to call deleteGSSOIDSet(...) afterwards</span>
+<span class="removed">- * to release the created gss_OID_set structure.</span>
+<span class="removed">- */</span>
+<span class="removed">-gss_OID_set newGSSOIDSet(gss_OID oid) {</span>
+<span class="removed">-  gss_OID_set oidSet;</span>
+<span class="removed">-  OM_uint32 minor; // don't care; just so it compiles</span>
+<span class="removed">-</span>
+<span class="removed">-  if (oid-&gt;length != 6 ||</span>
+<span class="removed">-      memcmp(oid-&gt;elements, SPNEGO_BYTES, 6) != 0) {</span>
+<span class="removed">-      (*ftab-&gt;createEmptyOidSet)(&amp;minor, &amp;oidSet);</span>
+<span class="removed">-      (*ftab-&gt;addOidSetMember)(&amp;minor, oid, &amp;oidSet);</span>
+<span class="removed">-      return oidSet;</span>
+<span class="removed">-  } else {</span>
+<span class="removed">-      // Use all mechs for SPNEGO in order to work with</span>
+<span class="removed">-      // various native GSS impls</span>
+<span class="removed">-      return (ftab-&gt;mechs);</span>
+<span class="removed">-  }</span>
+<span class="removed">-}</span>
+<span class="removed">-/*</span>
+<span class="removed">- * Utility routine for releasing a gss_OID_set structure.</span>
+<span class="removed">- * NOTE: used in conjunction with newGSSOIDSet(...).</span>
+<span class="removed">- */</span>
+<span class="removed">-void deleteGSSOIDSet(gss_OID_set oidSet) {</span>
+<span class="removed">-  OM_uint32 minor; /* don't care; just so it compiles */</span>
+<span class="removed">-</span>
+<span class="removed">-  if ((oidSet != ftab-&gt;mechs) &amp;&amp;</span>
+<span class="removed">-      (oidSet != NULL) &amp;&amp; (oidSet != GSS_C_NO_OID_SET)) {</span>
+<span class="removed">-    (*ftab-&gt;releaseOidSet)(&amp;minor, &amp;oidSet);</span>
+<span class="new">+ * Utility routine for filling in a 1-element gss_OID_set structure using the</span>
+<span class="new">+ * specified gss_OID (storage owned by caller).  However, with SPNEGO we return</span>
+<span class="new">+ * a static set containing all the available mechanisms.</span>
+<span class="new">+ */</span>
+<span class="new">+gss_OID_set makeGSSOIDSet(gss_OID_set mechs, gss_OID oid) {</span>
+<span class="new">+  if (oid-&gt;length != 6 || memcmp(oid-&gt;elements, SPNEGO_BYTES, 6) != 0) {</span>
+<span class="new">+      mechs-&gt;count = 1;</span>
+<span class="new">+      mechs-&gt;elements = oid;</span>
+<span class="new">+      return mechs;</span>
+   }
+<span class="new">+  /* Use all mechs for SPNEGO in order to work with various native GSS impls */</span>
+<span class="new">+  return (ftab-&gt;mechs);</span>
+ }
+ /*
+  * Utility routine for creating a org.ietf.jgss.Oid[]
+  * using the specified gss_OID_set structure.
+  */
+ jobjectArray getJavaOIDArray(JNIEnv *env, gss_OID_set cOidSet) {
+<span class="removed">-  int numOfOids = 0;</span>
+<span class="new">+  jsize numOfOids = 0;</span>
+   jobjectArray jOidSet;
+   jobject jOid;
+<span class="removed">-  int i;</span>
+<span class="new">+  jsize i;</span>
+ 
+   if (cOidSet != NULL &amp;&amp; cOidSet != GSS_C_NO_OID_SET) {
+<span class="removed">-    numOfOids = (int) cOidSet-&gt;count;</span>
+<span class="new">+    numOfOids = safe_jsize(cOidSet-&gt;count);</span>
+<span class="new">+    if (numOfOids &lt; 0) {</span>
+<span class="new">+      return NULL;</span>
+<span class="new">+    }</span>
+     jOidSet = (*env)-&gt;NewObjectArray(env, numOfOids, CLS_Oid, NULL);
+     if ((*env)-&gt;ExceptionCheck(env)) {
+       return NULL;
+     }
+     for (i = 0; i &lt; numOfOids; i++) {
+</pre></body></html>
+

@@ -1,0 +1,877 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre>ServicePermission empty realm support
+Also use empty realm as wildcard for krbtgt names</pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package javax.security.auth.kerberos;
+  27 
+  28 import java.io.IOException;
+  29 import java.io.ObjectInputStream;
+  30 import java.io.ObjectOutputStream;
+  31 import java.io.ObjectStreamField;
+  32 import java.security.Permission;
+  33 import java.security.PermissionCollection;
+  34 import java.util.*;
+  35 import java.util.concurrent.ConcurrentHashMap;
+  36 
+  37 /**
+  38  * This class is used to protect Kerberos services and the
+  39  * credentials necessary to access those services. There is a one to
+  40  * one mapping of a service principal and the credentials necessary
+  41  * to access the service. Therefore granting access to a service
+  42  * principal implicitly grants access to the credential necessary to
+  43  * establish a security context with the service principal. This
+  44  * applies regardless of whether the credentials are in a cache
+  45  * or acquired via an exchange with the KDC. The credential can
+  46  * be either a ticket granting ticket, a service ticket or a secret
+  47  * key from a key table.
+  48  * &lt;p&gt;
+  49  * A ServicePermission contains a service principal name and
+  50  * a list of actions which specify the context the credential can be
+  51  * used within.
+  52  * &lt;p&gt;
+  53  * The service principal name is the canonical name of the
+  54  * {@code KerberosPrincipal} supplying the service, that is
+  55  * the KerberosPrincipal represents a Kerberos service
+  56  * principal. This name is treated in a case sensitive manner.
+  57  * An asterisk may appear by itself, to signify any service principal.
+  58  * &lt;p&gt;
+  59  * Granting this permission implies that the caller can use a cached
+  60  * credential (TGT, service ticket or secret key) within the context
+  61  * designated by the action. In the case of the TGT, granting this
+  62  * permission also implies that the TGT can be obtained by an
+  63  * Authentication Service exchange.
+  64  * &lt;p&gt;
+  65  * Granting this permission also implies creating {@link KerberosPrincipal}
+  66  * or {@link org.ietf.jgss.GSSName GSSName} without providing a Kerberos
+  67  * realm, as long as the permission's service principal is in this realm.
+  68  * &lt;p&gt;
+  69  * The possible actions are:
+  70  *
+  71  * &lt;pre&gt;
+  72  *    initiate -              allow the caller to use the credential to
+  73  *                            initiate a security context with a service
+  74  *                            principal.
+  75  *
+  76  *    accept -                allow the caller to use the credential to
+  77  *                            accept security context as a particular
+  78  *                            principal.
+  79  * &lt;/pre&gt;
+  80  *
+  81  * For example, to specify the permission to access to the TGT to
+  82  * initiate a security context the permission is constructed as follows:
+  83  *
+  84  * &lt;pre&gt;
+  85  *     ServicePermission("krbtgt/EXAMPLE.COM@EXAMPLE.COM", "initiate");
+  86  * &lt;/pre&gt;
+  87  * &lt;p&gt;
+  88  * To obtain a service ticket to initiate a context with the "host"
+  89  * service the permission is constructed as follows:
+  90  * &lt;pre&gt;
+  91  *     ServicePermission("host/foo.example.com@EXAMPLE.COM", "initiate");
+  92  * &lt;/pre&gt;
+  93  * &lt;p&gt;
+  94  * For a Kerberized server the action is "accept". For example, the permission
+  95  * necessary to access and use the secret key of the  Kerberized "host"
+  96  * service (telnet and the likes)  would be constructed as follows:
+  97  *
+  98  * &lt;pre&gt;
+  99  *     ServicePermission("host/foo.example.com@EXAMPLE.COM", "accept");
+ 100  * &lt;/pre&gt;
+ 101  *
+ 102  * @since 1.4
+ 103  */
+ 104 
+ 105 public final class ServicePermission extends Permission
+ 106     implements java.io.Serializable {
+ 107 
+ 108     private static final long serialVersionUID = -1227585031618624935L;
+ 109 
+ 110     /**
+ 111      * Initiate a security context to the specified service
+ 112      */
+ 113     private final static int INITIATE   = 0x1;
+ 114 
+ 115     /**
+ 116      * Accept a security context
+ 117      */
+ 118     private final static int ACCEPT     = 0x2;
+ 119 
+ 120     /**
+ 121      * All actions
+ 122      */
+ 123     private final static int ALL        = INITIATE|ACCEPT;
+ 124 
+ 125     /**
+ 126      * No actions.
+ 127      */
+ 128     private final static int NONE    = 0x0;
+ 129 
+ 130     // the actions mask
+ 131     private transient int mask;
+ 132 
+ 133     /**
+ 134      * the actions string.
+ 135      *
+ 136      * @serial
+ 137      */
+ 138 
+ 139     private String actions; // Left null as long as possible, then
+ 140                             // created and re-used in the getAction function.
+ 141 
+ 142     /**
+ 143      * Create a new {@code ServicePermission}
+ 144      * with the specified {@code servicePrincipal}
+ 145      * and {@code action}.
+ 146      *
+ 147      * @param servicePrincipal the name of the service principal.
+ 148      * An asterisk may appear by itself, to signify any service principal.
+ 149      *
+ 150      * @param action the action string
+ 151      */
+ 152     public ServicePermission(String servicePrincipal, String action) {
+ 153         // Note: servicePrincipal can be "@REALM" which means any principal in
+ 154         // this realm implies it. action can be "-" which means any
+ 155         // action implies it.
+ 156         super(servicePrincipal);
+ 157         init(servicePrincipal, getMask(action));
+ 158     }
+ 159 
+ 160     /**
+ 161      * Creates a ServicePermission object with the specified servicePrincipal
+ 162      * and a pre-calculated mask. Avoids the overhead of re-computing the mask.
+ 163      * Called by ServicePermissionCollection.
+ 164      */
+ 165     ServicePermission(String servicePrincipal, int mask) {
+ 166         super(servicePrincipal);
+ 167         init(servicePrincipal, mask);
+ 168     }
+ 169 
+ 170     /**
+ 171      * Initialize the ServicePermission object.
+ 172      */
+ 173     private void init(String servicePrincipal, int mask) {
+ 174 
+ 175         if (servicePrincipal == null)
+ 176                 throw new NullPointerException("service principal can't be null");
+ 177 
+ 178         if ((mask &amp; ALL) != mask)
+ 179             throw new IllegalArgumentException("invalid actions mask");
+ 180 
+ 181         this.mask = mask;
+ 182     }
+ 183 
+ 184 
+ 185     /**
+ 186      * Checks if this Kerberos service permission object "implies" the
+ 187      * specified permission.
+ 188      * &lt;P&gt;
+ 189      * More specifically, this method returns true if all of the following
+ 190      * are true (and returns false if any of them are not):
+ 191      * &lt;ul&gt;
+ 192      * &lt;li&gt; &lt;i&gt;p&lt;/i&gt; is an instanceof {@code ServicePermission},
+ 193      * &lt;li&gt; &lt;i&gt;p&lt;/i&gt;'s actions are a proper subset of this
+ 194      * {@code ServicePermission}'s actions,
+ 195      * &lt;li&gt; &lt;i&gt;p&lt;/i&gt;'s name is equal to this {@code ServicePermission}'s name
+ 196      * or this {@code ServicePermission}'s name is "*".
+ 197      * &lt;/ul&gt;
+ 198      *
+ 199      * @param p the permission to check against.
+ 200      *
+ 201      * @return true if the specified permission is implied by this object,
+ 202      * false if not.
+ 203      */
+ 204     @Override
+ 205     public boolean implies(Permission p) {
+ 206         if (!(p instanceof ServicePermission))
+ 207             return false;
+ 208 
+ 209         ServicePermission that = (ServicePermission) p;
+ 210 
+ 211         return ((this.mask &amp; that.mask) == that.mask) &amp;&amp;
+ 212             impliesIgnoreMask(that);
+ 213     }
+ 214 
+ 215 
+ 216     boolean impliesIgnoreMask(ServicePermission p) {
+<a name="1" id="anc1"></a><span class="changed"> 217         String pName = p.getName();</span>
+<span class="changed"> 218 </span>
+<span class="changed"> 219         if ((this.getName().equals("*")) ||</span>
+ 220              this.getName().equals(p.getName()) ||
+<a name="2" id="anc2"></a><span class="changed"> 221              (pName.startsWith("@") &amp;&amp;</span>
+<span class="changed"> 222                      this.getName().endsWith(pName)))</span>
+<span class="changed"> 223             return true;</span>
+<span class="changed"> 224 </span>
+<span class="changed"> 225         /*</span>
+<span class="changed"> 226          * Empty realm in this or p is a wild-card.  This is needed to support</span>
+<span class="changed"> 227          * non-Kerberos ServicePermissions for GSS (a band-aid until we can</span>
+<span class="changed"> 228          * implement a proper GssAcceptorPermission class), but also because</span>
+<span class="changed"> 229          * users may not know and might not care what realm the service is in,</span>
+<span class="changed"> 230          * especially when they are using a keytab.</span>
+<span class="changed"> 231          *</span>
+<span class="changed"> 232          * If the user is using a password, then the realm matters more.  An</span>
+<span class="changed"> 233          * untrusted actor could cause KDCs for a realm they control to see</span>
+<span class="changed"> 234          * material they could attack offline, but that was already the case</span>
+<span class="changed"> 235          * anyways, and the answer is the same in all cases: use stronger</span>
+<span class="changed"> 236          * passwords, use randomized keys in a keytab, or let us implement</span>
+<span class="changed"> 237          * SPAKE or similar alternatives to the venerable PA-ENC-TIMESTAMP.</span>
+<span class="changed"> 238          */</span>
+<span class="changed"> 239         if ((this.getName().equals("krbtgt/@") &amp;&amp;</span>
+<span class="changed"> 240              pName.startsWith("krbtgt/")) ||</span>
+<span class="changed"> 241             (pName.equals("krbtgt/@") &amp;&amp;</span>
+<span class="changed"> 242              this.getName().startsWith("krbtgt/")))</span>
+<span class="changed"> 243             return true;</span>
+<span class="changed"> 244 </span>
+<span class="changed"> 245         String s = this.getName();</span>
+<span class="changed"> 246         int n = s.length();</span>
+<span class="changed"> 247         int i;</span>
+<span class="changed"> 248         for (i = 0; i &lt; n; i++) {</span>
+<span class="changed"> 249             if (s.charAt(i) == '\\') {</span>
+<span class="changed"> 250                 i++;</span>
+<span class="changed"> 251                 continue;</span>
+<span class="changed"> 252             }</span>
+<span class="changed"> 253             if (s.charAt(i) == '@') {</span>
+<span class="changed"> 254                 /*</span>
+<span class="changed"> 255                  * This is the same as:</span>
+<span class="changed"> 256                  *</span>
+<span class="changed"> 257                  *  String s = s.substring(0, i);</span>
+<span class="changed"> 258                  *  return (p.getName().startsWith(s) &amp;&amp;</span>
+<span class="changed"> 259                  *      (p.getName().equals(s) || this.getName().equals(s)));</span>
+<span class="changed"> 260                  */</span>
+<span class="changed"> 261                 return (pName.regionMatches(0, s, 0, i + 1) &amp;&amp;</span>
+<span class="changed"> 262                     (pName.length() == i + 1 || s.length() == i + 1));</span>
+<span class="changed"> 263             }</span>
+<span class="changed"> 264         }</span>
+<span class="changed"> 265 </span>
+<span class="changed"> 266         // No realm, not even empty -&gt; fail</span>
+<span class="changed"> 267         return false;</span>
+ 268     }
+ 269 
+ 270     /**
+ 271      * Checks two ServicePermission objects for equality.
+ 272      *
+ 273      * @param obj the object to test for equality with this object.
+ 274      *
+ 275      * @return true if {@code obj} is a ServicePermission, and has the
+ 276      *  same service principal, and actions as this
+ 277      * ServicePermission object.
+ 278      */
+ 279     @Override
+ 280     public boolean equals(Object obj) {
+ 281         if (obj == this)
+ 282             return true;
+ 283 
+ 284         if (! (obj instanceof ServicePermission))
+ 285             return false;
+ 286 
+ 287         ServicePermission that = (ServicePermission) obj;
+ 288         return ((this.mask &amp; that.mask) == that.mask) &amp;&amp;
+ 289             this.getName().equals(that.getName());
+ 290 
+ 291 
+ 292     }
+ 293 
+ 294     /**
+ 295      * Returns the hash code value for this object.
+ 296      *
+ 297      * @return a hash code value for this object.
+ 298      */
+ 299     @Override
+ 300     public int hashCode() {
+ 301         return (getName().hashCode() ^ mask);
+ 302     }
+ 303 
+ 304 
+ 305     /**
+ 306      * Returns the "canonical string representation" of the actions in the
+ 307      * specified mask.
+ 308      * Always returns present actions in the following order:
+ 309      * initiate, accept.
+ 310      *
+ 311      * @param mask a specific integer action mask to translate into a string
+ 312      * @return the canonical string representation of the actions
+ 313      */
+ 314     static String getActions(int mask)
+ 315     {
+ 316         StringBuilder sb = new StringBuilder();
+ 317         boolean comma = false;
+ 318 
+ 319         if ((mask &amp; INITIATE) == INITIATE) {
+ 320             if (comma) sb.append(',');
+ 321             else comma = true;
+ 322             sb.append("initiate");
+ 323         }
+ 324 
+ 325         if ((mask &amp; ACCEPT) == ACCEPT) {
+ 326             if (comma) sb.append(',');
+ 327             else comma = true;
+ 328             sb.append("accept");
+ 329         }
+ 330 
+ 331         return sb.toString();
+ 332     }
+ 333 
+ 334     /**
+ 335      * Returns the canonical string representation of the actions.
+ 336      * Always returns present actions in the following order:
+ 337      * initiate, accept.
+ 338      */
+ 339     @Override
+ 340     public String getActions() {
+ 341         if (actions == null)
+ 342             actions = getActions(this.mask);
+ 343 
+ 344         return actions;
+ 345     }
+ 346 
+ 347 
+ 348     /**
+ 349      * Returns a PermissionCollection object for storing
+ 350      * ServicePermission objects.
+ 351      * &lt;br&gt;
+ 352      * ServicePermission objects must be stored in a manner that
+ 353      * allows them to be inserted into the collection in any order, but
+ 354      * that also enables the PermissionCollection implies method to
+ 355      * be implemented in an efficient (and consistent) manner.
+ 356      *
+ 357      * @return a new PermissionCollection object suitable for storing
+ 358      * ServicePermissions.
+ 359      */
+ 360     @Override
+ 361     public PermissionCollection newPermissionCollection() {
+ 362         return new KrbServicePermissionCollection();
+ 363     }
+ 364 
+ 365     /**
+ 366      * Return the current action mask.
+ 367      *
+ 368      * @return the actions mask.
+ 369      */
+ 370     int getMask() {
+ 371         return mask;
+ 372     }
+ 373 
+ 374     /**
+ 375      * Convert an action string to an integer actions mask.
+ 376      *
+ 377      * Note: if action is "-", action will be NONE, which means any
+ 378      * action implies it.
+ 379      *
+ 380      * @param action the action string.
+ 381      * @return the action mask
+ 382      */
+ 383     private static int getMask(String action) {
+ 384 
+ 385         if (action == null) {
+ 386             throw new NullPointerException("action can't be null");
+ 387         }
+ 388 
+ 389         if (action.equals("")) {
+ 390             throw new IllegalArgumentException("action can't be empty");
+ 391         }
+ 392 
+ 393         int mask = NONE;
+ 394 
+ 395         char[] a = action.toCharArray();
+ 396 
+ 397         if (a.length == 1 &amp;&amp; a[0] == '-') {
+ 398             return mask;
+ 399         }
+ 400 
+ 401         int i = a.length - 1;
+ 402 
+ 403         while (i != -1) {
+ 404             char c;
+ 405 
+ 406             // skip whitespace
+ 407             while ((i!=-1) &amp;&amp; ((c = a[i]) == ' ' ||
+ 408                                c == '\r' ||
+ 409                                c == '\n' ||
+ 410                                c == '\f' ||
+ 411                                c == '\t'))
+ 412                 i--;
+ 413 
+ 414             // check for the known strings
+ 415             int matchlen;
+ 416 
+ 417             if (i &gt;= 7 &amp;&amp; (a[i-7] == 'i' || a[i-7] == 'I') &amp;&amp;
+ 418                           (a[i-6] == 'n' || a[i-6] == 'N') &amp;&amp;
+ 419                           (a[i-5] == 'i' || a[i-5] == 'I') &amp;&amp;
+ 420                           (a[i-4] == 't' || a[i-4] == 'T') &amp;&amp;
+ 421                           (a[i-3] == 'i' || a[i-3] == 'I') &amp;&amp;
+ 422                           (a[i-2] == 'a' || a[i-2] == 'A') &amp;&amp;
+ 423                           (a[i-1] == 't' || a[i-1] == 'T') &amp;&amp;
+ 424                           (a[i] == 'e' || a[i] == 'E'))
+ 425             {
+ 426                 matchlen = 8;
+ 427                 mask |= INITIATE;
+ 428 
+ 429             } else if (i &gt;= 5 &amp;&amp; (a[i-5] == 'a' || a[i-5] == 'A') &amp;&amp;
+ 430                                  (a[i-4] == 'c' || a[i-4] == 'C') &amp;&amp;
+ 431                                  (a[i-3] == 'c' || a[i-3] == 'C') &amp;&amp;
+ 432                                  (a[i-2] == 'e' || a[i-2] == 'E') &amp;&amp;
+ 433                                  (a[i-1] == 'p' || a[i-1] == 'P') &amp;&amp;
+ 434                                  (a[i] == 't' || a[i] == 'T'))
+ 435             {
+ 436                 matchlen = 6;
+ 437                 mask |= ACCEPT;
+ 438 
+ 439             } else {
+ 440                 // parse error
+ 441                 throw new IllegalArgumentException(
+ 442                         "invalid permission: " + action);
+ 443             }
+ 444 
+ 445             // make sure we didn't just match the tail of a word
+ 446             // like "ackbarfaccept".  Also, skip to the comma.
+ 447             boolean seencomma = false;
+ 448             while (i &gt;= matchlen &amp;&amp; !seencomma) {
+ 449                 switch(a[i-matchlen]) {
+ 450                 case ',':
+ 451                     seencomma = true;
+ 452                     break;
+ 453                 case ' ': case '\r': case '\n':
+ 454                 case '\f': case '\t':
+ 455                     break;
+ 456                 default:
+ 457                     throw new IllegalArgumentException(
+ 458                             "invalid permission: " + action);
+ 459                 }
+ 460                 i--;
+ 461             }
+ 462 
+ 463             // point i at the location of the comma minus one (or -1).
+ 464             i -= matchlen;
+ 465         }
+ 466 
+ 467         return mask;
+ 468     }
+ 469 
+ 470 
+ 471     /**
+ 472      * WriteObject is called to save the state of the ServicePermission
+ 473      * to a stream. The actions are serialized, and the superclass
+ 474      * takes care of the name.
+ 475      */
+ 476     private void writeObject(java.io.ObjectOutputStream s)
+ 477         throws IOException
+ 478     {
+ 479         // Write out the actions. The superclass takes care of the name
+ 480         // call getActions to make sure actions field is initialized
+ 481         if (actions == null)
+ 482             getActions();
+ 483         s.defaultWriteObject();
+ 484     }
+ 485 
+ 486     /**
+ 487      * readObject is called to restore the state of the
+ 488      * ServicePermission from a stream.
+ 489      */
+ 490     private void readObject(java.io.ObjectInputStream s)
+ 491          throws IOException, ClassNotFoundException
+ 492     {
+ 493         // Read in the action, then initialize the rest
+ 494         s.defaultReadObject();
+ 495         init(getName(),getMask(actions));
+ 496     }
+ 497 
+ 498 
+ 499     /*
+ 500       public static void main(String[] args) throws Exception {
+ 501       ServicePermission this_ =
+ 502       new ServicePermission(args[0], "accept");
+ 503       ServicePermission that_ =
+ 504       new ServicePermission(args[1], "accept,initiate");
+ 505       System.out.println("-----\n");
+ 506       System.out.println("this.implies(that) = " + this_.implies(that_));
+ 507       System.out.println("-----\n");
+ 508       System.out.println("this = "+this_);
+ 509       System.out.println("-----\n");
+ 510       System.out.println("that = "+that_);
+ 511       System.out.println("-----\n");
+ 512 
+ 513       KrbServicePermissionCollection nps =
+ 514       new KrbServicePermissionCollection();
+ 515       nps.add(this_);
+ 516       nps.add(new ServicePermission("nfs/example.com@EXAMPLE.COM",
+ 517       "accept"));
+ 518       nps.add(new ServicePermission("host/example.com@EXAMPLE.COM",
+ 519       "initiate"));
+ 520       System.out.println("nps.implies(that) = " + nps.implies(that_));
+ 521       System.out.println("-----\n");
+ 522 
+ 523       Enumeration e = nps.elements();
+ 524 
+ 525       while (e.hasMoreElements()) {
+ 526       ServicePermission x =
+ 527       (ServicePermission) e.nextElement();
+ 528       System.out.println("nps.e = " + x);
+ 529       }
+ 530 
+ 531       }
+ 532     */
+ 533 
+ 534 }
+ 535 
+ 536 
+ 537 final class KrbServicePermissionCollection extends PermissionCollection
+ 538     implements java.io.Serializable {
+ 539 
+ 540     // Key is the service principal, value is the ServicePermission.
+ 541     // Not serialized; see serialization section at end of class
+ 542     private transient ConcurrentHashMap&lt;String, Permission&gt; perms;
+ 543 
+ 544     public KrbServicePermissionCollection() {
+ 545         perms = new ConcurrentHashMap&lt;&gt;();
+ 546     }
+ 547 
+ 548     /**
+ 549      * Check and see if this collection of permissions implies the permissions
+ 550      * expressed in "permission".
+ 551      *
+ 552      * @param permission the Permission object to compare
+ 553      *
+ 554      * @return true if "permission" is a proper subset of a permission in
+ 555      * the collection, false if not.
+ 556      */
+ 557     @Override
+ 558     public boolean implies(Permission permission) {
+ 559         if (! (permission instanceof ServicePermission))
+ 560             return false;
+ 561 
+ 562         ServicePermission np = (ServicePermission) permission;
+ 563         int desired = np.getMask();
+ 564 
+ 565         if (desired == 0) {
+ 566             for (Permission p: perms.values()) {
+ 567                 ServicePermission sp = (ServicePermission)p;
+ 568                 if (sp.impliesIgnoreMask(np)) {
+ 569                     return true;
+ 570                 }
+ 571             }
+ 572             return false;
+ 573         }
+ 574 
+ 575 
+ 576         // first, check for wildcard principal
+ 577         ServicePermission x = (ServicePermission)perms.get("*");
+ 578         if (x != null) {
+ 579             if ((x.getMask() &amp; desired) == desired) {
+ 580                 return true;
+ 581             }
+ 582         }
+ 583 
+ 584         // otherwise, check for match on principal
+ 585         x = (ServicePermission)perms.get(np.getName());
+ 586         if (x != null) {
+ 587             //System.out.println("  trying "+x);
+ 588             if ((x.getMask() &amp; desired) == desired) {
+ 589                 return true;
+ 590             }
+ 591         }
+ 592         return false;
+ 593     }
+ 594 
+ 595     /**
+ 596      * Adds a permission to the ServicePermissions. The key for
+ 597      * the hash is the name.
+ 598      *
+ 599      * @param permission the Permission object to add.
+ 600      *
+ 601      * @exception IllegalArgumentException - if the permission is not a
+ 602      *                                       ServicePermission
+ 603      *
+ 604      * @exception SecurityException - if this PermissionCollection object
+ 605      *                                has been marked readonly
+ 606      */
+ 607     @Override
+ 608     public void add(Permission permission) {
+ 609         if (! (permission instanceof ServicePermission))
+ 610             throw new IllegalArgumentException("invalid permission: "+
+ 611                                                permission);
+ 612         if (isReadOnly())
+ 613             throw new SecurityException("attempt to add a Permission to a readonly PermissionCollection");
+ 614 
+ 615         ServicePermission sp = (ServicePermission)permission;
+ 616         String princName = sp.getName();
+ 617 
+ 618         // Add permission to map if it is absent, or replace with new
+ 619         // permission if applicable. NOTE: cannot use lambda for
+ 620         // remappingFunction parameter until JDK-8076596 is fixed.
+ 621         perms.merge(princName, sp,
+ 622             new java.util.function.BiFunction&lt;&gt;() {
+ 623                 @Override
+ 624                 public Permission apply(Permission existingVal,
+ 625                                         Permission newVal) {
+ 626                     int oldMask = ((ServicePermission)existingVal).getMask();
+ 627                     int newMask = ((ServicePermission)newVal).getMask();
+ 628                     if (oldMask != newMask) {
+ 629                         int effective = oldMask | newMask;
+ 630                         if (effective == newMask) {
+ 631                             return newVal;
+ 632                         }
+ 633                         if (effective != oldMask) {
+ 634                             return new ServicePermission(princName, effective);
+ 635                         }
+ 636                     }
+ 637                     return existingVal;
+ 638                 }
+ 639             }
+ 640         );
+ 641     }
+ 642 
+ 643     /**
+ 644      * Returns an enumeration of all the ServicePermission objects
+ 645      * in the container.
+ 646      *
+ 647      * @return an enumeration of all the ServicePermission objects.
+ 648      */
+ 649     @Override
+ 650     public Enumeration&lt;Permission&gt; elements() {
+ 651         return perms.elements();
+ 652     }
+ 653 
+ 654     private static final long serialVersionUID = -4118834211490102011L;
+ 655 
+ 656     // Need to maintain serialization interoperability with earlier releases,
+ 657     // which had the serializable field:
+ 658     // private Vector permissions;
+ 659 
+ 660     /**
+ 661      * @serialField permissions java.util.Vector
+ 662      *     A list of ServicePermission objects.
+ 663      */
+ 664     private static final ObjectStreamField[] serialPersistentFields = {
+ 665         new ObjectStreamField("permissions", Vector.class),
+ 666     };
+ 667 
+ 668     /**
+ 669      * @serialData "permissions" field (a Vector containing the ServicePermissions).
+ 670      */
+ 671     /*
+ 672      * Writes the contents of the perms field out as a Vector for
+ 673      * serialization compatibility with earlier releases.
+ 674      */
+ 675     private void writeObject(ObjectOutputStream out) throws IOException {
+ 676         // Don't call out.defaultWriteObject()
+ 677 
+ 678         // Write out Vector
+ 679         Vector&lt;Permission&gt; permissions = new Vector&lt;&gt;(perms.values());
+ 680 
+ 681         ObjectOutputStream.PutField pfields = out.putFields();
+ 682         pfields.put("permissions", permissions);
+ 683         out.writeFields();
+ 684     }
+ 685 
+ 686     /*
+ 687      * Reads in a Vector of ServicePermissions and saves them in the perms field.
+ 688      */
+ 689     @SuppressWarnings("unchecked")
+ 690     private void readObject(ObjectInputStream in)
+ 691         throws IOException, ClassNotFoundException
+ 692     {
+ 693         // Don't call defaultReadObject()
+ 694 
+ 695         // Read in serialized fields
+ 696         ObjectInputStream.GetField gfields = in.readFields();
+ 697 
+ 698         // Get the one we want
+ 699         Vector&lt;Permission&gt; permissions =
+ 700                 (Vector&lt;Permission&gt;)gfields.get("permissions", null);
+ 701         perms = new ConcurrentHashMap&lt;&gt;(permissions.size());
+ 702         for (Permission perm : permissions) {
+ 703             perms.put(perm.getName(), perm);
+ 704         }
+ 705     }
+ 706 }
+<a name="3" id="anc3"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="3" type="hidden"></input></form></body></html>

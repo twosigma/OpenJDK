@@ -1,0 +1,569 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Make GSSName implement Principal (add getName())
+Add getLocalName() GSSName method
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">16 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package org.ietf.jgss;
+<span class='added'>       27 +import java.security.Principal;
+</span>  27   28  
+  28   29  /**
+  29   30   * This interface encapsulates a single GSS-API principal entity. The
+  30   31   * application obtains an implementation of this interface
+  31   32   * through one of the &lt;code&gt;createName&lt;/code&gt; methods that exist in the {@link
+  32   33   * GSSManager GSSManager} class. Conceptually a GSSName contains many
+  33   34   * representations of the entity or many primitive name elements, one for
+  34   35   * each supported underlying mechanism. In GSS terminology, a GSSName that
+  35   36   * contains an element from just one mechanism is called a Mechanism Name
+  36   37   * (MN)&lt;p&gt;
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  37   38   *
+  38   39   * Since different authentication mechanisms may employ different
+  39   40   * namespaces for identifying their principals, GSS-API's naming support is
+  40   41   * necessarily complex in multi-mechanism environments (or even in some
+  41   42   * single-mechanism environments where the underlying mechanism supports
+  42   43   * multiple namespaces). Different name formats and their definitions are
+  43   44   * identified with {@link Oid Oid's} and some standard types
+  44   45   * are defined in this interface. The format of the names can be derived
+  45   46   * based on the unique &lt;code&gt;Oid&lt;/code&gt; of its name type.&lt;p&gt;
+  46   47   *
+  47   48   * Included below are code examples utilizing the &lt;code&gt;GSSName&lt;/code&gt; interface.
+  48   49   * The code below creates a &lt;code&gt;GSSName&lt;/code&gt;, converts it to an MN, performs a
+  49   50   * comparison, obtains a printable representation of the name, exports it
+  50   51   * to a byte array and then re-imports to obtain a
+  51   52   * new &lt;code&gt;GSSName&lt;/code&gt;.
+  52   53   * &lt;pre&gt;
+  53   54   *      GSSManager manager = GSSManager.getInstance();
+  54   55   *
+  55   56   *      // create a host based service name
+  56   57   *      GSSName name = manager.createName("service@host",
+  57   58   *                   GSSName.NT_HOSTBASED_SERVICE);
+  58   59   *
+  59   60   *      Oid krb5 = new Oid("1.2.840.113554.1.2.2");
+  60   61   *
+  61   62   *      GSSName mechName = name.canonicalize(krb5);
+  62   63   *
+  63   64   *      // the above two steps are equivalent to the following
+  64   65   *      GSSName mechName = manager.createName("service@host",
+  65   66   *                      GSSName.NT_HOSTBASED_SERVICE, krb5);
+  66   67   *
+  67   68   *      // perform name comparison
+  68   69   *      if (name.equals(mechName))
+  69   70   *              print("Names are equals.");
+  70   71   *
+  71   72   *      // obtain textual representation of name and its printable
+  72   73   *      // name type
+  73   74   *      print(mechName.toString() +
+  74   75   *                      mechName.getStringNameType().toString());
+  75   76   *
+  76   77   *      // export and re-import the name
+  77   78   *      byte [] exportName = mechName.export();
+  78   79   *
+  79   80   *      // create a new name object from the exported buffer
+  80   81   *      GSSName newName = manager.createName(exportName,
+  81   82   *                      GSSName.NT_EXPORT_NAME);
+  82   83   *
+  83   84   * &lt;/pre&gt;
+  84   85   * If a security manager is installed, in order to create a {@code GSSName}
+  85   86   * that contains a Kerberos name element without providing its realm,
+  86   87   * a {@link javax.security.auth.kerberos.ServicePermission ServicePermission}
+  87   88   * must be granted and the service principal of the permission must minimally
+  88   89   * be inside the Kerberos name element's realm. For example, if the result of
+  89   90   * {@link GSSManager#createName(String, Oid) createName("user", NT_USER_NAME)}
+  90   91   * contains a Kerberos name element {@code user@EXAMPLE.COM}, then
+  91   92   * a {@code ServicePermission} with service principal
+  92   93   * {@code host/www.example.com@EXAMPLE.COM} (and any action) must be granted.
+  93   94   * Otherwise, the creation will throw a {@link GSSException} containing the
+  94   95   * {@code GSSException.FAILURE} error code.
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">58 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  95   96   *
+  96   97   * @see #export()
+  97   98   * @see #equals(GSSName)
+  98   99   * @see GSSManager#createName(String, Oid)
+  99  100   * @see GSSManager#createName(String, Oid, Oid)
+ 100  101   * @see GSSManager#createName(byte[], Oid)
+ 101  102   *
+ 102  103   * @author Mayank Upadhyay
+ 103  104   * @since 1.4
+ 104  105   */
+<span class='subtracted'> 105      -public interface GSSName {
+</span><span class='added'>      106 +public interface GSSName extends Principal {
+</span> 106  107  
+ 107  108      /**
+ 108  109       * Oid indicating a host-based service name form.  It is used to
+ 109  110       * represent services associated with host computers.  This name form
+ 110  111       * is constructed using two elements, "service" and "hostname", as
+ 111  112       * follows: service@hostname.&lt;p&gt;
+ 112  113       *
+ 113  114       * It represents the following Oid value:&lt;br&gt;
+ 114  115       *  &lt;code&gt;{ iso(1) member-body(2) United
+ 115  116       * States(840) mit(113554) infosys(1) gssapi(2) generic(1) service_name(4)
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 116  117       * }&lt;/code&gt;
+ 117  118       */
+ 118  119      public static final Oid NT_HOSTBASED_SERVICE
+ 119  120          = Oid.getInstance("1.2.840.113554.1.2.1.4");
+ 120  121  
+ 121  122      /**
+ 122  123       * Name type to indicate a named user on a local system.&lt;p&gt;
+ 123  124       * It represents the following Oid value:&lt;br&gt;
+ 124  125       *  &lt;code&gt;{ iso(1) member-body(2) United
+ 125  126       * States(840) mit(113554) infosys(1) gssapi(2) generic(1) user_name(1)
+ 126  127       * }&lt;/code&gt;
+ 127  128       */
+ 128  129      public static final Oid NT_USER_NAME
+ 129  130          = Oid.getInstance("1.2.840.113554.1.2.1.1");
+ 130  131  
+ 131  132      /**
+ 132  133       * Name type to indicate a numeric user identifier corresponding to a
+ 133  134       * user on a local system. (e.g. Uid).&lt;p&gt;
+ 134  135       *
+ 135  136       *  It represents the following Oid value:&lt;br&gt;
+ 136  137       * &lt;code&gt;{ iso(1) member-body(2) United States(840) mit(113554)
+ 137  138       * infosys(1) gssapi(2) generic(1) machine_uid_name(2) }&lt;/code&gt;
+ 138  139       */
+ 139  140      public static final Oid NT_MACHINE_UID_NAME
+ 140  141          = Oid.getInstance("1.2.840.113554.1.2.1.2");
+ 141  142  
+ 142  143      /**
+ 143  144       * Name type to indicate a string of digits representing the numeric
+ 144  145       * user identifier of a user on a local system.&lt;p&gt;
+ 145  146       *
+ 146  147       * It represents the following Oid value:&lt;br&gt;
+ 147  148       * &lt;code&gt;{ iso(1) member-body(2) United
+ 148  149       * States(840) mit(113554) infosys(1) gssapi(2) generic(1)
+ 149  150       * string_uid_name(3) }&lt;/code&gt;
+ 150  151       */
+ 151  152      public static final Oid NT_STRING_UID_NAME
+ 152  153          = Oid.getInstance("1.2.840.113554.1.2.1.3");
+ 153  154  
+ 154  155      /**
+ 155  156       * Name type for representing an anonymous entity.&lt;p&gt;
+ 156  157       * It represents the following Oid value:&lt;br&gt;
+ 157  158       * &lt;code&gt;{ 1(iso), 3(org), 6(dod), 1(internet),
+ 158  159       * 5(security), 6(nametypes), 3(gss-anonymous-name) }&lt;/code&gt;
+ 159  160       */
+ 160  161      public static final Oid NT_ANONYMOUS
+ 161  162          = Oid.getInstance("1.3.6.1.5.6.3");
+ 162  163  
+ 163  164      /**
+ 164  165       * Name type used to indicate an exported name produced by the export
+ 165  166       * method.&lt;p&gt;
+ 166  167       *
+ 167  168       * It represents the following Oid value:&lt;br&gt; &lt;code&gt;{ 1(iso),
+ 168  169       * 3(org), 6(dod), 1(internet), 5(security), 6(nametypes),
+ 169  170       * 4(gss-api-exported-name) }&lt;/code&gt;
+ 170  171       */
+ 171  172      public static final Oid NT_EXPORT_NAME
+ 172  173          = Oid.getInstance("1.3.6.1.5.6.4");
+ 173  174  
+ 174  175      /**
+ 175  176       * Compares two &lt;code&gt;GSSName&lt;/code&gt; objects to determine if they refer to the
+ 176  177       * same entity.
+ 177  178       *
+ 178  179       * @param another the &lt;code&gt;GSSName&lt;/code&gt; to compare this name with
+ 179  180       * @return true if the two names contain at least one primitive element
+ 180  181       * in common. If either of the names represents an anonymous entity, the
+ 181  182       * method will return false.
+ 182  183       *
+ 183  184       * @throws GSSException when the names cannot be compared, containing the following
+ 184  185       * major error codes:
+ 185  186       *         {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 186  187       *         {@link GSSException#FAILURE GSSException.FAILURE}
+ 187  188       */
+ 188  189      public boolean equals(GSSName another) throws GSSException;
+ 189  190  
+ 190  191      /**
+ 191  192       * Compares this &lt;code&gt;GSSName&lt;/code&gt; object to another Object that might be a
+ 192  193       * &lt;code&gt;GSSName&lt;/code&gt;. The behaviour is exactly the same as in {@link
+ 193  194       * #equals(GSSName) equals} except that no GSSException is thrown;
+ 194  195       * instead, false will be returned in the situation where an error
+ 195  196       * occurs.
+ 196  197       * @return true if the object to compare to is also a &lt;code&gt;GSSName&lt;/code&gt; and the two
+ 197  198       * names refer to the same entity.
+ 198  199       * @param another the object to compare this name to
+ 199  200       * @see #equals(GSSName)
+ 200  201       */
+ 201  202      public boolean equals(Object another);
+ 202  203  
+ 203  204      /**
+ 204  205       * Returns a hashcode value for this GSSName.
+ 205  206       *
+ 206  207       * @return a hashCode value
+ 207  208       */
+ 208  209      public int hashCode();
+ 209  210  
+ 210  211      /**
+ 211  212       * Creates a name that is canonicalized for some
+ 212  213       * mechanism.
+ 213  214       *
+ 214  215       * @return a &lt;code&gt;GSSName&lt;/code&gt; that contains just one primitive
+ 215  216       * element representing this name in a canonicalized form for the desired
+ 216  217       * mechanism.
+ 217  218       * @param mech the oid for the mechanism for which the canonical form of
+ 218  219       * the name is requested.
+ 219  220       *
+ 220  221       * @throws GSSException containing the following
+ 221  222       * major error codes:
+ 222  223       *         {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+ 223  224       *         {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 224  225       *         {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 225  226       *         {@link GSSException#FAILURE GSSException.FAILURE}
+ 226  227       */
+ 227  228      public GSSName canonicalize(Oid mech) throws GSSException;
+ 228  229  
+ 229  230      /**
+ 230  231       * Returns a canonical contiguous byte representation of a mechanism name
+ 231  232       * (MN), suitable for direct, byte by byte comparison by authorization
+ 232  233       * functions.  If the name is not an MN, implementations may throw a
+ 233  234       * GSSException with the NAME_NOT_MN status code.  If an implementation
+ 234  235       * chooses not to throw an exception, it should use some system specific
+ 235  236       * default mechanism to canonicalize the name and then export
+ 236  237       * it. Structurally, an exported name object consists of a header
+ 237  238       * containing an OID identifying the mechanism that authenticated the
+ 238  239       * name, and a trailer containing the name itself, where the syntax of
+ 239  240       * the trailer is defined by the individual mechanism specification. The
+ 240  241       * format of the header of the output buffer is specified in RFC 2743.&lt;p&gt;
+ 241  242       *
+ 242  243       * The exported name is useful when used in large access control lists
+ 243  244       * where the overhead of creating a &lt;code&gt;GSSName&lt;/code&gt; object on each
+ 244  245       * name and invoking the equals method on each name from the ACL may be
+ 245  246       * prohibitive.&lt;p&gt;
+ 246  247       *
+ 247  248       * Exported names may be re-imported by using the byte array factory
+ 248  249       * method {@link GSSManager#createName(byte[], Oid)
+ 249  250       * GSSManager.createName} and specifying the NT_EXPORT_NAME as the name
+ 250  251       * type object identifier. The resulting &lt;code&gt;GSSName&lt;/code&gt; name will
+ 251  252       * also be a MN.
+ 252  253       *
+ 253  254       * @return a byte[] containing the exported name. RFC 2743 defines the
+ 254  255       * "Mechanism-Independent Exported Name Object Format" for these bytes.
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">139 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 255  256       *
+ 256  257       * @throws GSSException containing the following
+ 257  258       * major error codes:
+ 258  259       *         {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 259  260       *         {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 260  261       *         {@link GSSException#FAILURE GSSException.FAILURE}
+ 261  262       */
+ 262  263      public byte[] export() throws GSSException;
+ 263  264  
+ 264  265      /**
+<span class='added'>      266 +     * Returns a local username form of a mechanism name, if available.
+      267 +     */
+      268 +    public String getLocalName() throws GSSException;
+      269 +
+      270 +    /**
+      271 +     * Returns a local username form of a mechanism name, if available.
+      272 +     */
+      273 +    public String getLocalName(Oid mech) throws GSSException;
+      274 +
+      275 +    /**
+</span> 265  276       * Returns a textual representation of the &lt;code&gt;GSSName&lt;/code&gt; object.  To retrieve
+ 266  277       * the printed name format, which determines the syntax of the returned
+ 267  278       * string, use the {@link #getStringNameType() getStringNameType}
+ 268  279       * method.
+ 269  280       *
+ 270  281       * @return a String representing this name in printable form.
+ 271  282       */
+ 272  283      public String toString();
+<span class='added'>      284 +
+      285 +    /**
+      286 +     * Returns a textual representation of the &lt;code&gt;GSSName&lt;/code&gt; object.
+      287 +     *
+      288 +     * If &lt;code&gt;this&lt;/code&gt; is not an MN then the returned name should be the
+      289 +     * same as the generic name used to construct it.  Otherwise the returned
+      290 +     * name may be a mechanism-specific name string.
+      291 +     *
+      292 +     * @return a String representing this name in printable form.
+      293 +     */
+      294 +    public String getName();
+      295 +
+      296 +    /**
+      297 +     * Returns a textual representation of the &lt;code&gt;GSSName&lt;/code&gt; object
+      298 +     * element corresponding to the given &lt;code&gt;mech&lt;/code&gt;.  This will be a
+      299 +     * mechanism-specific representation of &lt;code&gt;this&lt;/code.
+      300 +     *
+      301 +     * @return a String representing this name in printable form.
+      302 +     */
+      303 +    public String getName(Oid mech) throws GSSException;
+</span> 273  304  
+ 274  305      /**
+ 275  306       * Returns the name type of the printable
+ 276  307       * representation of this name that can be obtained from the &lt;code&gt;
+ 277  308       * toString&lt;/code&gt; method.
+ 278  309       *
+ 279  310       * @return an Oid representing the namespace of the name returned
+ 280  311       * from the toString method.
+ 281  312       *
+ 282  313       * @throws GSSException containing the following
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 283  314       * major error codes:
+ 284  315       *         {@link GSSException#FAILURE GSSException.FAILURE}
+ 285  316       */
+ 286  317      public Oid getStringNameType() throws GSSException;
+ 287  318  
+ 288  319      /**
+ 289  320       * Tests if this name object represents an anonymous entity.
+ 290  321       *
+ 291  322       * @return true if this is an anonymous name, false otherwise.
+ 292  323       */
+ 293  324      public boolean isAnonymous();
+ 294  325  
+ 295  326      /**
+ 296  327       * Tests if this name object represents a Mechanism Name (MN). An MN is
+ 297  328       * a GSSName the contains exactly one mechanism's primitive name
+ 298  329       * element.
+ 299  330       *
+ 300  331       * @return true if this is an MN, false otherwise.
+ 301  332       */
+ 302  333      public boolean isMN();
+ 303  334  
+ 304  335  }
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">22 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 4; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 4; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

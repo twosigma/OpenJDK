@@ -1,0 +1,987 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+JGSS: Simplify context permissions checks
+We were reacquiring the initiator/acceptor credential upon security
+context full establishment in order to indirectly perform a permission
+check on the srcName/targName once we find out what they are.  But this
+is just one more way to end up failing, which happens with Heimdal when
+using SPNEGO because we ask to acquire a Kerberos credentials using a
+SPNEGO MN and that fails.
+Also, there was a security bug here: if the permission check fails then
+we raise, but if the application already has a context handle, then it
+can use it anyways if it catches the exception!  The fix for this is to
+dispose() when the permission check fails.
+JGSS: Add comment about unnec. perm check
+Fix SpNego multi-round-trip bug
+There is only one token that we can extract an actual mechanism OID from
+in the SPNEGO case when the native GSS library doesn't provide that
+(though it should) in the API.  If the SPNEGO exchange ends up requiring
+more than two tokens, then the previous code failed to establish a
+security context.
+Also, never raise if we cannot get an actual mech OID from SPNEGO
+tokens.
+Add actual mechanism to native GSSNameElement state
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package sun.security.jgss.wrapper;
+  27   27  
+  28   28  import org.ietf.jgss.*;
+  29   29  import java.security.Provider;
+  30   30  import sun.security.jgss.GSSHeader;
+  31   31  import sun.security.jgss.GSSUtil;
+  32   32  import sun.security.jgss.GSSExceptionImpl;
+  33   33  import sun.security.jgss.spi.*;
+  34   34  import sun.security.util.DerValue;
+  35   35  import sun.security.util.ObjectIdentifier;
+  36   36  import sun.security.jgss.spnego.NegTokenInit;
+  37   37  import sun.security.jgss.spnego.NegTokenTarg;
+  38   38  import javax.security.auth.kerberos.DelegationPermission;
+  39   39  import java.io.*;
+  40   40  
+  41   41  
+  42   42  /**
+  43   43   * This class is essentially a wrapper class for the gss_ctx_id_t
+  44   44   * structure of the native GSS library.
+  45   45   * @author Valerie Peng
+  46   46   * @since 1.6
+  47   47   */
+  48   48  class NativeGSSContext implements GSSContextSpi {
+  49   49  
+  50   50      private static final int GSS_C_DELEG_FLAG = 1;
+  51   51      private static final int GSS_C_MUTUAL_FLAG = 2;
+  52   52      private static final int GSS_C_REPLAY_FLAG = 4;
+  53   53      private static final int GSS_C_SEQUENCE_FLAG = 8;
+  54   54      private static final int GSS_C_CONF_FLAG = 16;
+  55   55      private static final int GSS_C_INTEG_FLAG = 32;
+  56   56      private static final int GSS_C_ANON_FLAG = 64;
+  57   57      private static final int GSS_C_PROT_READY_FLAG = 128;
+  58   58      private static final int GSS_C_TRANS_FLAG = 256;
+  59   59  
+  60   60      private static final int NUM_OF_INQUIRE_VALUES = 6;
+  61   61  
+  62   62      private long pContext = 0; // Pointer to the gss_ctx_id_t structure
+  63   63      private GSSNameElement srcName;
+  64   64      private GSSNameElement targetName;
+  65   65      private GSSCredElement cred;
+  66   66      private GSSCredElement disposeCred;
+  67   67      private boolean isInitiator;
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">67 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  68   68      private boolean isEstablished;
+  69   69      private Oid actualMech; // Assigned during context establishment
+  70   70  
+  71   71      private ChannelBinding cb;
+  72   72      private GSSCredElement delegatedCred;
+  73   73      private GSSCredElement disposeDelegatedCred;
+  74   74      private int flags;
+  75   75      private int lifetime = GSSCredential.DEFAULT_LIFETIME;
+  76   76      private final GSSLibStub cStub;
+  77   77  
+<span class='subtracted'>  78      -    private boolean skipDelegPermCheck;
+  79      -    private boolean skipServicePermCheck;
+</span><span class='added'>       78 +    private boolean skipDelegPermCheck = false;
+       79 +    private boolean skipServicePermCheck = false;
+</span>  80   80  
+  81   81      // Retrieve the (preferred) mech out of SPNEGO tokens, i.e.
+  82   82      // NegTokenInit &amp; NegTokenTarg
+  83   83      private static Oid getMechFromSpNegoToken(byte[] token,
+  84   84                                                boolean isInitiator)
+  85   85          throws GSSException {
+  86   86          Oid mech = null;
+  87   87          if (isInitiator) {
+  88   88              GSSHeader header = null;
+  89   89              try {
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  90   90                  header = new GSSHeader(new ByteArrayInputStream(token));
+  91   91              } catch (IOException ioe) {
+  92   92                  throw new GSSExceptionImpl(GSSException.FAILURE, ioe);
+  93   93              }
+  94   94              int negTokenLen = header.getMechTokenLength();
+  95   95              byte[] negToken = new byte[negTokenLen];
+  96   96              System.arraycopy(token, token.length-negTokenLen,
+  97   97                               negToken, 0, negToken.length);
+  98   98  
+  99   99              NegTokenInit ntok = new NegTokenInit(negToken);
+ 100  100              if (ntok.getMechToken() != null) {
+ 101  101                  Oid[] mechList = ntok.getMechTypeList();
+ 102  102                  mech = mechList[0];
+ 103  103              }
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">14 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 104  104          } else {
+ 105  105              NegTokenTarg ntok = new NegTokenTarg(token);
+ 106  106              mech = ntok.getSupportedMech();
+ 107  107          }
+ 108  108          return mech;
+ 109  109      }
+ 110  110  
+ 111  111      // Perform the Service permission check
+ 112  112      private void doServicePermCheck() throws GSSException {
+ 113  113          if (System.getSecurityManager() != null) {
+<span class='subtracted'> 114      -            String action = (isInitiator? "initiate" : "accept");
+ 115      -            // Need to check Service permission for accessing
+ 116      -            // initiator cred for SPNEGO during context establishment
+ 117      -            if (GSSUtil.isSpNegoMech(cStub.getMech()) &amp;&amp; isInitiator
+ 118      -                &amp;&amp; !isEstablished) {
+ 119      -                if (srcName == null) {
+ 120      -                    // Check by creating default initiator KRB5 cred
+ 121      -                    GSSCredElement tempCred =
+ 122      -                        new GSSCredElement(null, lifetime,
+ 123      -                                           GSSCredential.INITIATE_ONLY,
+ 124      -                                           GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID));
+ 125      -                    tempCred.dispose();
+ 126      -                } else {
+</span><span class='added'>      114 +            try {
+      115 +                if (isInitiator &amp;&amp; srcName != null) {
+</span> 127  116                      String tgsName = Krb5Util.getTGSName(srcName);
+<span class='subtracted'> 128      -                    Krb5Util.checkServicePermission(tgsName, action);
+</span><span class='added'>      117 +                    Krb5Util.checkServicePermission(tgsName, "initiate");
+      118 +                    skipServicePermCheck = true;
+      119 +                } else if (!isInitiator &amp;&amp; targetName != null) {
+      120 +                    String targetStr = targetName.getKrbName();
+      121 +                    Krb5Util.checkServicePermission(targetStr, "accept");
+      122 +                    skipServicePermCheck = true;
+</span> 129  123                  }
+<span class='added'>      124 +            } catch (GSSException ge) {
+      125 +                dispose();
+      126 +                throw ge;
+</span> 130  127              }
+<span class='subtracted'> 131      -            String targetStr = targetName.getKrbName();
+ 132      -            Krb5Util.checkServicePermission(targetStr, action);
+ 133      -            skipServicePermCheck = true;
+</span> 134  128          }
+ 135  129      }
+ 136  130  
+ 137  131      // Perform the Delegation permission check
+ 138  132      private void doDelegPermCheck() throws GSSException {
+ 139  133          SecurityManager sm = System.getSecurityManager();
+ 140  134          if (sm != null) {
+<span class='added'>      135 +            if (targetName == null)
+      136 +                return;
+</span> 141  137              String targetStr = targetName.getKrbName();
+ 142  138              String tgsStr = Krb5Util.getTGSName(targetName);
+ 143  139              StringBuilder sb = new StringBuilder("\"");
+ 144  140              sb.append(targetStr).append("\" \"");
+ 145  141              sb.append(tgsStr).append('\"');
+ 146  142              String krbPrincPair = sb.toString();
+ 147  143              SunNativeProvider.debug("Checking DelegationPermission (" +
+ 148  144                                      krbPrincPair + ")");
+ 149  145              DelegationPermission perm =
+ 150  146                  new DelegationPermission(krbPrincPair);
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 151  147              sm.checkPermission(perm);
+ 152  148              skipDelegPermCheck = true;
+ 153  149          }
+ 154  150      }
+ 155  151  
+ 156  152      private byte[] retrieveToken(InputStream is, int mechTokenLen)
+ 157  153          throws GSSException {
+ 158  154          try {
+ 159  155              byte[] result = null;
+ 160  156              if (mechTokenLen != -1) {
+ 161  157                  // Need to add back the GSS header for a complete GSS token
+ 162  158                  SunNativeProvider.debug("Precomputed mechToken length: " +
+ 163  159                                           mechTokenLen);
+ 164  160                  GSSHeader gssHeader = new GSSHeader
+ 165  161                      (new ObjectIdentifier(cStub.getMech().toString()),
+ 166  162                       mechTokenLen);
+ 167  163                  ByteArrayOutputStream baos = new ByteArrayOutputStream(600);
+ 168  164  
+ 169  165                  byte[] mechToken = new byte[mechTokenLen];
+ 170  166                  int len = is.read(mechToken);
+ 171  167                  assert(mechTokenLen == len);
+ 172  168                  gssHeader.encode(baos);
+ 173  169                  baos.write(mechToken);
+ 174  170                  result = baos.toByteArray();
+ 175  171              } else {
+ 176  172                  // Must be unparsed GSS token or SPNEGO's NegTokenTarg token
+ 177  173                  assert(mechTokenLen == -1);
+ 178  174                  DerValue dv = new DerValue(is);
+ 179  175                  result = dv.toByteArray();
+ 180  176              }
+ 181  177              SunNativeProvider.debug("Complete Token length: " +
+ 182  178                                      result.length);
+ 183  179              return result;
+ 184  180          } catch (IOException ioe) {
+ 185  181              throw new GSSExceptionImpl(GSSException.FAILURE, ioe);
+ 186  182          }
+ 187  183      }
+ 188  184  
+ 189  185      // Constructor for context initiator
+ 190  186      NativeGSSContext(GSSNameElement peer, GSSCredElement myCred,
+ 191  187                       int time, GSSLibStub stub) throws GSSException {
+ 192  188          if (peer == null) {
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">42 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 193  189              throw new GSSException(GSSException.FAILURE, 1, "null peer");
+ 194  190          }
+ 195  191          cStub = stub;
+ 196  192          cred = myCred;
+ 197  193          disposeCred = null;
+ 198  194          targetName = peer;
+ 199  195          isInitiator = true;
+ 200  196          lifetime = time;
+ 201  197  
+ 202  198          if (GSSUtil.isKerberosMech(cStub.getMech())) {
+<span class='subtracted'> 203      -            doServicePermCheck();
+</span> 204  199              if (cred == null) {
+ 205  200                  disposeCred = cred =
+ 206  201                      new GSSCredElement(null, lifetime,
+ 207  202                              GSSCredential.INITIATE_ONLY, cStub);
+ 208  203              }
+ 209  204              srcName = cred.getName();
+<span class='added'>      205 +            doServicePermCheck();
+</span> 210  206          }
+ 211  207      }
+ 212  208  
+ 213  209      // Constructor for context acceptor
+ 214  210      NativeGSSContext(GSSCredElement myCred, GSSLibStub stub)
+ 215  211          throws GSSException {
+ 216  212          cStub = stub;
+ 217  213          cred = myCred;
+ 218  214          disposeCred = null;
+ 219  215  
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 220  216          if (cred != null) targetName = cred.getName();
+ 221  217  
+ 222  218          isInitiator = false;
+ 223  219          // Defer Service permission check for default acceptor cred
+ 224  220          // to acceptSecContext()
+ 225  221          if (GSSUtil.isKerberosMech(cStub.getMech()) &amp;&amp; targetName != null) {
+ 226  222              doServicePermCheck();
+ 227  223          }
+ 228  224  
+ 229  225          // srcName and potentially targetName (when myCred is null)
+ 230  226          // will be set in GSSLibStub.acceptContext(...)
+ 231  227      }
+ 232  228  
+ 233  229      // Constructor for imported context
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">14 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 234  230      NativeGSSContext(long pCtxt, GSSLibStub stub) throws GSSException {
+ 235  231          assert(pContext != 0);
+ 236  232          pContext = pCtxt;
+ 237  233          cStub = stub;
+ 238  234  
+ 239  235          // Set everything except cred, cb, delegatedCred
+ 240  236          long[] info = cStub.inquireContext(pContext);
+ 241  237          if (info.length != NUM_OF_INQUIRE_VALUES) {
+ 242  238              throw new RuntimeException("Bug w/ GSSLibStub.inquireContext()");
+ 243  239          }
+<span class='subtracted'> 244      -        srcName = new GSSNameElement(info[0], cStub);
+ 245      -        targetName = new GSSNameElement(info[1], cStub);
+</span> 246  240          isInitiator = (info[2] != 0);
+ 247  241          isEstablished = (info[3] != 0);
+ 248  242          flags = (int) info[4];
+ 249  243          lifetime = (int) info[5];
+<span class='added'>      244 +        if (isEstablished) {
+      245 +            srcName = new GSSNameElement(info[0], actualMech, cStub);
+      246 +            targetName = new GSSNameElement(info[1], actualMech, cStub);
+      247 +        } else {
+      248 +            srcName = null;
+      249 +            targetName = null;
+      250 +        }
+</span> 250  251  
+ 251  252          // Do Service Permission check when importing SPNEGO context
+<span class='subtracted'> 252      -        // just to be safe
+</span><span class='added'>      253 +        // just to be safe.  WAT, no.  If the caller has an exported sec
+      254 +        // context token, it's because someone gave it to it, therefore there's
+      255 +        // no need to do any further permission checking.  REMOVE!
+</span> 253  256          Oid mech = cStub.getMech();
+ 254  257          if (GSSUtil.isSpNegoMech(mech) || GSSUtil.isKerberosMech(mech)) {
+ 255  258              doServicePermCheck();
+ 256  259          }
+ 257  260      }
+ 258  261  
+ 259  262      public Provider getProvider() {
+ 260  263          return SunNativeProvider.INSTANCE;
+ 261  264      }
+ 262  265  
+</pre>
+<pre id='elided5' class='elided' style='display: none'> 263  266      public byte[] initSecContext(InputStream is, int mechTokenLen)
+ 264  267          throws GSSException {
+ 265  268          byte[] outToken = null;
+ 266  269          if ((!isEstablished) &amp;&amp; (isInitiator)) {
+ 267  270              byte[] inToken = null;
+ 268  271              // Ignore the specified input stream on the first call
+ 269  272              if (pContext != 0) {
+ 270  273                  inToken = retrieveToken(is, mechTokenLen);
+ 271  274                  SunNativeProvider.debug("initSecContext=&gt; inToken len=" +
+ 272  275                      inToken.length);
+ 273  276              }
+ 274  277  
+ 275  278              if (!getCredDelegState()) skipDelegPermCheck = true;
+ 276  279  
+ 277  280              if (GSSUtil.isKerberosMech(cStub.getMech()) &amp;&amp; !skipDelegPermCheck) {
+ 278  281                  doDelegPermCheck();
+</pre>
+<table id='hb-elided5' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided5", "hb-elided5", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">16 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided5", "hb-elided5", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 279  282              }
+ 280  283  
+ 281  284              long pCred = (cred == null? 0 : cred.pCred);
+ 282  285              outToken = cStub.initContext(pCred, targetName.pName,
+ 283  286                                           cb, inToken, this);
+ 284  287              SunNativeProvider.debug("initSecContext=&gt; outToken len=" +
+ 285  288                  (outToken == null ? 0 : outToken.length));
+ 286  289  
+ 287  290              // Only inspect the token when the permission check
+ 288  291              // has not been performed
+<span class='subtracted'> 289      -            if (GSSUtil.isSpNegoMech(cStub.getMech()) &amp;&amp; outToken != null) {
+</span><span class='added'>      292 +            if (!GSSUtil.isSpNegoMech(cStub.getMech())) {
+      293 +                actualMech = cStub.getMech();
+      294 +            } else if (actualMech == null &amp;&amp; outToken != null) {
+</span> 290  295                  // WORKAROUND for SEAM bug#6287358
+<span class='subtracted'> 291      -                actualMech = getMechFromSpNegoToken(outToken, true);
+</span><span class='added'>      296 +                //
+      297 +                // This is where some C GSS SPNEGO implementations fail to make
+      298 +                // the real actual mechanism available.
+      299 +                // getMechFromSpNegoToken() does the horrible, no good, very
+      300 +                // bad thing its name says it does.  For now we retain this bit
+      301 +                // of evil.
+      302 +                //
+      303 +                // XXX Time to remove this workaround.  It's been 20
+      304 +                // years.
+      305 +                try {
+      306 +                    actualMech = getMechFromSpNegoToken(outToken, true);
+      307 +                } catch (GSSException e) { }
+      308 +            }
+</span> 292  309  
+<span class='subtracted'> 293      -                if (GSSUtil.isKerberosMech(actualMech)) {
+ 294      -                    if (!skipServicePermCheck) doServicePermCheck();
+ 295      -                    if (!skipDelegPermCheck) doDelegPermCheck();
+ 296      -                }
+</span><span class='added'>      310 +            if (actualMech != null &amp;&amp; GSSUtil.isKerberosMech(actualMech)) {
+      311 +                if (!skipServicePermCheck) doServicePermCheck();
+      312 +                if (!skipDelegPermCheck) doDelegPermCheck();
+</span> 297  313              }
+ 298  314  
+ 299  315              if (isEstablished) {
+<span class='added'>      316 +                // XXX We should attempt to get actualMech from the cStub here,
+      317 +                // and take it even if we got a semblance of an actualMech from
+      318 +                // the SPNEGO token, as long as the one returned by the cStub
+      319 +                // isn't the SPNEGO OID.
+</span> 300  320                  if (srcName == null) {
+ 301  321                      srcName = new GSSNameElement
+<span class='subtracted'> 302      -                        (cStub.getContextName(pContext, true), cStub);
+ 303      -                }
+ 304      -                if (cred == null) {
+ 305      -                    disposeCred = cred =
+ 306      -                        new GSSCredElement(srcName, lifetime,
+ 307      -                                GSSCredential.INITIATE_ONLY, cStub);
+</span><span class='added'>      322 +                        (cStub.getContextName(pContext, true), actualMech,
+      323 +                         cStub);
+</span> 308  324                  }
+<span class='added'>      325 +                if (!skipServicePermCheck) doServicePermCheck();
+</span> 309  326              }
+ 310  327          }
+ 311  328          return outToken;
+ 312  329      }
+ 313  330  
+ 314  331      public byte[] acceptSecContext(InputStream is, int mechTokenLen)
+ 315  332          throws GSSException {
+ 316  333          byte[] outToken = null;
+ 317  334          if ((!isEstablished) &amp;&amp; (!isInitiator)) {
+ 318  335              byte[] inToken = retrieveToken(is, mechTokenLen);
+ 319  336              SunNativeProvider.debug("acceptSecContext=&gt; inToken len=" +
+ 320  337                                      inToken.length);
+ 321  338              long pCred = (cred == null? 0 : cred.pCred);
+ 322  339              outToken = cStub.acceptContext(pCred, cb, inToken, this);
+ 323  340              disposeDelegatedCred = delegatedCred;
+ 324  341              SunNativeProvider.debug("acceptSecContext=&gt; outToken len=" +
+ 325  342                                      (outToken == null? 0 : outToken.length));
+ 326  343  
+<span class='subtracted'> 327      -            if (targetName == null) {
+</span><span class='added'>      344 +            if (isEstablished &amp;&amp; targetName == null) {
+</span> 328  345                  targetName = new GSSNameElement
+<span class='subtracted'> 329      -                    (cStub.getContextName(pContext, false), cStub);
+ 330      -                // Replace the current default acceptor cred now that
+ 331      -                // the context acceptor name is available
+ 332      -                if (disposeCred != null) {
+ 333      -                    disposeCred.dispose();
+ 334      -                }
+ 335      -                disposeCred = cred =
+ 336      -                    new GSSCredElement(targetName, lifetime,
+ 337      -                            GSSCredential.ACCEPT_ONLY, cStub);
+</span><span class='added'>      346 +                    (cStub.getContextName(pContext, false), actualMech, cStub);
+</span> 338  347              }
+<span class='subtracted'> 339      -
+ 340      -            // Only inspect token when the permission check has not
+ 341      -            // been performed
+ 342      -            if (GSSUtil.isSpNegoMech(cStub.getMech()) &amp;&amp;
+ 343      -                (outToken != null) &amp;&amp; !skipServicePermCheck) {
+ 344      -                if (GSSUtil.isKerberosMech(getMechFromSpNegoToken
+ 345      -                                           (outToken, false))) {
+ 346      -                    doServicePermCheck();
+ 347      -                }
+</span><span class='added'>      348 +            if (GSSUtil.isSpNegoMech(cStub.getMech()) &amp;&amp; outToken != null &amp;&amp;
+      349 +                actualMech == null) {
+      350 +                try {
+      351 +                    actualMech = getMechFromSpNegoToken(outToken, true);
+      352 +                } catch (GSSException e) { }
+      353 +            }
+      354 +            if (isEstablished &amp;&amp; targetName != null &amp;&amp; !skipServicePermCheck) {
+      355 +                doServicePermCheck();
+</span> 348  356              }
+ 349  357          }
+ 350  358          return outToken;
+ 351  359      }
+ 352  360  
+ 353  361      public boolean isEstablished() {
+ 354  362          return isEstablished;
+ 355  363      }
+ 356  364  
+ 357  365      public void dispose() throws GSSException {
+</pre>
+<pre id='elided6' class='elided' style='display: none'> 358  366          if (disposeCred != null) {
+ 359  367              disposeCred.dispose();
+ 360  368          }
+ 361  369          if (disposeDelegatedCred != null) {
+ 362  370              disposeDelegatedCred.dispose();
+ 363  371          }
+ 364  372          disposeDelegatedCred = disposeCred = cred = null;
+ 365  373          srcName = null;
+ 366  374          targetName = null;
+ 367  375          delegatedCred = null;
+ 368  376          if (pContext != 0) {
+ 369  377              pContext = cStub.deleteContext(pContext);
+ 370  378              pContext = 0;
+ 371  379          }
+ 372  380      }
+ 373  381  
+ 374  382      public int getWrapSizeLimit(int qop, boolean confReq,
+ 375  383                                  int maxTokenSize)
+ 376  384          throws GSSException {
+ 377  385          return cStub.wrapSizeLimit(pContext, (confReq? 1:0), qop,
+ 378  386                                     maxTokenSize);
+ 379  387      }
+ 380  388  
+ 381  389      public byte[] wrap(byte[] inBuf, int offset, int len,
+ 382  390                         MessageProp msgProp) throws GSSException {
+ 383  391          byte[] data = inBuf;
+ 384  392          if ((offset != 0) || (len != inBuf.length)) {
+ 385  393              data = new byte[len];
+ 386  394              System.arraycopy(inBuf, offset, data, 0, len);
+ 387  395          }
+ 388  396          return cStub.wrap(pContext, data, msgProp);
+ 389  397      }
+ 390  398      public void wrap(byte[] inBuf, int offset, int len,
+ 391  399                       OutputStream os, MessageProp msgProp)
+ 392  400          throws GSSException {
+ 393  401          try {
+ 394  402          byte[] result = wrap(inBuf, offset, len, msgProp);
+ 395  403          os.write(result);
+ 396  404          } catch (IOException ioe) {
+ 397  405              throw new GSSExceptionImpl(GSSException.FAILURE, ioe);
+ 398  406          }
+ 399  407      }
+ 400  408      public int wrap(byte[] inBuf, int inOffset, int len, byte[] outBuf,
+ 401  409                      int outOffset, MessageProp msgProp)
+ 402  410          throws GSSException {
+ 403  411          byte[] result = wrap(inBuf, inOffset, len, msgProp);
+ 404  412          System.arraycopy(result, 0, outBuf, outOffset, result.length);
+ 405  413          return result.length;
+ 406  414      }
+ 407  415      public void wrap(InputStream inStream, OutputStream outStream,
+ 408  416                       MessageProp msgProp) throws GSSException {
+ 409  417          try {
+ 410  418              byte[] data = new byte[inStream.available()];
+ 411  419              int length = inStream.read(data);
+ 412  420              byte[] token = wrap(data, 0, length, msgProp);
+ 413  421              outStream.write(token);
+ 414  422          } catch (IOException ioe) {
+ 415  423              throw new GSSExceptionImpl(GSSException.FAILURE, ioe);
+ 416  424          }
+ 417  425      }
+ 418  426  
+ 419  427      public byte[] unwrap(byte[] inBuf, int offset, int len,
+ 420  428                           MessageProp msgProp)
+ 421  429          throws GSSException {
+ 422  430          if ((offset != 0) || (len != inBuf.length)) {
+ 423  431              byte[] temp = new byte[len];
+ 424  432              System.arraycopy(inBuf, offset, temp, 0, len);
+ 425  433              return cStub.unwrap(pContext, temp, msgProp);
+ 426  434          } else {
+ 427  435              return cStub.unwrap(pContext, inBuf, msgProp);
+ 428  436          }
+ 429  437      }
+ 430  438      public int unwrap(byte[] inBuf, int inOffset, int len,
+ 431  439                        byte[] outBuf, int outOffset,
+ 432  440                        MessageProp msgProp) throws GSSException {
+ 433  441          byte[] result = null;
+ 434  442          if ((inOffset != 0) || (len != inBuf.length)) {
+ 435  443              byte[] temp = new byte[len];
+ 436  444              System.arraycopy(inBuf, inOffset, temp, 0, len);
+ 437  445              result = cStub.unwrap(pContext, temp, msgProp);
+ 438  446          } else {
+ 439  447              result = cStub.unwrap(pContext, inBuf, msgProp);
+ 440  448          }
+ 441  449          System.arraycopy(result, 0, outBuf, outOffset, result.length);
+ 442  450          return result.length;
+ 443  451      }
+ 444  452      public void unwrap(InputStream inStream, OutputStream outStream,
+ 445  453                         MessageProp msgProp) throws GSSException {
+ 446  454          try {
+ 447  455              byte[] wrapped = new byte[inStream.available()];
+ 448  456              int wLength = inStream.read(wrapped);
+ 449  457              byte[] data = unwrap(wrapped, 0, wLength, msgProp);
+ 450  458              outStream.write(data);
+ 451  459              outStream.flush();
+ 452  460          } catch (IOException ioe) {
+ 453  461              throw new GSSExceptionImpl(GSSException.FAILURE, ioe);
+ 454  462          }
+ 455  463      }
+ 456  464  
+ 457  465      public int unwrap(InputStream inStream,
+ 458  466                        byte[] outBuf, int outOffset,
+ 459  467                        MessageProp msgProp) throws GSSException {
+ 460  468          byte[] wrapped = null;
+ 461  469          int wLength = 0;
+ 462  470          try {
+ 463  471              wrapped = new byte[inStream.available()];
+ 464  472              wLength = inStream.read(wrapped);
+ 465  473              byte[] result = unwrap(wrapped, 0, wLength, msgProp);
+ 466  474          } catch (IOException ioe) {
+ 467  475              throw new GSSExceptionImpl(GSSException.FAILURE, ioe);
+ 468  476          }
+ 469  477          byte[] result = unwrap(wrapped, 0, wLength, msgProp);
+ 470  478          System.arraycopy(result, 0, outBuf, outOffset, result.length);
+ 471  479          return result.length;
+ 472  480      }
+ 473  481  
+ 474  482      public byte[] getMIC(byte[] in, int offset, int len,
+ 475  483                           MessageProp msgProp) throws GSSException {
+ 476  484          int qop = (msgProp == null? 0:msgProp.getQOP());
+ 477  485          byte[] inMsg = in;
+ 478  486          if ((offset != 0) || (len != in.length)) {
+ 479  487              inMsg = new byte[len];
+ 480  488              System.arraycopy(in, offset, inMsg, 0, len);
+ 481  489          }
+ 482  490          return cStub.getMic(pContext, qop, inMsg);
+ 483  491      }
+ 484  492  
+ 485  493      public void getMIC(InputStream inStream, OutputStream outStream,
+ 486  494                         MessageProp msgProp) throws GSSException {
+ 487  495          try {
+ 488  496              int length = 0;
+ 489  497              byte[] msg = new byte[inStream.available()];
+ 490  498              length = inStream.read(msg);
+ 491  499  
+ 492  500              byte[] msgToken = getMIC(msg, 0, length, msgProp);
+ 493  501              if ((msgToken != null) &amp;&amp; msgToken.length != 0) {
+ 494  502                  outStream.write(msgToken);
+ 495  503              }
+ 496  504          } catch (IOException ioe) {
+ 497  505              throw new GSSExceptionImpl(GSSException.FAILURE, ioe);
+ 498  506          }
+ 499  507      }
+ 500  508  
+ 501  509      public void verifyMIC(byte[] inToken, int tOffset, int tLen,
+ 502  510                            byte[] inMsg, int mOffset, int mLen,
+ 503  511                            MessageProp msgProp) throws GSSException {
+ 504  512          byte[] token = inToken;
+ 505  513          byte[] msg = inMsg;
+ 506  514          if ((tOffset != 0) || (tLen != inToken.length)) {
+ 507  515              token = new byte[tLen];
+ 508  516              System.arraycopy(inToken, tOffset, token, 0, tLen);
+ 509  517          }
+ 510  518          if ((mOffset != 0) || (mLen != inMsg.length)) {
+ 511  519              msg = new byte[mLen];
+ 512  520              System.arraycopy(inMsg, mOffset, msg, 0, mLen);
+ 513  521          }
+ 514  522          cStub.verifyMic(pContext, token, msg, msgProp);
+ 515  523      }
+ 516  524  
+ 517  525      public void verifyMIC(InputStream tokStream, InputStream msgStream,
+ 518  526                            MessageProp msgProp) throws GSSException {
+ 519  527          try {
+ 520  528              byte[] msg = new byte[msgStream.available()];
+ 521  529              int mLength = msgStream.read(msg);
+ 522  530              byte[] tok = new byte[tokStream.available()];
+ 523  531              int tLength = tokStream.read(tok);
+ 524  532              verifyMIC(tok, 0, tLength, msg, 0, mLength, msgProp);
+ 525  533          } catch (IOException ioe) {
+ 526  534              throw new GSSExceptionImpl(GSSException.FAILURE, ioe);
+ 527  535          }
+ 528  536      }
+ 529  537  
+ 530  538      public byte[] export() throws GSSException {
+ 531  539          byte[] result = cStub.exportContext(pContext);
+ 532  540          pContext = 0;
+ 533  541          return result;
+ 534  542      }
+ 535  543  
+ 536  544      private void changeFlags(int flagMask, boolean isEnable) {
+ 537  545          if (isInitiator &amp;&amp; pContext == 0) {
+ 538  546              if (isEnable) {
+ 539  547                  flags |= flagMask;
+ 540  548              } else {
+ 541  549                  flags &amp;= ~flagMask;
+ 542  550              }
+ 543  551          }
+ 544  552      }
+ 545  553      public void requestMutualAuth(boolean state) throws GSSException {
+ 546  554          changeFlags(GSS_C_MUTUAL_FLAG, state);
+ 547  555      }
+ 548  556      public void requestReplayDet(boolean state) throws GSSException {
+ 549  557          changeFlags(GSS_C_REPLAY_FLAG, state);
+ 550  558      }
+ 551  559      public void requestSequenceDet(boolean state) throws GSSException {
+ 552  560          changeFlags(GSS_C_SEQUENCE_FLAG, state);
+ 553  561      }
+ 554  562      public void requestCredDeleg(boolean state) throws GSSException {
+ 555  563          changeFlags(GSS_C_DELEG_FLAG, state);
+ 556  564      }
+ 557  565      public void requestAnonymity(boolean state) throws GSSException {
+ 558  566          changeFlags(GSS_C_ANON_FLAG, state);
+ 559  567      }
+ 560  568      public void requestConf(boolean state) throws GSSException {
+ 561  569          changeFlags(GSS_C_CONF_FLAG, state);
+ 562  570      }
+ 563  571      public void requestInteg(boolean state) throws GSSException {
+ 564  572          changeFlags(GSS_C_INTEG_FLAG, state);
+ 565  573      }
+ 566  574      public void requestDelegPolicy(boolean state) throws GSSException {
+ 567  575          // Not supported, ignore
+ 568  576      }
+ 569  577      public void requestLifetime(int lifetime) throws GSSException {
+ 570  578          if (isInitiator &amp;&amp; pContext == 0) {
+ 571  579              this.lifetime = lifetime;
+ 572  580          }
+ 573  581      }
+ 574  582      public void setChannelBinding(ChannelBinding cb) throws GSSException {
+ 575  583          if (pContext == 0) {
+ 576  584              this.cb = cb;
+ 577  585          }
+ 578  586      }
+ 579  587  
+ 580  588      private boolean checkFlags(int flagMask) {
+ 581  589          return ((flags &amp; flagMask) != 0);
+ 582  590      }
+ 583  591      public boolean getCredDelegState() {
+ 584  592          return checkFlags(GSS_C_DELEG_FLAG);
+ 585  593      }
+ 586  594      public boolean getMutualAuthState() {
+ 587  595          return checkFlags(GSS_C_MUTUAL_FLAG);
+ 588  596      }
+ 589  597      public boolean getReplayDetState() {
+ 590  598          return checkFlags(GSS_C_REPLAY_FLAG);
+ 591  599      }
+ 592  600      public boolean getSequenceDetState() {
+ 593  601          return checkFlags(GSS_C_SEQUENCE_FLAG);
+ 594  602      }
+ 595  603      public boolean getAnonymityState() {
+ 596  604          return checkFlags(GSS_C_ANON_FLAG);
+ 597  605      }
+ 598  606      public boolean isTransferable() throws GSSException {
+ 599  607          return checkFlags(GSS_C_TRANS_FLAG);
+ 600  608      }
+ 601  609      public boolean isProtReady() {
+ 602  610          return checkFlags(GSS_C_PROT_READY_FLAG);
+ 603  611      }
+ 604  612      public boolean getConfState() {
+ 605  613          return checkFlags(GSS_C_CONF_FLAG);
+ 606  614      }
+ 607  615      public boolean getIntegState() {
+ 608  616          return checkFlags(GSS_C_INTEG_FLAG);
+ 609  617      }
+ 610  618      public boolean getDelegPolicyState() {
+ 611  619          return false;
+ 612  620      }
+ 613  621      public int getLifetime() {
+ 614  622          return cStub.getContextTime(pContext);
+ 615  623      }
+ 616  624      public GSSNameSpi getSrcName() throws GSSException {
+ 617  625          return srcName;
+ 618  626      }
+ 619  627      public GSSNameSpi getTargName() throws GSSException {
+ 620  628          return targetName;
+ 621  629      }
+ 622  630      public Oid getMech() throws GSSException {
+ 623  631          if (isEstablished &amp;&amp; actualMech != null) {
+ 624  632              return actualMech;
+ 625  633          } else {
+ 626  634              return cStub.getMech();
+ 627  635          }
+ 628  636      }
+ 629  637      public GSSCredentialSpi getDelegCred() throws GSSException {
+ 630  638          disposeDelegatedCred = null;
+ 631  639          return delegatedCred;
+ 632  640      }
+ 633  641      public boolean isInitiator() {
+ 634  642          return isInitiator;
+ 635  643      }
+ 636  644  
+ 637  645      @SuppressWarnings("deprecation")
+ 638  646      protected void finalize() throws Throwable {
+ 639  647          dispose();
+ 640  648      }
+ 641  649  
+ 642  650      public Object inquireSecContext(String type)
+ 643  651              throws GSSException {
+ 644  652          throw new GSSException(GSSException.UNAVAILABLE, -1,
+ 645  653                  "Inquire type not supported.");
+ 646  654      }
+ 647  655  }
+</pre>
+<table id='hb-elided6' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided6", "hb-elided6", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">290 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided6", "hb-elided6", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 6; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 6; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

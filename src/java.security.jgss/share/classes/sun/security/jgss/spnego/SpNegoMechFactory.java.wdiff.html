@@ -1,0 +1,481 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add JGSS JNI bindings for gss cred store functions
+FIXME commentary
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2009, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package sun.security.jgss.spnego;
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">26 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  27   27  
+  28   28  import org.ietf.jgss.*;
+  29   29  import sun.security.jgss.*;
+  30   30  import sun.security.jgss.spi.*;
+  31   31  import sun.security.jgss.krb5.Krb5MechFactory;
+  32   32  import sun.security.jgss.krb5.Krb5InitCredential;
+  33   33  import sun.security.jgss.krb5.Krb5AcceptCredential;
+  34   34  import sun.security.jgss.krb5.Krb5NameElement;
+  35   35  import java.security.Provider;
+  36   36  import java.util.Vector;
+<span class='added'>       37 +import java.util.Map;
+</span>  37   38  
+  38   39  /**
+  39   40   * SpNego Mechanism plug in for JGSS
+  40   41   * This is the properties object required by the JGSS framework.
+  41   42   * All mechanism specific information is defined here.
+  42   43   *
+  43   44   * @author Seema Malkani
+  44   45   * @since 1.6
+  45   46   */
+  46   47  
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  47   48  public final class SpNegoMechFactory implements MechanismFactory {
+  48   49  
+  49   50      static final Provider PROVIDER =
+  50   51          new sun.security.jgss.SunProvider();
+  51   52  
+  52   53      static final Oid GSS_SPNEGO_MECH_OID =
+  53   54          GSSUtil.createOid("1.3.6.1.5.5.2");
+  54   55  
+  55   56      private static Oid[] nameTypes =
+  56   57          new Oid[] { GSSName.NT_USER_NAME,
+  57   58                          GSSName.NT_HOSTBASED_SERVICE,
+  58   59                          GSSName.NT_EXPORT_NAME};
+  59   60  
+  60   61      // The default underlying mech of SPNEGO, must not be SPNEGO itself.
+  61   62      private static final Oid DEFAULT_SPNEGO_MECH_OID =
+  62   63              ProviderList.DEFAULT_MECH_OID.equals(GSS_SPNEGO_MECH_OID)?
+  63   64                  GSSUtil.GSS_KRB5_MECH_OID:
+  64   65                  ProviderList.DEFAULT_MECH_OID;
+  65   66  
+  66   67      // Use an instance of a GSSManager whose provider list
+  67   68      // does not include native provider
+  68   69      final GSSManagerImpl manager;
+  69   70      final Oid[] availableMechs;
+  70   71  
+  71   72      private static SpNegoCredElement getCredFromSubject(GSSNameSpi name,
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">25 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  72   73                                                          boolean initiate)
+  73   74          throws GSSException {
+  74   75          Vector&lt;SpNegoCredElement&gt; creds =
+  75   76              GSSUtil.searchSubject(name, GSS_SPNEGO_MECH_OID,
+  76   77                  initiate, SpNegoCredElement.class);
+  77   78  
+  78   79          SpNegoCredElement result = ((creds == null || creds.isEmpty()) ?
+  79   80                                      null : creds.firstElement());
+  80   81  
+  81   82          // Force permission check before returning the cred to caller
+<span class='added'>       83 +        //
+       84 +        // FIXME This code assumes that the Kerberos mechanism is Java-coded,
+       85 +        // whereas it should be possible to mix Java-coded SPNEGO with a native
+       86 +        // (C-coded) mechanism.  For now this assumption stands.
+</span>  82   87          if (result != null) {
+  83   88              GSSCredentialSpi cred = result.getInternalCred();
+  84   89              if (GSSUtil.isKerberosMech(cred.getMechanism())) {
+  85   90                  if (initiate) {
+  86   91                      Krb5InitCredential krbCred = (Krb5InitCredential) cred;
+  87   92                      Krb5MechFactory.checkInitCredPermission
+  88   93                          ((Krb5NameElement) krbCred.getName());
+  89   94                  } else {
+  90   95                      Krb5AcceptCredential krbCred = (Krb5AcceptCredential) cred;
+  91   96                      Krb5MechFactory.checkAcceptCredPermission
+</pre>
+<pre id='elided3' class='elided' style='display: none'>  92   97                          ((Krb5NameElement) krbCred.getName(), name);
+  93   98                  }
+  94   99              }
+  95  100          }
+  96  101          return result;
+  97  102      }
+  98  103  
+  99  104      public SpNegoMechFactory() {
+ 100  105          this(GSSCaller.CALLER_UNKNOWN);
+ 101  106      }
+ 102  107  
+ 103  108      public SpNegoMechFactory(GSSCaller caller) {
+ 104  109          manager = new GSSManagerImpl(caller, false);
+ 105  110          Oid[] mechs = manager.getMechs();
+ 106  111          availableMechs = new Oid[mechs.length-1];
+ 107  112          for (int i = 0, j = 0; i &lt; mechs.length; i++) {
+ 108  113              // Skip SpNego mechanism
+ 109  114              if (!mechs[i].equals(GSS_SPNEGO_MECH_OID)) {
+ 110  115                  availableMechs[j++] = mechs[i];
+ 111  116              }
+ 112  117          }
+ 113  118          // Move the preferred mech to first place
+ 114  119          for (int i=0; i&lt;availableMechs.length; i++) {
+ 115  120              if (availableMechs[i].equals(DEFAULT_SPNEGO_MECH_OID)) {
+ 116  121                  if (i != 0) {
+ 117  122                      availableMechs[i] = availableMechs[0];
+ 118  123                      availableMechs[0] = DEFAULT_SPNEGO_MECH_OID;
+ 119  124                  }
+ 120  125                  break;
+ 121  126              }
+ 122  127          }
+ 123  128      }
+ 124  129  
+ 125  130      public GSSNameSpi getNameElement(String nameStr, Oid nameType)
+ 126  131              throws GSSException {
+ 127  132          return manager.getNameElement(
+ 128  133                  nameStr, nameType, DEFAULT_SPNEGO_MECH_OID);
+ 129  134      }
+ 130  135  
+ 131  136      public GSSNameSpi getNameElement(byte[] name, Oid nameType)
+ 132  137              throws GSSException {
+ 133  138          return manager.getNameElement(name, nameType, DEFAULT_SPNEGO_MECH_OID);
+ 134  139      }
+ 135  140  
+ 136  141      public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+ 137  142             int initLifetime, int acceptLifetime,
+ 138  143             int usage) throws GSSException {
+ 139  144  
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">48 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 140  145          SpNegoCredElement credElement = getCredFromSubject
+ 141  146              (name, (usage != GSSCredential.ACCEPT_ONLY));
+ 142  147  
+ 143  148          if (credElement == null) {
+ 144  149              // get CredElement for the default Mechanism
+ 145  150              credElement = new SpNegoCredElement
+ 146  151                  (manager.getCredentialElement(name, initLifetime,
+ 147  152                  acceptLifetime, null, usage));
+ 148  153          }
+ 149  154          return credElement;
+<span class='added'>      155 +    }
+      156 +
+      157 +    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+      158 +           String password, int initLifetime, int acceptLifetime,
+      159 +           int usage) throws GSSException {
+      160 +
+      161 +        SpNegoCredElement credElement = getCredFromSubject
+      162 +            (name, (usage != GSSCredential.ACCEPT_ONLY));
+      163 +
+      164 +        if (credElement == null) {
+      165 +            // get CredElement for the default Mechanism
+      166 +            credElement = new SpNegoCredElement
+      167 +                (manager.getCredentialElement(name, password, initLifetime,
+      168 +                acceptLifetime, null, usage));
+      169 +        }
+      170 +        return credElement;
+      171 +    }
+      172 +
+      173 +    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+      174 +           Map&lt;String,String&gt; store, int initLifetime, int acceptLifetime,
+      175 +           int usage) throws GSSException {
+      176 +
+      177 +        SpNegoCredElement credElement = getCredFromSubject
+      178 +            (name, (usage != GSSCredential.ACCEPT_ONLY));
+      179 +
+      180 +        if (credElement == null) {
+      181 +            // get CredElement for the default Mechanism
+      182 +            credElement = new SpNegoCredElement
+      183 +                (manager.getCredentialElement(name, store, initLifetime,
+      184 +                acceptLifetime, null, usage));
+      185 +        }
+      186 +        return credElement;
+      187 +    }
+      188 +
+      189 +    public void storeCredInto(GSSCredentialSpi cred, int usage,
+      190 +                              boolean overwrite, boolean defaultCred,
+      191 +                              Map&lt;String,String&gt; store) throws GSSException {
+      192 +        throw new GSSException(GSSException.UNAVAILABLE, -1,
+      193 +                "The SpNego mechanism does not " +
+      194 +                "currently support storing GSS credentials handle " +
+      195 +                "elements into a \"credential store\"");
+</span> 150  196      }
+ 151  197  
+ 152  198      public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+ 153  199                               GSSCredentialSpi myInitiatorCred, int lifetime)
+ 154  200          throws GSSException {
+ 155  201          // get SpNego mechanism context
+ 156  202          if (myInitiatorCred == null) {
+ 157  203              myInitiatorCred = getCredFromSubject(null, true);
+ 158  204          } else if (!(myInitiatorCred instanceof SpNegoCredElement)) {
+ 159  205              // convert to SpNegoCredElement
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 160  206              SpNegoCredElement cred = new SpNegoCredElement(myInitiatorCred);
+ 161  207              return new SpNegoContext(this, peer, cred, lifetime);
+ 162  208          }
+ 163  209          return new SpNegoContext(this, peer, myInitiatorCred, lifetime);
+ 164  210      }
+ 165  211  
+ 166  212      public GSSContextSpi getMechanismContext(GSSCredentialSpi myAcceptorCred)
+ 167  213          throws GSSException {
+ 168  214          // get SpNego mechanism context
+ 169  215          if (myAcceptorCred == null) {
+ 170  216              myAcceptorCred = getCredFromSubject(null, false);
+ 171  217          } else if (!(myAcceptorCred instanceof SpNegoCredElement)) {
+ 172  218              // convert to SpNegoCredElement
+ 173  219              SpNegoCredElement cred = new SpNegoCredElement(myAcceptorCred);
+ 174  220              return new SpNegoContext(this, cred);
+ 175  221          }
+ 176  222          return new SpNegoContext(this, myAcceptorCred);
+ 177  223      }
+ 178  224  
+ 179  225      public GSSContextSpi getMechanismContext(byte[] exportedContext)
+ 180  226          throws GSSException {
+ 181  227          // get SpNego mechanism context
+ 182  228          return new SpNegoContext(this, exportedContext);
+ 183  229      }
+ 184  230  
+ 185  231      public final Oid getMechanismOid() {
+ 186  232          return GSS_SPNEGO_MECH_OID;
+ 187  233      }
+ 188  234  
+ 189  235      public Provider getProvider() {
+ 190  236          return PROVIDER;
+ 191  237      }
+ 192  238  
+ 193  239      public Oid[] getNameTypes() {
+ 194  240          // nameTypes is cloned in GSSManager.getNamesForMech
+ 195  241          return nameTypes;
+ 196  242      }
+ 197  243  }
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">38 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 4; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 4; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

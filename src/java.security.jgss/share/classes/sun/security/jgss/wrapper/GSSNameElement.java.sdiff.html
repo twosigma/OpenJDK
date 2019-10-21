@@ -1,0 +1,589 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Sdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSNameElement.java</title>
+</head><body id="SUNWwebrev">
+<a class="print" href="javascript:print()">Print this page</a>
+<pre>Add commentary about permissions checks
+Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method
+Add actual mechanism to native GSSNameElement state</pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+  36 import sun.security.util.DerInputStream;
+  37 import sun.security.util.DerOutputStream;
+  38 import sun.security.jgss.GSSUtil;
+  39 import sun.security.jgss.GSSExceptionImpl;
+  40 import sun.security.jgss.spi.GSSNameSpi;
+  41 
+  42 import javax.security.auth.kerberos.ServicePermission;
+  43 
+  44 /**
+  45  * This class is essentially a wrapper class for the gss_name_t
+  46  * structure of the native GSS library.
+  47  * @author Valerie Peng
+  48  * @since 1.6
+  49  */
+  50 
+  51 public class GSSNameElement implements GSSNameSpi {
+  52 
+  53     long pName = 0; // Pointer to the gss_name_t structure
+  54     private String printableName;
+  55     private Oid printableType;
+
+  56     private GSSLibStub cStub;
+  57 
+  58     static final GSSNameElement DEF_ACCEPTOR = new GSSNameElement();
+  59 
+  60     private static Oid getNativeNameType(Oid nameType, GSSLibStub stub) {
+  61         if (GSSUtil.NT_GSS_KRB5_PRINCIPAL.equals(nameType)) {
+  62             Oid[] supportedNTs = null;
+  63             try {
+  64                 supportedNTs = stub.inquireNamesForMech();
+  65             } catch (GSSException ge) {
+  66                 if (ge.getMajor() == GSSException.BAD_MECH &amp;&amp;
+  67                     GSSUtil.isSpNegoMech(stub.getMech())) {
+  68                     // Workaround known Heimdal issue and retry with KRB5
+  69                     try {
+  70                         stub = GSSLibStub.getInstance
+  71                             (GSSUtil.GSS_KRB5_MECH_OID);
+  72                         supportedNTs = stub.inquireNamesForMech();
+  73                     } catch (GSSException ge2) {
+  74                         // Should never happen
+  75                         SunNativeProvider.debug("Name type list unavailable: " +
+
+</pre><hr></hr><pre>
+  80                         ge.getMajorString());
+  81                 }
+  82             }
+  83             if (supportedNTs != null) {
+  84                 for (int i = 0; i &lt; supportedNTs.length; i++) {
+  85                     if (supportedNTs[i].equals(nameType)) return nameType;
+  86                 }
+  87                 // Special handling the specified name type
+  88                 SunNativeProvider.debug("Override " + nameType +
+  89                     " with mechanism default(null)");
+  90                 return null; // Use mechanism specific default
+  91             }
+  92         }
+  93         return nameType;
+  94     }
+  95 
+  96     private GSSNameElement() {
+  97         printableName = "&lt;DEFAULT ACCEPTOR&gt;";
+  98     }
+  99 
+<span class="changed"> 100     GSSNameElement(long pNativeName, GSSLibStub stub) throws GSSException {</span>
+ 101         assert(stub != null);
+ 102         if (pNativeName == 0) {
+ 103             throw new GSSException(GSSException.BAD_NAME);
+ 104         }
+ 105         // Note: pNativeName is assumed to be a MN.
+ 106         pName = pNativeName;
+
+ 107         cStub = stub;
+ 108         setPrintables();
+ 109     }
+ 110 
+ 111     GSSNameElement(byte[] nameBytes, Oid nameType, GSSLibStub stub)
+ 112         throws GSSException {
+ 113         assert(stub != null);
+ 114         if (nameBytes == null) {
+ 115             throw new GSSException(GSSException.BAD_NAME);
+ 116         }
+ 117         cStub = stub;
+ 118         byte[] name = nameBytes;
+
+ 119 
+ 120         if (nameType != null) {
+ 121             // Special handling the specified name type if
+ 122             // necessary
+ 123             nameType = getNativeNameType(nameType, stub);
+ 124 
+ 125             if (GSSName.NT_EXPORT_NAME.equals(nameType)) {
+ 126                 // Need to add back the mech Oid portion (stripped
+ 127                 // off by GSSNameImpl class prior to calling this
+ 128                 // method) for "NT_EXPORT_NAME"
+ 129                 byte[] mechBytes = null;
+ 130                 DerOutputStream dout = new DerOutputStream();
+<span class="removed"> 131                 Oid mech = cStub.getMech();</span>
+ 132                 try {
+ 133                     dout.putOID(new ObjectIdentifier(mech.toString()));
+ 134                 } catch (IOException e) {
+ 135                     throw new GSSExceptionImpl(GSSException.FAILURE, e);
+ 136                 }
+ 137                 mechBytes = dout.toByteArray();
+ 138                 name = new byte[2 + 2 + mechBytes.length + 4 + nameBytes.length];
+ 139                 int pos = 0;
+ 140                 name[pos++] = 0x04;
+ 141                 name[pos++] = 0x01;
+ 142                 name[pos++] = (byte) (mechBytes.length&gt;&gt;&gt;8);
+ 143                 name[pos++] = (byte) mechBytes.length;
+ 144                 System.arraycopy(mechBytes, 0, name, pos, mechBytes.length);
+ 145                 pos += mechBytes.length;
+ 146                 name[pos++] = (byte) (nameBytes.length&gt;&gt;&gt;24);
+ 147                 name[pos++] = (byte) (nameBytes.length&gt;&gt;&gt;16);
+ 148                 name[pos++] = (byte) (nameBytes.length&gt;&gt;&gt;8);
+ 149                 name[pos++] = (byte) nameBytes.length;
+ 150                 System.arraycopy(nameBytes, 0, name, pos, nameBytes.length);
+ 151             }
+
+</pre><hr></hr><pre>
+ 178         SunNativeProvider.debug("Imported " + printableName + " w/ type " +
+ 179                                 printableType);
+ 180     }
+ 181 
+ 182     private void setPrintables() throws GSSException {
+ 183         Object[] printables = null;
+ 184         printables = cStub.displayName(pName);
+ 185         assert((printables != null) &amp;&amp; (printables.length == 2));
+ 186         printableName = (String) printables[0];
+ 187         assert(printableName != null);
+ 188         printableType = (Oid) printables[1];
+ 189         if (printableType == null) {
+ 190             printableType = GSSName.NT_USER_NAME;
+ 191         }
+ 192     }
+ 193 
+ 194     // Need to be public for GSSUtil.getSubject()
+ 195     public String getKrbName() throws GSSException {
+ 196         long mName = 0;
+ 197         GSSLibStub stub = cStub;
+<span class="changed"> 198         if (!GSSUtil.isKerberosMech(cStub.getMech())) {</span>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 199             stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
+ 200         }
+ 201         mName = stub.canonicalizeName(pName);
+ 202         Object[] printables2 = stub.displayName(mName);
+ 203         stub.releaseName(mName);
+ 204         SunNativeProvider.debug("Got kerberized name: " + printables2[0]);
+ 205         return (String) printables2[0];
+ 206     }
+ 207 
+ 208     public Provider getProvider() {
+ 209         return SunNativeProvider.INSTANCE;
+ 210     }
+ 211 
+ 212     public boolean equals(GSSNameSpi other) throws GSSException {
+ 213         if (!(other instanceof GSSNameElement)) {
+ 214             return false;
+ 215         }
+ 216         return cStub.compareName(pName, ((GSSNameElement)other).pName);
+ 217     }
+ 218 
+
+</pre><hr></hr><pre>
+ 250             temp = new ObjectIdentifier(din);
+ 251         } catch (IOException e) {
+ 252             throw new GSSExceptionImpl(GSSException.BAD_NAME, e);
+ 253         }
+ 254         Oid mech2 = new Oid(temp.toString());
+ 255         assert(mech2.equals(getMechanism()));
+ 256         pos += mechOidLen;
+ 257         int mechPortionLen = (((0xFF &amp; nameVal[pos++]) &lt;&lt; 24) |
+ 258                               ((0xFF &amp; nameVal[pos++]) &lt;&lt; 16) |
+ 259                               ((0xFF &amp; nameVal[pos++]) &lt;&lt; 8) |
+ 260                               (0xFF &amp; nameVal[pos++]));
+ 261         if (mechPortionLen &lt; 0) {
+ 262             throw new GSSException(GSSException.BAD_NAME);
+ 263         }
+ 264         byte[] mechPortion = new byte[mechPortionLen];
+ 265         System.arraycopy(nameVal, pos, mechPortion, 0, mechPortionLen);
+ 266         return mechPortion;
+ 267     }
+ 268 
+ 269     public Oid getMechanism() {
+<span class="changed"> 270         return cStub.getMech();</span>
+ 271     }
+ 272 
+ 273     public String toString() {
+ 274         return printableName;
+ 275     }
+ 276 
+
+
+
+
+
+
+
+
+
+
+ 277     public Oid getStringNameType() {
+ 278         return printableType;
+ 279     }
+ 280 
+ 281     public boolean isAnonymousName() {
+ 282         return (GSSName.NT_ANONYMOUS.equals(printableType));
+
+
+
+
+ 283     }
+ 284 
+ 285     public void dispose() {
+ 286         if (pName != 0) {
+ 287             cStub.releaseName(pName);
+ 288             pName = 0;
+ 289         }
+ 290     }
+ 291 
+ 292     @SuppressWarnings("deprecation")
+ 293     protected void finalize() throws Throwable {
+ 294         dispose();
+ 295     }
+ 296 }
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+  36 import sun.security.util.DerInputStream;
+  37 import sun.security.util.DerOutputStream;
+  38 import sun.security.jgss.GSSUtil;
+  39 import sun.security.jgss.GSSExceptionImpl;
+  40 import sun.security.jgss.spi.GSSNameSpi;
+  41 
+  42 import javax.security.auth.kerberos.ServicePermission;
+  43 
+  44 /**
+  45  * This class is essentially a wrapper class for the gss_name_t
+  46  * structure of the native GSS library.
+  47  * @author Valerie Peng
+  48  * @since 1.6
+  49  */
+  50 
+  51 public class GSSNameElement implements GSSNameSpi {
+  52 
+  53     long pName = 0; // Pointer to the gss_name_t structure
+  54     private String printableName;
+  55     private Oid printableType;
+<span class="new">  56     private Oid mech;</span>
+  57     private GSSLibStub cStub;
+  58 
+  59     static final GSSNameElement DEF_ACCEPTOR = new GSSNameElement();
+  60 
+  61     private static Oid getNativeNameType(Oid nameType, GSSLibStub stub) {
+  62         if (GSSUtil.NT_GSS_KRB5_PRINCIPAL.equals(nameType)) {
+  63             Oid[] supportedNTs = null;
+  64             try {
+  65                 supportedNTs = stub.inquireNamesForMech();
+  66             } catch (GSSException ge) {
+  67                 if (ge.getMajor() == GSSException.BAD_MECH &amp;&amp;
+  68                     GSSUtil.isSpNegoMech(stub.getMech())) {
+  69                     // Workaround known Heimdal issue and retry with KRB5
+  70                     try {
+  71                         stub = GSSLibStub.getInstance
+  72                             (GSSUtil.GSS_KRB5_MECH_OID);
+  73                         supportedNTs = stub.inquireNamesForMech();
+  74                     } catch (GSSException ge2) {
+  75                         // Should never happen
+  76                         SunNativeProvider.debug("Name type list unavailable: " +
+
+</pre><hr></hr><pre>
+  81                         ge.getMajorString());
+  82                 }
+  83             }
+  84             if (supportedNTs != null) {
+  85                 for (int i = 0; i &lt; supportedNTs.length; i++) {
+  86                     if (supportedNTs[i].equals(nameType)) return nameType;
+  87                 }
+  88                 // Special handling the specified name type
+  89                 SunNativeProvider.debug("Override " + nameType +
+  90                     " with mechanism default(null)");
+  91                 return null; // Use mechanism specific default
+  92             }
+  93         }
+  94         return nameType;
+  95     }
+  96 
+  97     private GSSNameElement() {
+  98         printableName = "&lt;DEFAULT ACCEPTOR&gt;";
+  99     }
+ 100 
+<span class="changed"> 101     GSSNameElement(long pNativeName, Oid mech, GSSLibStub stub) throws GSSException {</span>
+ 102         assert(stub != null);
+ 103         if (pNativeName == 0) {
+ 104             throw new GSSException(GSSException.BAD_NAME);
+ 105         }
+ 106         // Note: pNativeName is assumed to be a MN.
+ 107         pName = pNativeName;
+<span class="new"> 108         this.mech = mech;</span>
+ 109         cStub = stub;
+ 110         setPrintables();
+ 111     }
+ 112 
+ 113     GSSNameElement(byte[] nameBytes, Oid nameType, GSSLibStub stub)
+ 114         throws GSSException {
+ 115         assert(stub != null);
+ 116         if (nameBytes == null) {
+ 117             throw new GSSException(GSSException.BAD_NAME);
+ 118         }
+ 119         cStub = stub;
+ 120         byte[] name = nameBytes;
+<span class="new"> 121         mech = cStub.getMech();</span>
+ 122 
+ 123         if (nameType != null) {
+ 124             // Special handling the specified name type if
+ 125             // necessary
+ 126             nameType = getNativeNameType(nameType, stub);
+ 127 
+ 128             if (GSSName.NT_EXPORT_NAME.equals(nameType)) {
+ 129                 // Need to add back the mech Oid portion (stripped
+ 130                 // off by GSSNameImpl class prior to calling this
+ 131                 // method) for "NT_EXPORT_NAME"
+ 132                 byte[] mechBytes = null;
+ 133                 DerOutputStream dout = new DerOutputStream();
+
+ 134                 try {
+ 135                     dout.putOID(new ObjectIdentifier(mech.toString()));
+ 136                 } catch (IOException e) {
+ 137                     throw new GSSExceptionImpl(GSSException.FAILURE, e);
+ 138                 }
+ 139                 mechBytes = dout.toByteArray();
+ 140                 name = new byte[2 + 2 + mechBytes.length + 4 + nameBytes.length];
+ 141                 int pos = 0;
+ 142                 name[pos++] = 0x04;
+ 143                 name[pos++] = 0x01;
+ 144                 name[pos++] = (byte) (mechBytes.length&gt;&gt;&gt;8);
+ 145                 name[pos++] = (byte) mechBytes.length;
+ 146                 System.arraycopy(mechBytes, 0, name, pos, mechBytes.length);
+ 147                 pos += mechBytes.length;
+ 148                 name[pos++] = (byte) (nameBytes.length&gt;&gt;&gt;24);
+ 149                 name[pos++] = (byte) (nameBytes.length&gt;&gt;&gt;16);
+ 150                 name[pos++] = (byte) (nameBytes.length&gt;&gt;&gt;8);
+ 151                 name[pos++] = (byte) nameBytes.length;
+ 152                 System.arraycopy(nameBytes, 0, name, pos, nameBytes.length);
+ 153             }
+
+</pre><hr></hr><pre>
+ 180         SunNativeProvider.debug("Imported " + printableName + " w/ type " +
+ 181                                 printableType);
+ 182     }
+ 183 
+ 184     private void setPrintables() throws GSSException {
+ 185         Object[] printables = null;
+ 186         printables = cStub.displayName(pName);
+ 187         assert((printables != null) &amp;&amp; (printables.length == 2));
+ 188         printableName = (String) printables[0];
+ 189         assert(printableName != null);
+ 190         printableType = (Oid) printables[1];
+ 191         if (printableType == null) {
+ 192             printableType = GSSName.NT_USER_NAME;
+ 193         }
+ 194     }
+ 195 
+ 196     // Need to be public for GSSUtil.getSubject()
+ 197     public String getKrbName() throws GSSException {
+ 198         long mName = 0;
+ 199         GSSLibStub stub = cStub;
+<span class="changed"> 200         if (!GSSUtil.isKerberosMech(mech)) {</span>
+<span class="changed"> 201             // XXX We can't expect this to work generally.  We should</span>
+<span class="changed"> 202             // generalize the permission checks so that they can deal</span>
+<span class="changed"> 203             // with name forms other than those of Kerberos.</span>
+<span class="changed"> 204             //</span>
+<span class="changed"> 205             // Alternatively we could have a method in GSSLibStub for</span>
+<span class="changed"> 206             // mapping a non-Kerberos MN to a Kerberos MN, but depending</span>
+<span class="changed"> 207             // on the specifics of the non-Kerberos mechanism we would</span>
+<span class="changed"> 208             // either end up needing new conventions for Kerberos naming</span>
+<span class="changed"> 209             // or else having cases where we can end up failing to</span>
+<span class="changed"> 210             // support unconventional name forms.</span>
+<span class="changed"> 211             //</span>
+<span class="changed"> 212             // Consider a SAML assertion with a variety of identifying</span>
+<span class="changed"> 213             // attributes and a variety of non-identifying attributes</span>
+<span class="changed"> 214             // that are relevant to authorization.  How should a</span>
+<span class="changed"> 215             // Kerberos-equivalent be constructed?  GSS does have</span>
+<span class="changed"> 216             // extensions for decorating name objects with attributes,</span>
+<span class="changed"> 217             // so that's not an issue, but if there are multiple</span>
+<span class="changed"> 218             // identifying attributes then we'd have to pick one.  Now,</span>
+<span class="changed"> 219             // suppose the identifying attribute has a form like</span>
+<span class="changed"> 220             // &lt;phone-number&gt; -- we'd need a Kerberos convention for</span>
+<span class="changed"> 221             // that, which might be PHONE/&lt;number&gt;@&lt;ASSERTION-SIGNER&gt;.</span>
+ 222             stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
+ 223         }
+ 224         mName = stub.canonicalizeName(pName);
+ 225         Object[] printables2 = stub.displayName(mName);
+ 226         stub.releaseName(mName);
+ 227         SunNativeProvider.debug("Got kerberized name: " + printables2[0]);
+ 228         return (String) printables2[0];
+ 229     }
+ 230 
+ 231     public Provider getProvider() {
+ 232         return SunNativeProvider.INSTANCE;
+ 233     }
+ 234 
+ 235     public boolean equals(GSSNameSpi other) throws GSSException {
+ 236         if (!(other instanceof GSSNameElement)) {
+ 237             return false;
+ 238         }
+ 239         return cStub.compareName(pName, ((GSSNameElement)other).pName);
+ 240     }
+ 241 
+
+</pre><hr></hr><pre>
+ 273             temp = new ObjectIdentifier(din);
+ 274         } catch (IOException e) {
+ 275             throw new GSSExceptionImpl(GSSException.BAD_NAME, e);
+ 276         }
+ 277         Oid mech2 = new Oid(temp.toString());
+ 278         assert(mech2.equals(getMechanism()));
+ 279         pos += mechOidLen;
+ 280         int mechPortionLen = (((0xFF &amp; nameVal[pos++]) &lt;&lt; 24) |
+ 281                               ((0xFF &amp; nameVal[pos++]) &lt;&lt; 16) |
+ 282                               ((0xFF &amp; nameVal[pos++]) &lt;&lt; 8) |
+ 283                               (0xFF &amp; nameVal[pos++]));
+ 284         if (mechPortionLen &lt; 0) {
+ 285             throw new GSSException(GSSException.BAD_NAME);
+ 286         }
+ 287         byte[] mechPortion = new byte[mechPortionLen];
+ 288         System.arraycopy(nameVal, pos, mechPortion, 0, mechPortionLen);
+ 289         return mechPortion;
+ 290     }
+ 291 
+ 292     public Oid getMechanism() {
+<span class="changed"> 293         return (mech != null) ? mech : cStub.getMech();</span>
+ 294     }
+ 295 
+ 296     public String toString() {
+ 297         return printableName;
+ 298     }
+ 299 
+<span class="new"> 300     public String getLocalName() throws GSSException {</span>
+<span class="new"> 301         return cStub.localName(pName, mech);</span>
+<span class="new"> 302     }</span>
+<span class="new"> 303 </span>
+<span class="new"> 304     public String getLocalName(Oid mech) throws GSSException {</span>
+<span class="new"> 305         if (mech.equals(this.mech))</span>
+<span class="new"> 306             return cStub.localName(pName, mech);</span>
+<span class="new"> 307         throw new GSSException(GSSException.BAD_MECH);</span>
+<span class="new"> 308     }</span>
+<span class="new"> 309 </span>
+ 310     public Oid getStringNameType() {
+ 311         return printableType;
+ 312     }
+ 313 
+ 314     public boolean isAnonymousName() {
+ 315         return (GSSName.NT_ANONYMOUS.equals(printableType));
+<span class="new"> 316     }</span>
+<span class="new"> 317 </span>
+<span class="new"> 318     public boolean isDefaultCredentialName() {</span>
+<span class="new"> 319         return (this == DEF_ACCEPTOR);</span>
+ 320     }
+ 321 
+ 322     public void dispose() {
+ 323         if (pName != 0) {
+ 324             cStub.releaseName(pName);
+ 325             pName = 0;
+ 326         }
+ 327     }
+ 328 
+ 329     @SuppressWarnings("deprecation")
+ 330     protected void finalize() throws Throwable {
+ 331         dispose();
+ 332     }
+ 333 }
+</pre></td>
+</tr></table>
+</body></html>

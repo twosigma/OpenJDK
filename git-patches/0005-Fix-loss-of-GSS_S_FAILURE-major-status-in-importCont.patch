@@ -1,0 +1,25 @@
+From ccd17fc999068477dfd75dcf7802286ee367ae80 Mon Sep 17 00:00:00 2001
+From: Viktor Dukhovni <viktor@twosigma.com>
+Date: Wed, 11 Nov 2015 04:12:07 +0000
+Subject: [PATCH 05/24] Fix loss of GSS_S_FAILURE major status in importContext
+
+---
+ src/java.security.jgss/share/native/libj2gss/GSSLibStub.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+index 4a5096467f..91359f447d 100644
+--- a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
++++ b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+@@ -824,7 +824,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importContext(JNIEnv *env,
+   } else {
+     /* mech mismatch - clean up then return null */
+     major = (*ftab->deleteSecContext)(&minor, &contextHdl, GSS_C_NO_BUFFER);
+-    checkStatus(env, jobj, major, minor,
++    checkStatus(env, jobj, GSS_S_FAILURE, minor,
+         "[GSSLibStub_importContext] cleanup");
+     return NULL;
+   }
+-- 
+2.17.1
+

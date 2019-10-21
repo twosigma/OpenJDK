@@ -1,0 +1,530 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/native/libj2gss/NativeFunc.c</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/native/libj2gss/NativeFunc.c
+</span><span class='added'>          +++ new/src/java.security.jgss/share/native/libj2gss/NativeFunc.c
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  #include &lt;stdio.h&gt;
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">26 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  27   27  #include &lt;stdlib.h&gt;
+  28   28  #include "NativeFunc.h"
+  29   29  
+  30   30  /* standard GSS method names (ordering is from mapfile) */
+  31   31  static const char RELEASE_NAME[]                = "gss_release_name";
+  32   32  static const char IMPORT_NAME[]                 = "gss_import_name";
+  33   33  static const char COMPARE_NAME[]                = "gss_compare_name";
+  34   34  static const char CANONICALIZE_NAME[]           = "gss_canonicalize_name";
+  35   35  static const char EXPORT_NAME[]                 = "gss_export_name";
+  36   36  static const char DISPLAY_NAME[]                = "gss_display_name";
+<span class='added'>       37 +static const char LOCAL_NAME[]                  = "gss_localname";
+</span>  37   38  static const char ACQUIRE_CRED[]                = "gss_acquire_cred";
+<span class='added'>       39 +static const char ACQUIRE_CRED_WITH_PASSWORD[]  = "gss_acquire_cred_with_password";
+       40 +static const char ACQUIRE_CRED_FROM[]           = "gss_acquire_cred_from";
+       41 +static const char STORE_CRED_INTO[]             = "gss_store_cred_into";
+</span>  38   42  static const char RELEASE_CRED[]                = "gss_release_cred";
+  39   43  static const char INQUIRE_CRED[]                = "gss_inquire_cred";
+  40   44  static const char IMPORT_SEC_CONTEXT[]          = "gss_import_sec_context";
+  41   45  static const char INIT_SEC_CONTEXT[]            = "gss_init_sec_context";
+  42   46  static const char ACCEPT_SEC_CONTEXT[]          = "gss_accept_sec_context";
+  43   47  static const char INQUIRE_CONTEXT[]             = "gss_inquire_context";
+  44   48  static const char DELETE_SEC_CONTEXT[]          = "gss_delete_sec_context";
+  45   49  static const char CONTEXT_TIME[]                = "gss_context_time";
+  46   50  static const char WRAP_SIZE_LIMIT[]             = "gss_wrap_size_limit";
+  47   51  static const char EXPORT_SEC_CONTEXT[]          = "gss_export_sec_context";
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  48   52  static const char GET_MIC[]                     = "gss_get_mic";
+  49   53  static const char VERIFY_MIC[]                  = "gss_verify_mic";
+  50   54  static const char WRAP[]                        = "gss_wrap";
+  51   55  static const char UNWRAP[]                      = "gss_unwrap";
+  52   56  static const char INDICATE_MECHS[]              = "gss_indicate_mechs";
+  53   57  static const char INQUIRE_NAMES_FOR_MECH[]      = "gss_inquire_names_for_mech";
+  54   58  
+  55   59  /* additional GSS methods not public thru mapfile */
+  56   60  
+  57   61  static const char ADD_OID_SET_MEMBER[]          = "gss_add_oid_set_member";
+  58   62  static const char DISPLAY_STATUS[]              = "gss_display_status";
+  59   63  static const char CREATE_EMPTY_OID_SET[]        = "gss_create_empty_oid_set";
+  60   64  static const char RELEASE_OID_SET[]             = "gss_release_oid_set";
+  61   65  static const char RELEASE_BUFFER[]              = "gss_release_buffer";
+  62   66  
+  63   67  /**
+  64   68   * Initialize native GSS function pointers
+  65   69   */
+  66   70  int loadNative(const char *libName) {
+  67   71  
+  68   72      void *gssLib;
+  69   73      int failed;
+  70   74      OM_uint32 minor, major;
+  71   75  
+  72   76      ftab = NULL;
+  73   77      failed = FALSE;
+  74   78  
+  75   79      gssLib = GETLIB(libName);
+  76   80      if (gssLib == NULL) {
+  77   81          failed = TRUE;
+  78   82          goto out;
+  79   83      }
+  80   84  
+  81   85      /* global function table instance */
+  82   86      ftab = (GSS_FUNCTION_TABLE_PTR)malloc(sizeof(GSS_FUNCTION_TABLE));
+  83   87      if (ftab == NULL) {
+  84   88          failed = TRUE;
+  85   89          goto out;
+  86   90      }
+  87   91  
+  88   92      ftab-&gt;releaseName = (RELEASE_NAME_FN_PTR)GETFUNC(gssLib, RELEASE_NAME);
+  89   93      if (ftab-&gt;releaseName == NULL) {
+  90   94          failed = TRUE;
+  91   95          goto out;
+  92   96      }
+  93   97  
+  94   98      ftab-&gt;importName = (IMPORT_NAME_FN_PTR)GETFUNC(gssLib, IMPORT_NAME);
+  95   99      if (ftab-&gt;importName == NULL) {
+  96  100          failed = TRUE;
+  97  101          goto out;
+  98  102      }
+  99  103  
+ 100  104      ftab-&gt;compareName = (COMPARE_NAME_FN_PTR)GETFUNC(gssLib, COMPARE_NAME);
+ 101  105      if (ftab-&gt;compareName == NULL) {
+ 102  106          failed = TRUE;
+ 103  107          goto out;
+ 104  108      }
+ 105  109  
+ 106  110      ftab-&gt;canonicalizeName = (CANONICALIZE_NAME_FN_PTR)
+ 107  111                                  GETFUNC(gssLib, CANONICALIZE_NAME);
+ 108  112      if (ftab-&gt;canonicalizeName == NULL) {
+ 109  113          failed = TRUE;
+ 110  114          goto out;
+ 111  115      }
+ 112  116  
+ 113  117      ftab-&gt;exportName = (EXPORT_NAME_FN_PTR)GETFUNC(gssLib, EXPORT_NAME);
+ 114  118      if (ftab-&gt;exportName == NULL) {
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">67 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 115  119          failed = TRUE;
+ 116  120          goto out;
+ 117  121      }
+ 118  122  
+ 119  123      ftab-&gt;displayName = (DISPLAY_NAME_FN_PTR)GETFUNC(gssLib, DISPLAY_NAME);
+ 120  124      if (ftab-&gt;displayName == NULL) {
+ 121  125          failed = TRUE;
+ 122  126          goto out;
+ 123  127      }
+ 124  128  
+<span class='added'>      129 +    /*
+      130 +     * This one may not be available for a given GSS library, as it's an
+      131 +     * extension, therefore we don't fail if it's missing.
+      132 +     */
+      133 +    ftab-&gt;localName = (LOCAL_NAME_FN_PTR)GETFUNC(gssLib, LOCAL_NAME);
+      134 +
+</span> 125  135      ftab-&gt;acquireCred = (ACQUIRE_CRED_FN_PTR)GETFUNC(gssLib, ACQUIRE_CRED);
+ 126  136      if (ftab-&gt;acquireCred == NULL) {
+ 127  137          failed = TRUE;
+ 128  138          goto out;
+ 129  139      }
+<span class='added'>      140 +
+      141 +    /*
+      142 +     * These may not be available for a given GSS library, as they are
+      143 +     * extensions, therefore we don't fail if it's missing.
+      144 +     */
+      145 +    ftab-&gt;acquireCredWithPassword = (ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)
+      146 +                        GETFUNC(gssLib, ACQUIRE_CRED_WITH_PASSWORD);
+      147 +    ftab-&gt;acquireCredFrom = (ACQUIRE_CRED_FROM_FN_PTR)
+      148 +                        GETFUNC(gssLib, ACQUIRE_CRED_FROM);
+      149 +    ftab-&gt;storeCredInto = (STORE_CRED_INTO_FN_PTR)
+      150 +                        GETFUNC(gssLib, STORE_CRED_INTO);
+</span> 130  151  
+ 131  152      ftab-&gt;releaseCred = (RELEASE_CRED_FN_PTR)GETFUNC(gssLib, RELEASE_CRED);
+ 132  153      if (ftab-&gt;releaseCred == NULL) {
+ 133  154          failed = TRUE;
+ 134  155          goto out;
+ 135  156      }
+ 136  157  
+ 137  158      ftab-&gt;inquireCred = (INQUIRE_CRED_FN_PTR)GETFUNC(gssLib, INQUIRE_CRED);
+ 138  159      if (ftab-&gt;inquireCred == NULL) {
+ 139  160          failed = TRUE;
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 140  161          goto out;
+ 141  162      }
+ 142  163  
+ 143  164      ftab-&gt;importSecContext = (IMPORT_SEC_CONTEXT_FN_PTR)
+ 144  165                          GETFUNC(gssLib, IMPORT_SEC_CONTEXT);
+ 145  166      if (ftab-&gt;importSecContext == NULL) {
+ 146  167          failed = TRUE;
+ 147  168          goto out;
+ 148  169      }
+ 149  170  
+ 150  171      ftab-&gt;initSecContext = (INIT_SEC_CONTEXT_FN_PTR)
+ 151  172                          GETFUNC(gssLib, INIT_SEC_CONTEXT);
+ 152  173      if (ftab-&gt;initSecContext == NULL) {
+ 153  174          failed = TRUE;
+ 154  175          goto out;
+ 155  176      }
+ 156  177  
+ 157  178      ftab-&gt;acceptSecContext = (ACCEPT_SEC_CONTEXT_FN_PTR)
+ 158  179                          GETFUNC(gssLib, ACCEPT_SEC_CONTEXT);
+ 159  180      if (ftab-&gt;acceptSecContext == NULL) {
+ 160  181          failed = TRUE;
+ 161  182          goto out;
+ 162  183      }
+ 163  184  
+ 164  185      ftab-&gt;inquireContext = (INQUIRE_CONTEXT_FN_PTR)
+ 165  186                          GETFUNC(gssLib, INQUIRE_CONTEXT);
+ 166  187      if (ftab-&gt;inquireContext == NULL) {
+ 167  188          failed = TRUE;
+ 168  189          goto out;
+ 169  190      }
+ 170  191  
+ 171  192      ftab-&gt;deleteSecContext = (DELETE_SEC_CONTEXT_FN_PTR)
+ 172  193                          GETFUNC(gssLib, DELETE_SEC_CONTEXT);
+ 173  194      if (ftab-&gt;deleteSecContext == NULL) {
+ 174  195          failed = TRUE;
+ 175  196          goto out;
+ 176  197      }
+ 177  198  
+ 178  199      ftab-&gt;contextTime = (CONTEXT_TIME_FN_PTR)GETFUNC(gssLib, CONTEXT_TIME);
+ 179  200      if (ftab-&gt;contextTime == NULL) {
+ 180  201          failed = TRUE;
+ 181  202          goto out;
+ 182  203      }
+ 183  204  
+ 184  205      ftab-&gt;wrapSizeLimit = (WRAP_SIZE_LIMIT_FN_PTR)
+ 185  206                          GETFUNC(gssLib, WRAP_SIZE_LIMIT);
+ 186  207      if (ftab-&gt;wrapSizeLimit == NULL) {
+ 187  208          failed = TRUE;
+ 188  209          goto out;
+ 189  210      }
+ 190  211  
+ 191  212      ftab-&gt;exportSecContext = (EXPORT_SEC_CONTEXT_FN_PTR)
+ 192  213                          GETFUNC(gssLib, EXPORT_SEC_CONTEXT);
+ 193  214      if (ftab-&gt;exportSecContext == NULL) {
+ 194  215          failed = TRUE;
+ 195  216          goto out;
+ 196  217      }
+ 197  218  
+ 198  219      ftab-&gt;getMic = (GET_MIC_FN_PTR)GETFUNC(gssLib, GET_MIC);
+ 199  220      if (ftab-&gt;getMic == NULL) {
+ 200  221          failed = TRUE;
+ 201  222          goto out;
+ 202  223      }
+ 203  224  
+ 204  225      ftab-&gt;verifyMic = (VERIFY_MIC_FN_PTR)GETFUNC(gssLib, VERIFY_MIC);
+ 205  226      if (ftab-&gt;verifyMic == NULL) {
+ 206  227          failed = TRUE;
+ 207  228          goto out;
+ 208  229      }
+ 209  230  
+ 210  231      ftab-&gt;wrap = (WRAP_FN_PTR)GETFUNC(gssLib, WRAP);
+ 211  232      if (ftab-&gt;wrap == NULL) {
+ 212  233          failed = TRUE;
+ 213  234          goto out;
+ 214  235      }
+ 215  236  
+ 216  237      ftab-&gt;unwrap = (UNWRAP_FN_PTR)GETFUNC(gssLib, UNWRAP);
+ 217  238      if (ftab-&gt;unwrap == NULL) {
+ 218  239          failed = TRUE;
+ 219  240          goto out;
+ 220  241      }
+ 221  242  
+ 222  243      ftab-&gt;indicateMechs = (INDICATE_MECHS_FN_PTR)GETFUNC(gssLib, INDICATE_MECHS);
+ 223  244      if (ftab-&gt;indicateMechs == NULL) {
+ 224  245          failed = TRUE;
+ 225  246          goto out;
+ 226  247      }
+ 227  248  
+ 228  249      ftab-&gt;inquireNamesForMech = (INQUIRE_NAMES_FOR_MECH_FN_PTR)
+ 229  250                          GETFUNC(gssLib, INQUIRE_NAMES_FOR_MECH);
+ 230  251      if (ftab-&gt;inquireNamesForMech == NULL) {
+ 231  252          failed = TRUE;
+ 232  253          goto out;
+ 233  254      }
+ 234  255  
+ 235  256      ftab-&gt;addOidSetMember = (ADD_OID_SET_MEMBER_FN_PTR)
+ 236  257                          GETFUNC(gssLib, ADD_OID_SET_MEMBER);
+ 237  258      if (ftab-&gt;addOidSetMember == NULL) {
+ 238  259          failed = TRUE;
+ 239  260          goto out;
+ 240  261      }
+ 241  262  
+ 242  263      ftab-&gt;displayStatus = (DISPLAY_STATUS_FN_PTR)
+ 243  264                          GETFUNC(gssLib, DISPLAY_STATUS);
+ 244  265      if (ftab-&gt;displayStatus == NULL) {
+ 245  266          failed = TRUE;
+ 246  267          goto out;
+ 247  268      }
+ 248  269  
+ 249  270      ftab-&gt;createEmptyOidSet = (CREATE_EMPTY_OID_SET_FN_PTR)
+ 250  271                          GETFUNC(gssLib, CREATE_EMPTY_OID_SET);
+ 251  272      if (ftab-&gt;createEmptyOidSet == NULL) {
+ 252  273          failed = TRUE;
+ 253  274          goto out;
+ 254  275      }
+ 255  276  
+ 256  277      ftab-&gt;releaseOidSet = (RELEASE_OID_SET_FN_PTR)
+ 257  278                          GETFUNC(gssLib, RELEASE_OID_SET);
+ 258  279      if (ftab-&gt;releaseOidSet == NULL) {
+ 259  280          failed = TRUE;
+ 260  281          goto out;
+ 261  282      }
+ 262  283  
+ 263  284      ftab-&gt;releaseBuffer = (RELEASE_BUFFER_FN_PTR)
+ 264  285                          GETFUNC(gssLib, RELEASE_BUFFER);
+ 265  286      if (ftab-&gt;releaseBuffer == NULL) {
+ 266  287          failed = TRUE;
+ 267  288          goto out;
+ 268  289      }
+ 269  290  
+ 270  291      ftab-&gt;mechs = GSS_C_NO_OID_SET;
+ 271  292      major = (*ftab-&gt;indicateMechs)(&amp;minor, &amp;(ftab-&gt;mechs));
+ 272  293      if (ftab-&gt;mechs == NULL || ftab-&gt;mechs == GSS_C_NO_OID_SET) {
+ 273  294          failed = TRUE;
+ 274  295          goto out;
+ 275  296      }
+ 276  297  
+ 277  298  
+ 278  299  out:
+ 279  300      if (failed == TRUE) {
+ 280  301          if (gssLib != NULL) CLOSELIB(gssLib);
+ 281  302          if (ftab != NULL) free(ftab);
+ 282  303      }
+ 283  304      return failed;
+ 284  305  }
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">145 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 3; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 3; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

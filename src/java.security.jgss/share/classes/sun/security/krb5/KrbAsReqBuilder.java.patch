@@ -1,0 +1,12 @@
+--- old/src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java	2019-10-21 14:15:14.588474589 -0500
++++ new/src/java.security.jgss/share/classes/sun/security/krb5/KrbAsReqBuilder.java	2019-10-21 14:15:14.592474538 -0500
+@@ -473,6 +473,9 @@
+         }
+     }
+ 
++    // XXX It'd be nice to implement AutoCloseable with a close() that calls
++    // destroy()
++
+     /**
+      * Checks if the current state is the specified one.
+      * @param st the expected state

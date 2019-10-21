@@ -1,0 +1,419 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre>Add JGSS JNI bindings for gss cred store functions
+FIXME commentary
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().</pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 2005, 2009, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package sun.security.jgss.spnego;
+  27 
+  28 import org.ietf.jgss.*;
+  29 import sun.security.jgss.*;
+  30 import sun.security.jgss.spi.*;
+  31 import sun.security.jgss.krb5.Krb5MechFactory;
+  32 import sun.security.jgss.krb5.Krb5InitCredential;
+  33 import sun.security.jgss.krb5.Krb5AcceptCredential;
+  34 import sun.security.jgss.krb5.Krb5NameElement;
+  35 import java.security.Provider;
+  36 import java.util.Vector;
+<a name="1" id="anc1"></a>
+  37 
+  38 /**
+  39  * SpNego Mechanism plug in for JGSS
+  40  * This is the properties object required by the JGSS framework.
+  41  * All mechanism specific information is defined here.
+  42  *
+  43  * @author Seema Malkani
+  44  * @since 1.6
+  45  */
+  46 
+  47 public final class SpNegoMechFactory implements MechanismFactory {
+  48 
+  49     static final Provider PROVIDER =
+  50         new sun.security.jgss.SunProvider();
+  51 
+  52     static final Oid GSS_SPNEGO_MECH_OID =
+  53         GSSUtil.createOid("1.3.6.1.5.5.2");
+  54 
+  55     private static Oid[] nameTypes =
+  56         new Oid[] { GSSName.NT_USER_NAME,
+  57                         GSSName.NT_HOSTBASED_SERVICE,
+  58                         GSSName.NT_EXPORT_NAME};
+  59 
+  60     // The default underlying mech of SPNEGO, must not be SPNEGO itself.
+  61     private static final Oid DEFAULT_SPNEGO_MECH_OID =
+  62             ProviderList.DEFAULT_MECH_OID.equals(GSS_SPNEGO_MECH_OID)?
+  63                 GSSUtil.GSS_KRB5_MECH_OID:
+  64                 ProviderList.DEFAULT_MECH_OID;
+  65 
+  66     // Use an instance of a GSSManager whose provider list
+  67     // does not include native provider
+  68     final GSSManagerImpl manager;
+  69     final Oid[] availableMechs;
+  70 
+  71     private static SpNegoCredElement getCredFromSubject(GSSNameSpi name,
+  72                                                         boolean initiate)
+  73         throws GSSException {
+  74         Vector&lt;SpNegoCredElement&gt; creds =
+  75             GSSUtil.searchSubject(name, GSS_SPNEGO_MECH_OID,
+  76                 initiate, SpNegoCredElement.class);
+  77 
+  78         SpNegoCredElement result = ((creds == null || creds.isEmpty()) ?
+  79                                     null : creds.firstElement());
+  80 
+  81         // Force permission check before returning the cred to caller
+<a name="2" id="anc2"></a>
+
+
+
+  82         if (result != null) {
+  83             GSSCredentialSpi cred = result.getInternalCred();
+  84             if (GSSUtil.isKerberosMech(cred.getMechanism())) {
+  85                 if (initiate) {
+  86                     Krb5InitCredential krbCred = (Krb5InitCredential) cred;
+  87                     Krb5MechFactory.checkInitCredPermission
+  88                         ((Krb5NameElement) krbCred.getName());
+  89                 } else {
+  90                     Krb5AcceptCredential krbCred = (Krb5AcceptCredential) cred;
+  91                     Krb5MechFactory.checkAcceptCredPermission
+  92                         ((Krb5NameElement) krbCred.getName(), name);
+  93                 }
+  94             }
+  95         }
+  96         return result;
+  97     }
+  98 
+  99     public SpNegoMechFactory() {
+ 100         this(GSSCaller.CALLER_UNKNOWN);
+ 101     }
+ 102 
+ 103     public SpNegoMechFactory(GSSCaller caller) {
+ 104         manager = new GSSManagerImpl(caller, false);
+ 105         Oid[] mechs = manager.getMechs();
+ 106         availableMechs = new Oid[mechs.length-1];
+ 107         for (int i = 0, j = 0; i &lt; mechs.length; i++) {
+ 108             // Skip SpNego mechanism
+ 109             if (!mechs[i].equals(GSS_SPNEGO_MECH_OID)) {
+ 110                 availableMechs[j++] = mechs[i];
+ 111             }
+ 112         }
+ 113         // Move the preferred mech to first place
+ 114         for (int i=0; i&lt;availableMechs.length; i++) {
+ 115             if (availableMechs[i].equals(DEFAULT_SPNEGO_MECH_OID)) {
+ 116                 if (i != 0) {
+ 117                     availableMechs[i] = availableMechs[0];
+ 118                     availableMechs[0] = DEFAULT_SPNEGO_MECH_OID;
+ 119                 }
+ 120                 break;
+ 121             }
+ 122         }
+ 123     }
+ 124 
+ 125     public GSSNameSpi getNameElement(String nameStr, Oid nameType)
+ 126             throws GSSException {
+ 127         return manager.getNameElement(
+ 128                 nameStr, nameType, DEFAULT_SPNEGO_MECH_OID);
+ 129     }
+ 130 
+ 131     public GSSNameSpi getNameElement(byte[] name, Oid nameType)
+ 132             throws GSSException {
+ 133         return manager.getNameElement(name, nameType, DEFAULT_SPNEGO_MECH_OID);
+ 134     }
+ 135 
+ 136     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+ 137            int initLifetime, int acceptLifetime,
+ 138            int usage) throws GSSException {
+ 139 
+ 140         SpNegoCredElement credElement = getCredFromSubject
+ 141             (name, (usage != GSSCredential.ACCEPT_ONLY));
+ 142 
+ 143         if (credElement == null) {
+ 144             // get CredElement for the default Mechanism
+ 145             credElement = new SpNegoCredElement
+ 146                 (manager.getCredentialElement(name, initLifetime,
+ 147                 acceptLifetime, null, usage));
+ 148         }
+ 149         return credElement;
+<a name="3" id="anc3"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 150     }
+ 151 
+ 152     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+ 153                              GSSCredentialSpi myInitiatorCred, int lifetime)
+ 154         throws GSSException {
+ 155         // get SpNego mechanism context
+ 156         if (myInitiatorCred == null) {
+ 157             myInitiatorCred = getCredFromSubject(null, true);
+ 158         } else if (!(myInitiatorCred instanceof SpNegoCredElement)) {
+ 159             // convert to SpNegoCredElement
+ 160             SpNegoCredElement cred = new SpNegoCredElement(myInitiatorCred);
+ 161             return new SpNegoContext(this, peer, cred, lifetime);
+ 162         }
+ 163         return new SpNegoContext(this, peer, myInitiatorCred, lifetime);
+ 164     }
+ 165 
+ 166     public GSSContextSpi getMechanismContext(GSSCredentialSpi myAcceptorCred)
+ 167         throws GSSException {
+ 168         // get SpNego mechanism context
+ 169         if (myAcceptorCred == null) {
+ 170             myAcceptorCred = getCredFromSubject(null, false);
+ 171         } else if (!(myAcceptorCred instanceof SpNegoCredElement)) {
+ 172             // convert to SpNegoCredElement
+ 173             SpNegoCredElement cred = new SpNegoCredElement(myAcceptorCred);
+ 174             return new SpNegoContext(this, cred);
+ 175         }
+ 176         return new SpNegoContext(this, myAcceptorCred);
+ 177     }
+ 178 
+ 179     public GSSContextSpi getMechanismContext(byte[] exportedContext)
+ 180         throws GSSException {
+ 181         // get SpNego mechanism context
+ 182         return new SpNegoContext(this, exportedContext);
+ 183     }
+ 184 
+ 185     public final Oid getMechanismOid() {
+ 186         return GSS_SPNEGO_MECH_OID;
+ 187     }
+ 188 
+ 189     public Provider getProvider() {
+ 190         return PROVIDER;
+ 191     }
+ 192 
+ 193     public Oid[] getNameTypes() {
+ 194         // nameTypes is cloned in GSSManager.getNamesForMech
+ 195         return nameTypes;
+ 196     }
+ 197 }
+<a name="4" id="anc4"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="4" type="hidden"></input></form></body></html>

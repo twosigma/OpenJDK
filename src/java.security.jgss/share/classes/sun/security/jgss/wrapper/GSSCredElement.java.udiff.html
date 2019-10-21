@@ -1,0 +1,215 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Udiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+FIXME commentary
+Add isDefaultCredential() method to GSSCredentialSpi
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add actual mechanism to native GSSNameElement state</pre>
+        <pre>
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -24,10 +24,13 @@</span>
+  */
+ package sun.security.jgss.wrapper;
+ 
+ import org.ietf.jgss.*;
+ import java.security.Provider;
+<span class="new">+import java.util.Map;</span>
+<span class="new">+import java.util.List;</span>
+<span class="new">+import java.util.ArrayList;</span>
+ import sun.security.jgss.GSSUtil;
+ import sun.security.jgss.spi.GSSCredentialSpi;
+ import sun.security.jgss.spi.GSSNameSpi;
+ 
+ /**
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -40,13 +43,18 @@</span>
+ 
+     private int usage;
+     long pCred; // Pointer to the gss_cred_id_t structure
+     private GSSNameElement name = null;
+     private GSSLibStub cStub;
+<span class="new">+    public boolean isDefCred;</span>
+ 
+     // Perform the necessary ServicePermission check on this cred
+<span class="new">+    // FIXME Don't use any Krb5-specific code here.</span>
+     void doServicePermCheck() throws GSSException {
+<span class="new">+        // FIXME We need only do this check in initSecContext() and</span>
+<span class="new">+        // acceptSecContext(), so gut this here, and never ever do the</span>
+<span class="new">+        // Krb5Util.getTGSName(name) check.</span>
+         if (GSSUtil.isKerberosMech(cStub.getMech())) {
+             if (System.getSecurityManager() != null) {
+                 if (isInitiatorCredential()) {
+                     String tgsName = Krb5Util.getTGSName(name);
+                     Krb5Util.checkServicePermission(tgsName, "initiate");
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -67,24 +75,51 @@</span>
+         cStub = GSSLibStub.getInstance(mech);
+         usage = GSSCredential.INITIATE_ONLY;
+         name = srcName;
+     }
+ 
+<span class="removed">-    GSSCredElement(GSSNameElement name, int lifetime, int usage,</span>
+<span class="new">+    private GSSCredElement(GSSNameElement name, String password,</span>
+<span class="new">+                           Map&lt;String,String&gt; store, int lifetime, int usage,</span>
+                    GSSLibStub stub) throws GSSException {
+         cStub = stub;
+         this.usage = usage;
+ 
+         if (name != null) { // Could be GSSNameElement.DEF_ACCEPTOR
+             this.name = name;
+             doServicePermCheck();
+<span class="removed">-            pCred = cStub.acquireCred(this.name.pName, lifetime, usage);</span>
+<span class="new">+            pCred = cStub.acquireCred(this.name.pName, password, store,</span>
+<span class="new">+                lifetime, usage);</span>
+<span class="new">+            if (name == GSSNameElement.DEF_ACCEPTOR)</span>
+<span class="new">+                isDefCred = true;</span>
+         } else {
+<span class="removed">-            pCred = cStub.acquireCred(0, lifetime, usage);</span>
+<span class="removed">-            this.name = new GSSNameElement(cStub.getCredName(pCred), cStub);</span>
+<span class="new">+            pCred = cStub.acquireCred(0, password, store, lifetime, usage);</span>
+<span class="new">+            this.name = new GSSNameElement(cStub.getCredName(pCred), cStub.getMech(), cStub);</span>
+             doServicePermCheck();
+<span class="new">+            isDefCred = true;</span>
+<span class="new">+        }</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    GSSCredElement(GSSNameElement name, Map&lt;String,String&gt; store, int lifetime,</span>
+<span class="new">+                   int usage, GSSLibStub stub) throws GSSException {</span>
+<span class="new">+        this(name, (String)null, store, lifetime, usage, stub);</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    GSSCredElement(GSSNameElement name, String password, int lifetime,</span>
+<span class="new">+                   int usage, GSSLibStub stub) throws GSSException {</span>
+<span class="new">+        this(name, password, (Map&lt;String,String&gt;)null, lifetime, usage, stub);</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+<span class="new">+    GSSCredElement(GSSNameElement name, int lifetime, int usage,</span>
+<span class="new">+                   GSSLibStub stub) throws GSSException {</span>
+<span class="new">+        this(name, (String)null, lifetime, usage, stub);</span>
+         }
+<span class="new">+</span>
+<span class="new">+    public void storeInto(int usage, boolean overwrite, boolean defaultCred,</span>
+<span class="new">+                          Map&lt;String,String&gt; store)</span>
+<span class="new">+            throws GSSException {</span>
+<span class="new">+        cStub.storeCred(pCred, usage, getMechanism(), overwrite,</span>
+<span class="new">+                        defaultCred, store);</span>
+     }
+ 
+     public Provider getProvider() {
+         return SunNativeProvider.INSTANCE;
+     }
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -123,10 +158,14 @@</span>
+ 
+     public Oid getMechanism() {
+         return cStub.getMech();
+     }
+ 
+<span class="new">+    public boolean isDefaultCredential() {</span>
+<span class="new">+        return isDefCred;</span>
+<span class="new">+    }</span>
+<span class="new">+</span>
+     public String toString() {
+         // No hex bytes available for native impl
+         return "N/A";
+     }
+ 
+</pre></body></html>
+

@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Udiff src/java.security.jgss/share/native/libj2gss/NativeFunc.c</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method</pre>
+        <pre>
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -32,11 +32,15 @@</span>
+ static const char IMPORT_NAME[]                 = "gss_import_name";
+ static const char COMPARE_NAME[]                = "gss_compare_name";
+ static const char CANONICALIZE_NAME[]           = "gss_canonicalize_name";
+ static const char EXPORT_NAME[]                 = "gss_export_name";
+ static const char DISPLAY_NAME[]                = "gss_display_name";
+<span class="new">+static const char LOCAL_NAME[]                  = "gss_localname";</span>
+ static const char ACQUIRE_CRED[]                = "gss_acquire_cred";
+<span class="new">+static const char ACQUIRE_CRED_WITH_PASSWORD[]  = "gss_acquire_cred_with_password";</span>
+<span class="new">+static const char ACQUIRE_CRED_FROM[]           = "gss_acquire_cred_from";</span>
+<span class="new">+static const char STORE_CRED_INTO[]             = "gss_store_cred_into";</span>
+ static const char RELEASE_CRED[]                = "gss_release_cred";
+ static const char INQUIRE_CRED[]                = "gss_inquire_cred";
+ static const char IMPORT_SEC_CONTEXT[]          = "gss_import_sec_context";
+ static const char INIT_SEC_CONTEXT[]            = "gss_init_sec_context";
+ static const char ACCEPT_SEC_CONTEXT[]          = "gss_accept_sec_context";
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -120,16 +124,33 @@</span>
+     if (ftab-&gt;displayName == NULL) {
+         failed = TRUE;
+         goto out;
+     }
+ 
+<span class="new">+    /*</span>
+<span class="new">+     * This one may not be available for a given GSS library, as it's an</span>
+<span class="new">+     * extension, therefore we don't fail if it's missing.</span>
+<span class="new">+     */</span>
+<span class="new">+    ftab-&gt;localName = (LOCAL_NAME_FN_PTR)GETFUNC(gssLib, LOCAL_NAME);</span>
+<span class="new">+</span>
+     ftab-&gt;acquireCred = (ACQUIRE_CRED_FN_PTR)GETFUNC(gssLib, ACQUIRE_CRED);
+     if (ftab-&gt;acquireCred == NULL) {
+         failed = TRUE;
+         goto out;
+     }
+ 
+<span class="new">+    /*</span>
+<span class="new">+     * These may not be available for a given GSS library, as they are</span>
+<span class="new">+     * extensions, therefore we don't fail if it's missing.</span>
+<span class="new">+     */</span>
+<span class="new">+    ftab-&gt;acquireCredWithPassword = (ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)</span>
+<span class="new">+                        GETFUNC(gssLib, ACQUIRE_CRED_WITH_PASSWORD);</span>
+<span class="new">+    ftab-&gt;acquireCredFrom = (ACQUIRE_CRED_FROM_FN_PTR)</span>
+<span class="new">+                        GETFUNC(gssLib, ACQUIRE_CRED_FROM);</span>
+<span class="new">+    ftab-&gt;storeCredInto = (STORE_CRED_INTO_FN_PTR)</span>
+<span class="new">+                        GETFUNC(gssLib, STORE_CRED_INTO);</span>
+<span class="new">+</span>
+     ftab-&gt;releaseCred = (RELEASE_CRED_FN_PTR)GETFUNC(gssLib, RELEASE_CRED);
+     if (ftab-&gt;releaseCred == NULL) {
+         failed = TRUE;
+         goto out;
+     }
+</pre></body></html>
+

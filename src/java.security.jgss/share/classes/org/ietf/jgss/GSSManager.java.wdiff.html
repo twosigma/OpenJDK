@@ -1,0 +1,1199 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">17 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package org.ietf.jgss;
+  27   27  
+<span class='added'>       28 +import java.util.Map;
+</span>  28   29  import java.security.Provider;
+  29   30  
+  30   31  /**
+  31   32   * This class serves as a factory for other important
+  32   33   * GSS-API classes and also provides information about the mechanisms that
+  33   34   * are supported. It can create instances of classes
+  34   35   * implementing the following three GSS-API interfaces: {@link
+  35   36   * GSSName GSSName}, {@link GSSCredential GSSCredential}, and {@link
+  36   37   * GSSContext GSSContext}. It also has methods to query for the list
+  37   38   * of available mechanisms and the nametypes that each mechanism
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  38   39   * supports.&lt;p&gt;
+  39   40   *
+  40   41   * An instance of the default &lt;code&gt;GSSManager&lt;/code&gt; subclass
+  41   42   * may be obtained through the static method {@link #getInstance()
+  42   43   * getInstance}, but applications are free to instantiate other subclasses
+  43   44   * of &lt;code&gt;GSSManager&lt;/code&gt;. The default &lt;code&gt;GSSManager&lt;/code&gt; instance
+  44   45   * will support the Kerberos v5 GSS-API mechanism in addition to any
+  45   46   * others. This mechanism is identified by the Oid "1.2.840.113554.1.2.2"
+  46   47   * and is defined in RFC 1964.&lt;p&gt;
+  47   48   *
+  48   49   * A subclass extending the &lt;code&gt;GSSManager&lt;/code&gt; abstract class may be
+  49   50   * implemented  as a modular provider based layer that utilizes some well
+  50   51   * known  service provider specification. The &lt;code&gt;GSSManager&lt;/code&gt; API
+  51   52   * allows the application to set provider preferences on
+  52   53   * such an implementation. These methods also allow the implementation to
+  53   54   * throw a well-defined exception in case provider based configuration is
+  54   55   * not supported. Applications that expect to be portable should be aware
+  55   56   * of this and recover cleanly by catching the exception.&lt;p&gt;
+  56   57   *
+  57   58   * It is envisioned that there will be three most common ways in which
+  58   59   * providers will be used:
+  59   60   * &lt;ol&gt;
+  60   61   * &lt;li&gt; The application does not care about what provider is used (the
+  61   62   * default case).
+  62   63   * &lt;li&gt; The application wants a particular provider to be used
+  63   64   * preferentially, either for a particular mechanism or all the
+  64   65   * time, irrespective of mechanism.
+  65   66   * &lt;li&gt; The application wants to use the locally configured providers
+  66   67   * as far as possible but if support is missing for one or more
+  67   68   * mechanisms then it wants to fall back on its own provider.
+  68   69   *&lt;/ol&gt;&lt;p&gt;
+  69   70   *
+  70   71   * The &lt;code&gt;GSSManager&lt;/code&gt; class has two methods that enable these modes of
+  71   72   * usage:  {@link #addProviderAtFront(Provider, Oid) addProviderAtFront} and
+  72   73   * {@link #addProviderAtEnd(Provider, Oid) addProviderAtEnd}. These methods
+  73   74   * have the effect of creating an ordered list of &lt;i&gt;&amp;lt;provider,
+  74   75   * oid&amp;gt;&lt;/i&gt; pairs  where each pair indicates a preference of provider
+  75   76   * for a given oid.&lt;p&gt;
+  76   77   *
+  77   78   * It is important to note that there are certain interactions
+  78   79   * between the different GSS-API objects that are created by a
+  79   80   * GSSManager, where the provider that is used for a particular mechanism
+  80   81   * might need to be consistent across all objects. For instance, if a
+  81   82   * GSSCredential contains elements from a provider &lt;i&gt;p&lt;/i&gt; for a mechanism
+  82   83   * &lt;i&gt;m&lt;/i&gt;, it should generally be passed in to a GSSContext that will use
+  83   84   * provider &lt;i&gt;p&lt;/i&gt; for the mechanism &lt;i&gt;m&lt;/i&gt;. A simple rule of thumb
+  84   85   * that will maximize portability is that objects created from different
+  85   86   * GSSManager's should not be mixed, and if possible, a different
+  86   87   * GSSManager instance should be created if the application wants to invoke
+  87   88   * the &lt;code&gt;addProviderAtFront&lt;/code&gt; method on a GSSManager that has
+  88   89   * already created an object.&lt;p&gt;
+  89   90   *
+  90   91   *  Here is some sample code showing how the GSSManager might be used:
+  91   92   * &lt;pre&gt;
+  92   93   *     GSSManager manager = GSSManager.getInstance();
+  93   94   *
+  94   95   *     Oid krb5Mechanism = new Oid("1.2.840.113554.1.2.2");
+  95   96   *     Oid krb5PrincipalNameType = new Oid("1.2.840.113554.1.2.2.1");
+  96   97   *
+  97   98   *     // Identify who the client wishes to be
+  98   99   *     GSSName userName = manager.createName("duke", GSSName.NT_USER_NAME);
+  99  100   *
+ 100  101   *     // Identify the name of the server. This uses a Kerberos specific
+ 101  102   *     // name format.
+ 102  103   *     GSSName serverName = manager.createName("nfs/foo.sun.com",
+ 103  104   *                                             krb5PrincipalNameType);
+ 104  105   *
+ 105  106   *     // Acquire credentials for the user
+ 106  107   *     GSSCredential userCreds = manager.createCredential(userName,
+ 107  108   *                                             GSSCredential.DEFAULT_LIFETIME,
+ 108  109   *                                             krb5Mechanism,
+ 109  110   *                                             GSSCredential.INITIATE_ONLY);
+ 110  111   *
+ 111  112   *     // Instantiate and initialize a security context that will be
+ 112  113   *     // established with the server
+ 113  114   *     GSSContext context = manager.createContext(serverName,
+ 114  115   *                                                krb5Mechanism,
+ 115  116   *                                                userCreds,
+ 116  117   *                                                GSSContext.DEFAULT_LIFETIME);
+ 117  118   * &lt;/pre&gt;&lt;p&gt;
+ 118  119   *
+ 119  120   * The server side might use the following variation of this source:
+ 120  121   *
+ 121  122   * &lt;pre&gt;
+ 122  123   *     // Acquire credentials for the server
+ 123  124   *     GSSCredential serverCreds = manager.createCredential(serverName,
+ 124  125   *                                             GSSCredential.DEFAULT_LIFETIME,
+ 125  126   *                                             krb5Mechanism,
+ 126  127   *                                             GSSCredential.ACCEPT_ONLY);
+ 127  128   *
+ 128  129   *     // Instantiate and initialize a security context that will
+ 129  130   *     // wait for an establishment request token from the client
+ 130  131   *     GSSContext context = manager.createContext(serverCreds);
+ 131  132   * &lt;/pre&gt;
+ 132  133   *
+ 133  134   * @author Mayank Upadhyay
+ 134  135   * @see GSSName
+ 135  136   * @see GSSCredential
+ 136  137   * @see GSSContext
+ 137  138   * @since 1.4
+ 138  139   */
+ 139  140  public abstract class GSSManager {
+ 140  141  
+ 141  142      /**
+ 142  143       * Returns the default GSSManager implementation.
+ 143  144       *
+ 144  145       * @return a GSSManager implementation
+ 145  146       */
+ 146  147      public static GSSManager getInstance() {
+ 147  148          return new sun.security.jgss.GSSManagerImpl();
+ 148  149      }
+ 149  150  
+ 150  151      /**
+ 151  152       * Returns a list of mechanisms that are available to GSS-API callers
+ 152  153       * through this GSSManager. The default GSSManager obtained from the
+ 153  154       * {@link #getInstance() getInstance()} method includes the Oid
+ 154  155       * "1.2.840.113554.1.2.2" in its list. This Oid identifies the Kerberos
+ 155  156       * v5 GSS-API mechanism that is defined in RFC 1964.
+ 156  157       *
+ 157  158       * @return an array of Oid objects corresponding to the mechanisms that
+ 158  159       * are available. A &lt;code&gt;null&lt;/code&gt; value is returned when no
+ 159  160       * mechanism are available (an example of this would be when mechanism
+ 160  161       * are dynamically configured, and currently no mechanisms are
+ 161  162       * installed).
+ 162  163       */
+ 163  164      public  abstract Oid[] getMechs();
+ 164  165  
+ 165  166      /**
+ 166  167       * Returns then name types supported by the indicated mechanism.&lt;p&gt;
+ 167  168       *
+ 168  169       * The default GSSManager instance includes support for the Kerberos v5
+ 169  170       * mechanism. When this mechanism ("1.2.840.113554.1.2.2") is indicated,
+ 170  171       * the returned list will contain at least the following nametypes:
+ 171  172       * {@link GSSName#NT_HOSTBASED_SERVICE GSSName.NT_HOSTBASED_SERVICE},
+ 172  173       * {@link GSSName#NT_EXPORT_NAME GSSName.NT_EXPORT_NAME}, and the
+ 173  174       * Kerberos v5 specific Oid "1.2.840.113554.1.2.2.1". The namespace for
+ 174  175       * the Oid "1.2.840.113554.1.2.2.1" is defined in RFC 1964.
+ 175  176       *
+ 176  177       * @return an array of Oid objects corresponding to the name types that
+ 177  178       * the mechanism supports.
+ 178  179       * @param mech the Oid of the mechanism to query
+ 179  180       *
+ 180  181       * @see #getMechsForName(Oid)
+ 181  182       *
+ 182  183       * @throws GSSException containing the following
+ 183  184       * major error codes:
+ 184  185       *    {@link GSSException#BAD_MECH GSSException.BAD_MECH}
+ 185  186       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 186  187       */
+ 187  188      public abstract  Oid[] getNamesForMech(Oid mech)
+ 188  189          throws GSSException;
+ 189  190  
+ 190  191      /**
+ 191  192       * Returns a list of mechanisms that support the indicated name type.&lt;p&gt;
+ 192  193       *
+ 193  194       * The Kerberos v5 mechanism ("1.2.840.113554.1.2.2") will always be
+ 194  195       * returned in this list when the indicated nametype is one of
+ 195  196       * {@link GSSName#NT_HOSTBASED_SERVICE GSSName.NT_HOSTBASED_SERVICE},
+ 196  197       * {@link GSSName#NT_EXPORT_NAME GSSName.NT_EXPORT_NAME}, or
+ 197  198       * "1.2.840.113554.1.2.2.1".
+ 198  199       *
+ 199  200       * @return an array of Oid objects corresponding to the mechanisms that
+ 200  201       * support the specified name type.  &lt;code&gt;null&lt;/code&gt; is returned when no
+ 201  202       * mechanisms are found to support the specified name type.
+ 202  203       * @param nameType the Oid of the name type to look for
+ 203  204       *
+ 204  205       * @see #getNamesForMech(Oid)
+ 205  206       */
+ 206  207      public abstract  Oid[] getMechsForName(Oid nameType);
+ 207  208  
+ 208  209      /**
+ 209  210       * Factory method to convert a string name from the
+ 210  211       * specified namespace to a GSSName object. In general, the
+ 211  212       * &lt;code&gt;GSSName&lt;/code&gt; object created  will contain multiple
+ 212  213       * representations of the name, one for each mechanism that is
+ 213  214       * supported; two examples that are exceptions to this are when
+ 214  215       * the namespace type parameter indicates NT_EXPORT_NAME or when the
+ 215  216       * GSS-API implementation is not multi-mechanism. It is
+ 216  217       * not recommended to use this method with a NT_EXPORT_NAME type because
+ 217  218       * representing a previously exported name consisting of arbitrary bytes
+ 218  219       * as a String might cause problems with character encoding schemes. In
+ 219  220       * such cases it is recommended that the bytes be passed in directly to
+ 220  221       * the overloaded form of this method {@link #createName(byte[],
+ 221  222       * Oid) createName}.
+ 222  223       *
+ 223  224       * @param nameStr the string representing a printable form of the name to
+ 224  225       * create.
+ 225  226       * @param nameType the Oid specifying the namespace of the printable name
+ 226  227       * supplied. &lt;code&gt;null&lt;/code&gt; can be used to specify
+ 227  228       * that a mechanism specific default printable syntax should
+ 228  229       * be assumed by each mechanism that examines nameStr.
+ 229  230       * It is not advisable to use the nametype NT_EXPORT_NAME with this
+ 230  231       * method.
+ 231  232       * @return a GSSName representing the indicated principal
+ 232  233       *
+ 233  234       * @see GSSName
+ 234  235       * @see GSSName#NT_EXPORT_NAME
+ 235  236       *
+ 236  237       * @throws GSSException containing the following
+ 237  238       * major error codes:
+ 238  239       *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 239  240       *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 240  241       *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+ 241  242       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 242  243       */
+ 243  244      public abstract GSSName createName(String nameStr, Oid nameType)
+ 244  245          throws GSSException;
+ 245  246  
+ 246  247      /**
+ 247  248       * Factory method to convert a byte array containing a
+ 248  249       * name from the specified namespace to a GSSName object. In general,
+ 249  250       * the &lt;code&gt;GSSName&lt;/code&gt; object created  will contain multiple
+ 250  251       * representations of the name, one for each mechanism that is
+ 251  252       * supported; two examples that are exceptions to this are when the
+ 252  253       * namespace type parameter indicates NT_EXPORT_NAME or when the
+ 253  254       * GSS-API implementation is not multi-mechanism. The bytes that are
+ 254  255       * passed in are interpreted by each underlying mechanism according to
+ 255  256       * some encoding scheme of its choice for the given nametype.
+ 256  257       *
+ 257  258       * @param name the byte array containing the name to create
+ 258  259       * @param nameType the Oid specifying the namespace of the name supplied
+ 259  260       * in the byte array. &lt;code&gt;null&lt;/code&gt; can be used to specify that a
+ 260  261       * mechanism specific default syntax should be assumed by each mechanism
+ 261  262       * that examines the byte array.
+ 262  263       * @return a GSSName representing the indicated principal
+ 263  264       *
+ 264  265       * @see GSSName
+ 265  266       * @see GSSName#NT_EXPORT_NAME
+ 266  267       *
+ 267  268       * @throws GSSException containing the following
+ 268  269       * major error codes:
+ 269  270       *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 270  271       *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 271  272       *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+ 272  273       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 273  274       */
+ 274  275      public abstract GSSName createName(byte name[], Oid nameType)
+ 275  276          throws GSSException;
+ 276  277  
+ 277  278      /**
+ 278  279       *  Factory method to convert a string name from the
+ 279  280       * specified namespace to a GSSName object and canonicalize it at the
+ 280  281       * same time for a mechanism. In other words, this method is
+ 281  282       * a utility that does the equivalent of two steps: the {@link
+ 282  283       * #createName(String, Oid) createName} and then also the {@link
+ 283  284       * GSSName#canonicalize(Oid) GSSName.canonicalize}.
+ 284  285       *
+ 285  286       * @param nameStr the string representing a printable form of the name to
+ 286  287       * create.
+ 287  288       * @param nameType the Oid specifying the namespace of the printable name
+ 288  289       * supplied. &lt;code&gt;null&lt;/code&gt; can be used to specify
+ 289  290       * that a mechanism specific default printable syntax should
+ 290  291       * be assumed by each mechanism that examines nameStr.
+ 291  292       * It is not advisable to use the nametype NT_EXPORT_NAME with this
+ 292  293       * method.
+ 293  294       * @param mech Oid specifying the mechanism for which the name should be
+ 294  295       * canonicalized
+ 295  296       * @return a GSSName representing the indicated principal
+ 296  297       *
+ 297  298       * @see GSSName#canonicalize(Oid)
+ 298  299       * @see GSSName#NT_EXPORT_NAME
+ 299  300       *
+ 300  301       * @throws GSSException containing the following
+ 301  302       * major error codes:
+ 302  303       *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 303  304       *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 304  305       *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+ 305  306       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 306  307       */
+ 307  308      public abstract GSSName createName(String nameStr, Oid nameType,
+ 308  309                                         Oid mech) throws GSSException;
+ 309  310  
+ 310  311      /**
+ 311  312       *  Factory method to convert a byte array containing a
+ 312  313       * name from the specified namespace to a GSSName object and canonicalize
+ 313  314       * it at the same time for a mechanism. In other words, this method is a
+ 314  315       * utility that does the equivalent of two steps: the {@link
+ 315  316       * #createName(byte[], Oid) createName} and then also {@link
+ 316  317       * GSSName#canonicalize(Oid) GSSName.canonicalize}.
+ 317  318       *
+ 318  319       * @param name the byte array containing the name to create
+ 319  320       * @param nameType the Oid specifying the namespace of the name supplied
+ 320  321       * in the byte array. &lt;code&gt;null&lt;/code&gt; can be used to specify that a
+ 321  322       * mechanism specific default syntax should be assumed by each mechanism
+ 322  323       * that examines the byte array.
+ 323  324       * @param mech Oid specifying the mechanism for which the name should be
+ 324  325       * canonicalized
+ 325  326       * @return a GSSName representing the indicated principal
+ 326  327       *
+ 327  328       * @see GSSName#canonicalize(Oid)
+ 328  329       * @see GSSName#NT_EXPORT_NAME
+ 329  330       *
+ 330  331       * @throws GSSException containing the following
+ 331  332       * major error codes:
+ 332  333       *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 333  334       *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 334  335       *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+ 335  336       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 336  337       */
+ 337  338      public abstract GSSName createName(byte name[], Oid nameType, Oid mech)
+ 338  339          throws GSSException;
+ 339  340  
+ 340  341      /**
+ 341  342       * Factory method for acquiring default credentials.  This will cause
+ 342  343       * the GSS-API to use system specific defaults for the set of mechanisms,
+ 343  344       * name, and lifetime.&lt;p&gt;
+ 344  345       *
+ 345  346       * GSS-API mechanism providers must impose a local access-control
+ 346  347       * policy on callers to prevent unauthorized callers from acquiring
+ 347  348       * credentials to which they are not entitled. The kinds of permissions
+ 348  349       * needed by different mechanism providers will be documented on a
+ 349  350       * per-mechanism basis. A failed permission check might cause a {@link
+ 350  351       * java.lang.SecurityException SecurityException} to be thrown from
+ 351  352       * this method.
+ 352  353       *
+ 353  354       * @param usage The intended usage for this credential object. The value
+ 354  355       * of this parameter must be one of:
+ 355  356       * {@link GSSCredential#INITIATE_AND_ACCEPT
+ 356  357       * GSSCredential.INITIATE_AND_ACCEPT},
+ 357  358       * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and
+ 358  359       * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.
+ 359  360       * @return a GSSCredential of the requested type.
+ 360  361       *
+ 361  362       * @see GSSCredential
+ 362  363       *
+ 363  364       * @throws GSSException containing the following
+ 364  365       * major error codes:
+ 365  366       *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+ 366  367       *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 367  368       *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 368  369       *    {@link GSSException#CREDENTIALS_EXPIRED
+ 369  370       *                                   GSSException.CREDENTIALS_EXPIRED},
+ 370  371       *    {@link GSSException#NO_CRED GSSException.NO_CRED},
+ 371  372       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 372  373       */
+ 373  374      public abstract GSSCredential createCredential (int usage)
+ 374  375          throws GSSException;
+ 375  376  
+ 376  377      /**
+ 377  378       * Factory method for acquiring a single mechanism credential.&lt;p&gt;
+ 378  379       *
+ 379  380       * GSS-API mechanism providers must impose a local access-control
+ 380  381       * policy on callers to prevent unauthorized callers from acquiring
+ 381  382       * credentials to which they are not entitled. The kinds of permissions
+ 382  383       * needed by different mechanism providers will be documented on a
+ 383  384       * per-mechanism basis. A failed permission check might cause a {@link
+ 384  385       * java.lang.SecurityException SecurityException} to be thrown from
+ 385  386       * this method. &lt;p&gt;
+ 386  387       *
+ 387  388       * Non-default values for lifetime cannot always be honored by the
+ 388  389       * underlying mechanisms, thus applications should be prepared to call
+ 389  390       * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
+ 390  391       * on the returned credential.
+ 391  392       *
+ 392  393       * @param name the name of the principal for whom this credential is to be
+ 393  394       * acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default principal.
+ 394  395       * @param lifetime The number of seconds that credentials should remain
+ 395  396       * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
+ 396  397       * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
+ 397  398       * have the maximum permitted lifetime.  Use {@link
+ 398  399       * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to
+ 399  400       * request default credential lifetime.
+ 400  401       * @param mech the Oid of the desired mechanism.  Use &lt;code&gt;(Oid) null
+ 401  402       * &lt;/code&gt; to request the default mechanism.
+ 402  403       * @param usage The intended usage for this credential object. The value
+ 403  404       * of this parameter must be one of:
+ 404  405       * {@link GSSCredential#INITIATE_AND_ACCEPT
+ 405  406       * GSSCredential.INITIATE_AND_ACCEPT},
+ 406  407       * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and
+ 407  408       * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.
+ 408  409       * @return a GSSCredential of the requested type.
+ 409  410       *
+ 410  411       * @see GSSCredential
+ 411  412       *
+ 412  413       * @throws GSSException containing the following
+ 413  414       * major error codes:
+ 414  415       *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+ 415  416       *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 416  417       *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">379 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 417  418       *    {@link GSSException#CREDENTIALS_EXPIRED
+ 418  419       *                                   GSSException.CREDENTIALS_EXPIRED},
+ 419  420       *    {@link GSSException#NO_CRED GSSException.NO_CRED},
+ 420  421       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 421  422       */
+ 422  423      public abstract GSSCredential createCredential (GSSName name,
+ 423  424                                    int lifetime, Oid mech, int usage)
+ 424  425          throws GSSException;
+ 425  426  
+ 426  427      /**
+<span class='added'>      428 +     * Factory method for acquiring a single mechanism credential with a
+      429 +     * password.&lt;p&gt;
+      430 +     *
+      431 +     * GSS-API mechanism providers must impose a local access-control
+      432 +     * policy on callers to prevent unauthorized callers from acquiring
+      433 +     * credentials to which they are not entitled. The kinds of permissions
+      434 +     * needed by different mechanism providers will be documented on a
+      435 +     * per-mechanism basis. A failed permission check might cause a {@link
+      436 +     * java.lang.SecurityException SecurityException} to be thrown from
+      437 +     * this method. &lt;p&gt;
+      438 +     *
+      439 +     * Non-default values for lifetime cannot always be honored by the
+      440 +     * underlying mechanisms, thus applications should be prepared to call
+      441 +     * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
+      442 +     * on the returned credential.&lt;p&gt;
+      443 +     *
+      444 +     * @param name the name of the principal for whom this credential is to be
+      445 +     * acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default principal.
+      446 +     * @param password The password for the principal.
+      447 +     * @param lifetime The number of seconds that credentials should remain
+      448 +     * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
+      449 +     * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
+      450 +     * have the maximum permitted lifetime.  Use {@link
+      451 +     * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to
+      452 +     * request default credential lifetime.
+      453 +     * @param mech the Oid of the desired mechanism.  Use &lt;code&gt;(Oid) null
+      454 +     * &lt;/code&gt; to request the default mechanism.
+      455 +     * @param usage The intended usage for this credential object. The value
+      456 +     * of this parameter must be one of:
+      457 +     * {@link GSSCredential#INITIATE_AND_ACCEPT
+      458 +     * GSSCredential.INITIATE_AND_ACCEPT},
+      459 +     * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and
+      460 +     * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.
+      461 +     * @return a GSSCredential of the requested type.
+      462 +     *
+      463 +     * @see GSSCredential
+      464 +     *
+      465 +     * @throws GSSException containing the following
+      466 +     * major error codes:
+      467 +     *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+      468 +     *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+      469 +     *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+      470 +     *    {@link GSSException#CREDENTIALS_EXPIRED
+      471 +     *                                   GSSException.CREDENTIALS_EXPIRED},
+      472 +     *    {@link GSSException#NO_CRED GSSException.NO_CRED},
+      473 +     *    {@link GSSException#FAILURE GSSException.FAILURE}
+      474 +     */
+      475 +    public abstract GSSCredential createCredential (GSSName name,
+      476 +                                  String password, int lifetime, Oid mech,
+      477 +                                  int usage)
+      478 +        throws GSSException;
+      479 +
+      480 +    /**
+      481 +     * Factory method for acquiring a single mechanism credential from
+      482 +     * an external credential store.&lt;p&gt;
+      483 +     *
+      484 +     * GSS-API mechanism providers must impose a local access-control
+      485 +     * policy on callers to prevent unauthorized callers from acquiring
+      486 +     * credentials to which they are not entitled. The kinds of permissions
+      487 +     * needed by different mechanism providers will be documented on a
+      488 +     * per-mechanism basis. A failed permission check might cause a {@link
+      489 +     * java.lang.SecurityException SecurityException} to be thrown from
+      490 +     * this method. &lt;p&gt;
+      491 +     *
+      492 +     * Non-default values for lifetime cannot always be honored by the
+      493 +     * underlying mechanisms, thus applications should be prepared to call
+      494 +     * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
+      495 +     * on the returned credential.&lt;p&gt;
+      496 +     *
+      497 +     * @param name the name of the principal for whom this credential is to be
+      498 +     * acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default principal.
+      499 +     * @param store A description of an external credential store.
+      500 +     * Common keys supported by platform-native GSS-API providers
+      501 +     * include: {@code ccache} and {@code keytab}, with the values being
+      502 +     * typically file paths.  Consult the documentation for your
+      503 +     * platform's native GSS-API providers.  The Java-native Krb5
+      504 +     * provider does not support this method at this time.
+      505 +     * @param lifetime The number of seconds that credentials should remain
+      506 +     * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
+      507 +     * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
+      508 +     * have the maximum permitted lifetime.  Use {@link
+      509 +     * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to
+      510 +     * request default credential lifetime.
+      511 +     * @param mech the Oid of the desired mechanism.  Use &lt;code&gt;(Oid) null
+      512 +     * &lt;/code&gt; to request the default mechanism.
+      513 +     * @param usage The intended usage for this credential object. The value
+      514 +     * of this parameter must be one of:
+      515 +     * {@link GSSCredential#INITIATE_AND_ACCEPT
+      516 +     * GSSCredential.INITIATE_AND_ACCEPT},
+      517 +     * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and
+      518 +     * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.
+      519 +     * @return a GSSCredential of the requested type.
+      520 +     *
+      521 +     * @see GSSCredential
+      522 +     *
+      523 +     * @throws GSSException containing the following
+      524 +     * major error codes:
+      525 +     *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+      526 +     *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+      527 +     *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+      528 +     *    {@link GSSException#CREDENTIALS_EXPIRED
+      529 +     *                                   GSSException.CREDENTIALS_EXPIRED},
+      530 +     *    {@link GSSException#NO_CRED GSSException.NO_CRED},
+      531 +     *    {@link GSSException#FAILURE GSSException.FAILURE}
+      532 +     */
+      533 +    public abstract GSSCredential createCredential (GSSName name,
+      534 +                                  Map&lt;String,String&gt; store, int lifetime,
+      535 +                                  Oid mech, int usage)
+      536 +        throws GSSException;
+      537 +
+      538 +    /**
+</span> 427  539       * Factory method for acquiring credentials over a set of
+ 428  540       * mechanisms. This method attempts to acquire credentials for
+ 429  541       * each of the mechanisms specified in the array called mechs.  To
+ 430  542       * determine the list of mechanisms for which the acquisition of
+ 431  543       * credentials succeeded, the caller should use the {@link
+ 432  544       * GSSCredential#getMechs() GSSCredential.getMechs} method.&lt;p&gt;
+ 433  545       *
+ 434  546       * GSS-API mechanism providers must impose a local access-control
+ 435  547       * policy on callers to prevent unauthorized callers from acquiring
+ 436  548       * credentials to which they are not entitled. The kinds of permissions
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 437  549       * needed by different mechanism providers will be documented on a
+ 438  550       * per-mechanism basis. A failed permission check might cause a {@link
+ 439  551       * java.lang.SecurityException SecurityException} to be thrown from
+ 440  552       * this method.&lt;p&gt;
+ 441  553       *
+ 442  554       * Non-default values for lifetime cannot always be honored by the
+ 443  555       * underlying mechanisms, thus applications should be prepared to call
+ 444  556       * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
+ 445  557       * on the returned credential.
+ 446  558       *
+ 447  559       * @param name the name of the principal for whom this credential is to
+ 448  560       * be acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default
+ 449  561       * principal.
+ 450  562       * @param lifetime The number of seconds that credentials should remain
+ 451  563       * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
+ 452  564       * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
+ 453  565       * have the maximum permitted lifetime.  Use {@link
+ 454  566       * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to
+ 455  567       * request default credential lifetime.
+ 456  568       * @param mechs an array of Oid's indicating the mechanisms over which
+ 457  569       * the credential is to be acquired.  Use &lt;code&gt;(Oid[]) null&lt;/code&gt; for
+ 458  570       * requesting a system specific default set of mechanisms.
+ 459  571       * @param usage The intended usage for this credential object. The value
+ 460  572       * of this parameter must be one of:
+ 461  573       * {@link GSSCredential#INITIATE_AND_ACCEPT
+ 462  574       * GSSCredential.INITIATE_AND_ACCEPT},
+ 463  575       * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and
+ 464  576       * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.
+ 465  577       * @return a GSSCredential of the requested type.
+ 466  578       *
+ 467  579       * @see GSSCredential
+ 468  580       *
+ 469  581       * @throws GSSException containing the following
+ 470  582       * major error codes:
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">34 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 471  583       *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+ 472  584       *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+ 473  585       *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+ 474  586       *    {@link GSSException#CREDENTIALS_EXPIRED
+ 475  587       *                                   GSSException.CREDENTIALS_EXPIRED},
+ 476  588       *    {@link GSSException#NO_CRED GSSException.NO_CRED},
+ 477  589       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 478  590       */
+ 479  591      public abstract GSSCredential createCredential(GSSName name,
+ 480  592                                        int lifetime, Oid mechs[], int usage)
+<span class='added'>      593 +        throws GSSException;
+      594 +
+      595 +    /**
+      596 +     * Factory method for acquiring credentials with a password over a set of
+      597 +     * mechanisms. This method attempts to acquire credentials for
+      598 +     * each of the mechanisms specified in the array called mechs.  To
+      599 +     * determine the list of mechanisms for which the acquisition of
+      600 +     * credentials succeeded, the caller should use the {@link
+      601 +     * GSSCredential#getMechs() GSSCredential.getMechs} method.&lt;p&gt;
+      602 +     *
+      603 +     * GSS-API mechanism providers must impose a local access-control
+      604 +     * policy on callers to prevent unauthorized callers from acquiring
+      605 +     * credentials to which they are not entitled. The kinds of permissions
+      606 +     * needed by different mechanism providers will be documented on a
+      607 +     * per-mechanism basis. A failed permission check might cause a {@link
+      608 +     * java.lang.SecurityException SecurityException} to be thrown from
+      609 +     * this method.&lt;p&gt;
+      610 +     *
+      611 +     * Non-default values for lifetime cannot always be honored by the
+      612 +     * underlying mechanisms, thus applications should be prepared to call
+      613 +     * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
+      614 +     * on the returned credential.&lt;p&gt;
+      615 +     *
+      616 +     * @param name the name of the principal for whom this credential is to
+      617 +     * be acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default
+      618 +     * principal.
+      619 +     * @param password The password for the principal.
+      620 +     * @param lifetime The number of seconds that credentials should remain
+      621 +     * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
+      622 +     * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
+      623 +     * have the maximum permitted lifetime.  Use {@link
+      624 +     * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to
+      625 +     * request default credential lifetime.
+      626 +     * @param mechs an array of Oid's indicating the mechanisms over which
+      627 +     * the credential is to be acquired.  Use &lt;code&gt;(Oid[]) null&lt;/code&gt; for
+      628 +     * requesting a system specific default set of mechanisms.
+      629 +     * @param usage The intended usage for this credential object. The value
+      630 +     * of this parameter must be one of:
+      631 +     * {@link GSSCredential#INITIATE_AND_ACCEPT
+      632 +     * GSSCredential.INITIATE_AND_ACCEPT},
+      633 +     * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and
+      634 +     * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.
+      635 +     * @return a GSSCredential of the requested type.
+      636 +     *
+      637 +     * @see GSSCredential
+      638 +     *
+      639 +     * @throws GSSException containing the following
+      640 +     * major error codes:
+      641 +     *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+      642 +     *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+      643 +     *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+      644 +     *    {@link GSSException#CREDENTIALS_EXPIRED
+      645 +     *                                   GSSException.CREDENTIALS_EXPIRED},
+      646 +     *    {@link GSSException#NO_CRED GSSException.NO_CRED},
+      647 +     *    {@link GSSException#FAILURE GSSException.FAILURE}
+      648 +     */
+      649 +    public abstract GSSCredential createCredential(GSSName name,
+      650 +                                      String password, int lifetime,
+      651 +                                      Oid mechs[], int usage)
+      652 +        throws GSSException;
+      653 +
+      654 +    /**
+      655 +     * Factory method for acquiring credentials with a "credential
+      656 +     * store" over a set of mechanisms. This method attempts to acquire
+      657 +     * credentials for each of the mechanisms specified in the array
+      658 +     * called mechs.  To determine the list of mechanisms for which the
+      659 +     * acquisition of credentials succeeded, the caller should use the
+      660 +     * {@link GSSCredential#getMechs() GSSCredential.getMechs}
+      661 +     * method.&lt;p&gt;
+      662 +     *
+      663 +     * GSS-API mechanism providers must impose a local access-control
+      664 +     * policy on callers to prevent unauthorized callers from acquiring
+      665 +     * credentials to which they are not entitled. The kinds of permissions
+      666 +     * needed by different mechanism providers will be documented on a
+      667 +     * per-mechanism basis. A failed permission check might cause a {@link
+      668 +     * java.lang.SecurityException SecurityException} to be thrown from
+      669 +     * this method.&lt;p&gt;
+      670 +     *
+      671 +     * Non-default values for lifetime cannot always be honored by the
+      672 +     * underlying mechanisms, thus applications should be prepared to call
+      673 +     * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
+      674 +     * on the returned credential.&lt;p&gt;
+      675 +     *
+      676 +     * @param name the name of the principal for whom this credential is to
+      677 +     * be acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default
+      678 +     * principal.
+      679 +     * @param store Map of string key and values describing how to
+      680 +     * acquire the credential. Consult the documentation for the various
+      681 +     * GSS mechanisms.
+      682 +     * @param lifetime The number of seconds that credentials should remain
+      683 +     * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
+      684 +     * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
+      685 +     * have the maximum permitted lifetime.  Use {@link
+      686 +     * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to
+      687 +     * request default credential lifetime.
+      688 +     * @param mechs an array of Oid's indicating the mechanisms over which
+      689 +     * the credential is to be acquired.  Use &lt;code&gt;(Oid[]) null&lt;/code&gt; for
+      690 +     * requesting a system specific default set of mechanisms.
+      691 +     * @param usage The intended usage for this credential object. The value
+      692 +     * of this parameter must be one of:
+      693 +     * {@link GSSCredential#INITIATE_AND_ACCEPT
+      694 +     * GSSCredential.INITIATE_AND_ACCEPT},
+      695 +     * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and
+      696 +     * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.
+      697 +     * @return a GSSCredential of the requested type.
+      698 +     *
+      699 +     * @see GSSCredential
+      700 +     *
+      701 +     * @throws GSSException containing the following
+      702 +     * major error codes:
+      703 +     *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
+      704 +     *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
+      705 +     *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
+      706 +     *    {@link GSSException#CREDENTIALS_EXPIRED
+      707 +     *                                   GSSException.CREDENTIALS_EXPIRED},
+      708 +     *    {@link GSSException#NO_CRED GSSException.NO_CRED},
+      709 +     *    {@link GSSException#FAILURE GSSException.FAILURE}
+      710 +     */
+      711 +    public abstract GSSCredential createCredential(GSSName name,
+      712 +                                      Map&lt;String,String&gt; store, int lifetime,
+      713 +                                      Oid mechs[], int usage)
+</span> 481  714          throws GSSException;
+ 482  715  
+ 483  716      /**
+ 484  717       * Factory method for creating a context on the initiator's
+ 485  718       * side.
+ 486  719       *
+ 487  720       * Some mechanism providers might require that the caller be granted
+ 488  721       * permission to initiate a security context. A failed permission check
+ 489  722       * might cause a {@link java.lang.SecurityException SecurityException}
+ 490  723       * to be thrown from this method.&lt;p&gt;
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 491  724       *
+ 492  725       * Non-default values for lifetime cannot always be honored by the
+ 493  726       * underlying mechanism, thus applications should be prepared to call
+ 494  727       * {@link GSSContext#getLifetime() getLifetime} on the returned
+ 495  728       * context.
+ 496  729       *
+ 497  730       * @param peer the name of the target peer.
+ 498  731       * @param mech the Oid of the desired mechanism.  Use &lt;code&gt;null&lt;/code&gt;
+ 499  732       * to request the default mechanism.
+ 500  733       * @param myCred the credentials of the initiator.  Use
+ 501  734       * &lt;code&gt;null&lt;/code&gt; to act as the default initiator principal.
+ 502  735       * @param lifetime the lifetime, in seconds, requested for the
+ 503  736       * context. Use {@link GSSContext#INDEFINITE_LIFETIME
+ 504  737       * GSSContext.INDEFINITE_LIFETIME} to request that the context have the
+ 505  738       * maximum permitted lifetime. Use {@link GSSContext#DEFAULT_LIFETIME
+ 506  739       * GSSContext.DEFAULT_LIFETIME} to request a default lifetime for the
+ 507  740       * context.
+ 508  741       * @return an unestablished GSSContext
+ 509  742       *
+ 510  743       * @see GSSContext
+ 511  744       *
+ 512  745       * @throws GSSException containing the following
+ 513  746       * major error codes:
+ 514  747       *    {@link GSSException#NO_CRED GSSException.NO_CRED}
+ 515  748       *    {@link GSSException#CREDENTIALS_EXPIRED
+ 516  749       *                      GSSException.CREDENTIALS_EXPIRED}
+ 517  750       *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE}
+ 518  751       *    {@link GSSException#BAD_MECH GSSException.BAD_MECH}
+ 519  752       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 520  753       */
+ 521  754      public abstract GSSContext createContext(GSSName peer, Oid mech,
+ 522  755                                          GSSCredential myCred, int lifetime)
+ 523  756          throws GSSException;
+ 524  757  
+ 525  758     /**
+ 526  759      * Factory method for creating a context on the acceptor' side.  The
+ 527  760      * context's properties will be determined from the input token supplied
+ 528  761      * to the accept method.
+ 529  762      *
+ 530  763      * Some mechanism providers might require that the caller be granted
+ 531  764      * permission to accept a security context. A failed permission check
+ 532  765      * might cause a {@link java.lang.SecurityException SecurityException}
+ 533  766      * to be thrown from this method.
+ 534  767      *
+ 535  768      * @param myCred the credentials for the acceptor.  Use
+ 536  769      * &lt;code&gt;null&lt;/code&gt; to act as a default acceptor principal.
+ 537  770      * @return an unestablished GSSContext
+ 538  771      *
+ 539  772      * @see GSSContext
+ 540  773      *
+ 541  774      * @throws GSSException containing the following
+ 542  775      * major error codes:
+ 543  776      *    {@link GSSException#NO_CRED GSSException.NO_CRED}
+ 544  777      *    {@link GSSException#CREDENTIALS_EXPIRED
+ 545  778      *                        GSSException.CREDENTIALS_EXPIRED}
+ 546  779      *    {@link GSSException#BAD_MECH GSSException.BAD_MECH}
+ 547  780      *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 548  781      */
+ 549  782      public abstract GSSContext createContext(GSSCredential myCred)
+ 550  783          throws GSSException;
+ 551  784  
+ 552  785      /**
+ 553  786       * Factory method for creating a previously exported context.  The
+ 554  787       * context properties will be determined from the input token and
+ 555  788       * cannot be modified through the set methods.&lt;p&gt;
+ 556  789       *
+ 557  790       * Implementations are not required to support the inter-process
+ 558  791       * transfer of security contexts.  Before exporting a context, calling
+ 559  792       * the {@link GSSContext#isTransferable() GSSContext.isTransferable}
+ 560  793       * will indicate if the context is transferable. Calling this method in
+ 561  794       * an implementation that does not support it will result in a
+ 562  795       * &lt;code&gt;GSSException&lt;/code&gt; with the error
+ 563  796       * code {@link GSSException#UNAVAILABLE GSSException.UNAVAILABLE}.
+ 564  797       *
+ 565  798       * Some mechanism providers might require that the caller be granted
+ 566  799       * permission to initiate or accept a security context. A failed
+ 567  800       * permission check might cause a {@link java.lang.SecurityException
+ 568  801       * SecurityException} to be thrown from this method.
+ 569  802       *
+ 570  803       * @param interProcessToken the token previously emitted from the
+ 571  804       * export method.
+ 572  805       * @return the previously established GSSContext
+ 573  806       *
+ 574  807       * @see GSSContext
+ 575  808       *
+ 576  809       * @throws GSSException containing the following
+ 577  810       * major error codes:
+ 578  811       *    {@link GSSException#NO_CONTEXT GSSException.NO_CONTEXT},
+ 579  812       *    {@link GSSException#DEFECTIVE_TOKEN GSSException.DEFECTIVE_TOKEN},
+ 580  813       *    {@link GSSException#UNAVAILABLE GSSException.UNAVAILABLE},
+ 581  814       *    {@link GSSException#UNAUTHORIZED GSSException.UNAUTHORIZED},
+ 582  815       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 583  816       */
+ 584  817      public abstract GSSContext createContext(byte [] interProcessToken)
+ 585  818          throws GSSException;
+ 586  819  
+ 587  820      /**
+ 588  821       * This method is used to indicate to the GSSManager that the
+ 589  822       * application would like a particular provider to be used ahead of all
+ 590  823       * others when support is desired for the given mechanism. When a value
+ 591  824       * of null is used instead of an &lt;code&gt;Oid&lt;/code&gt; for the mechanism,
+ 592  825       * the GSSManager must use the indicated provider ahead of all others
+ 593  826       * no matter what the mechanism is. Only when the indicated provider
+ 594  827       * does not support the needed mechanism should the GSSManager move on
+ 595  828       * to a different provider.&lt;p&gt;
+ 596  829       *
+ 597  830       * Calling this method repeatedly preserves the older settings but
+ 598  831       * lowers them in preference thus forming an ordered list of provider
+ 599  832       * and &lt;code&gt;Oid&lt;/code&gt; pairs that grows at the top.&lt;p&gt;
+ 600  833       *
+ 601  834       * Calling addProviderAtFront with a null &lt;code&gt;Oid&lt;/code&gt; will remove
+ 602  835       * all previous preferences that were set for this provider in the
+ 603  836       * GSSManager instance. Calling addProviderAtFront with a non-null
+ 604  837       * &lt;code&gt;Oid&lt;/code&gt; will remove any previous preference that was set
+ 605  838       * using this mechanism and this provider together.&lt;p&gt;
+ 606  839       *
+ 607  840       * If the GSSManager implementation does not support an SPI with a
+ 608  841       * pluggable provider architecture it should throw a GSSException with
+ 609  842       * the status code GSSException.UNAVAILABLE to indicate that the
+ 610  843       * operation is unavailable.&lt;p&gt;
+ 611  844       *
+ 612  845       * Suppose an application desired that the provider A always be checked
+ 613  846       * first when any mechanism is needed, it would call:
+ 614  847       * &lt;pre&gt;
+ 615  848       *         GSSManager mgr = GSSManager.getInstance();
+ 616  849       *         // mgr may at this point have its own pre-configured list
+ 617  850       *         // of provider preferences. The following will prepend to
+ 618  851       *         // any such list:
+ 619  852       *
+ 620  853       *         mgr.addProviderAtFront(A, null);
+ 621  854       * &lt;/pre&gt;
+ 622  855       * Now if it also desired that the mechanism of Oid m1 always be
+ 623  856       * obtained from the provider B before the previously set A was checked,
+ 624  857       * it would call:
+ 625  858       * &lt;pre&gt;
+ 626  859       *         mgr.addProviderAtFront(B, m1);
+ 627  860       * &lt;/pre&gt;
+ 628  861       * The GSSManager would then first check with B if m1 was needed. In
+ 629  862       * case B did not provide support for m1, the GSSManager would continue
+ 630  863       * on to check with A.  If any mechanism m2 is needed where m2 is
+ 631  864       * different from m1 then the GSSManager would skip B and check with A
+ 632  865       * directly.&lt;p&gt;
+ 633  866       *
+ 634  867       * Suppose at a later time the following call is made to the same
+ 635  868       * GSSManager instance:
+ 636  869       * &lt;pre&gt;
+ 637  870       *         mgr.addProviderAtFront(B, null)
+ 638  871       * &lt;/pre&gt;
+ 639  872       * then the previous setting with the pair (B, m1) is subsumed by this
+ 640  873       * and should be removed. Effectively the list of preferences now
+ 641  874       * becomes {(B, null), (A, null),
+ 642  875       *         ... //followed by the pre-configured list.&lt;p&gt;
+ 643  876       *
+ 644  877       * Please note, however, that the following call:
+ 645  878       * &lt;pre&gt;
+ 646  879       *         mgr.addProviderAtFront(A, m3)
+ 647  880       * &lt;/pre&gt;
+ 648  881       * does not subsume the previous setting of (A, null) and the list will
+ 649  882       * effectively become {(A, m3), (B, null), (A, null), ...}
+ 650  883       *
+ 651  884       * @param p the provider instance that should be used whenever support
+ 652  885       * is needed for mech.
+ 653  886       * @param mech the mechanism for which the provider is being set
+ 654  887       *
+ 655  888       * @throws GSSException containing the following
+ 656  889       * major error codes:
+ 657  890       *    {@link GSSException#UNAVAILABLE GSSException.UNAVAILABLE},
+ 658  891       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 659  892       */
+ 660  893      public abstract void addProviderAtFront(Provider p, Oid mech)
+ 661  894          throws GSSException;
+ 662  895  
+ 663  896      /**
+ 664  897       * This method is used to indicate to the GSSManager that the
+ 665  898       * application would like a particular provider to be used if no other
+ 666  899       * provider can be found that supports the given mechanism. When a value
+ 667  900       * of null is used instead of an Oid for the mechanism, the GSSManager
+ 668  901       * must use the indicated provider for any mechanism.&lt;p&gt;
+ 669  902       *
+ 670  903       * Calling this method repeatedly preserves the older settings but
+ 671  904       * raises them above newer ones in preference thus forming an ordered
+ 672  905       * list of providers and Oid pairs that grows at the bottom. Thus the
+ 673  906       * older provider settings will be utilized first before this one is.&lt;p&gt;
+ 674  907       *
+ 675  908       * If there are any previously existing preferences that conflict with
+ 676  909       * the preference being set here, then the GSSManager should ignore this
+ 677  910       * request.&lt;p&gt;
+ 678  911       *
+ 679  912       * If the GSSManager implementation does not support an SPI with a
+ 680  913       * pluggable provider architecture it should throw a GSSException with
+ 681  914       * the status code GSSException.UNAVAILABLE to indicate that the
+ 682  915       * operation is unavailable.&lt;p&gt;
+ 683  916       *
+ 684  917       * Suppose an application desired that when a mechanism of Oid m1 is
+ 685  918       * needed the system default providers always be checked first, and only
+ 686  919       * when they do not support m1 should a provider A be checked. It would
+ 687  920       * then make the call:
+ 688  921       * &lt;pre&gt;
+ 689  922       *         GSSManager mgr = GSSManager.getInstance();
+ 690  923       *         mgr.addProviderAtEnd(A, m1);
+ 691  924       * &lt;/pre&gt;
+ 692  925       * Now, if it also desired that for all mechanisms the provider B be
+ 693  926       * checked after all configured providers have been checked, it would
+ 694  927       * then call:
+ 695  928       * &lt;pre&gt;
+ 696  929       *         mgr.addProviderAtEnd(B, null);
+ 697  930       * &lt;/pre&gt;
+ 698  931       * Effectively the list of preferences now becomes {..., (A, m1), (B,
+ 699  932       * null)}.&lt;p&gt;
+ 700  933       *
+ 701  934       * Suppose at a later time the following call is made to the same
+ 702  935       * GSSManager instance:
+ 703  936       * &lt;pre&gt;
+ 704  937       *         mgr.addProviderAtEnd(B, m2)
+ 705  938       * &lt;/pre&gt;
+ 706  939       * then the previous setting with the pair (B, null) subsumes this and
+ 707  940       * therefore this request should be ignored. The same would happen if a
+ 708  941       * request is made for the already existing pairs of (A, m1) or (B,
+ 709  942       * null).&lt;p&gt;
+ 710  943       *
+ 711  944       * Please note, however, that the following call:
+ 712  945       * &lt;pre&gt;
+ 713  946       *         mgr.addProviderAtEnd(A, null)
+ 714  947       * &lt;/pre&gt;
+ 715  948       * is not subsumed by the previous setting of (A, m1) and the list will
+ 716  949       * effectively become {..., (A, m1), (B, null), (A, null)}
+ 717  950       *
+ 718  951       * @param p the provider instance that should be used whenever support
+ 719  952       * is needed for mech.
+ 720  953       * @param mech the mechanism for which the provider is being set
+ 721  954       *
+ 722  955       * @throws GSSException containing the following
+ 723  956       * major error codes:
+ 724  957       *    {@link GSSException#UNAVAILABLE GSSException.UNAVAILABLE},
+ 725  958       *    {@link GSSException#FAILURE GSSException.FAILURE}
+ 726  959       */
+ 727  960      public abstract void addProviderAtEnd(Provider p, Oid mech)
+ 728  961          throws GSSException;
+ 729  962  }
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">239 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 4; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 4; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

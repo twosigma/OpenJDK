@@ -1,0 +1,179 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Udiff src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Make GSSName implement Principal (add getName())
+Add getLocalName() GSSName method</pre>
+        <pre>
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -22,10 +22,11 @@</span>
+  * or visit www.oracle.com if you need additional information or have any
+  * questions.
+  */
+ 
+ package org.ietf.jgss;
+<span class="new">+import java.security.Principal;</span>
+ 
+ /**
+  * This interface encapsulates a single GSS-API principal entity. The
+  * application obtains an implementation of this interface
+  * through one of the &lt;code&gt;createName&lt;/code&gt; methods that exist in the {@link
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -100,11 +101,11 @@</span>
+  * @see GSSManager#createName(byte[], Oid)
+  *
+  * @author Mayank Upadhyay
+  * @since 1.4
+  */
+<span class="removed">-public interface GSSName {</span>
+<span class="new">+public interface GSSName extends Principal {</span>
+ 
+     /**
+      * Oid indicating a host-based service name form.  It is used to
+      * represent services associated with host computers.  This name form
+      * is constructed using two elements, "service" and "hostname", as
+</pre><hr></hr><pre>
+<span class="newmarker">@@ -260,20 +261,50 @@</span>
+      *         {@link GSSException#FAILURE GSSException.FAILURE}
+      */
+     public byte[] export() throws GSSException;
+ 
+     /**
+<span class="new">+     * Returns a local username form of a mechanism name, if available.</span>
+<span class="new">+     */</span>
+<span class="new">+    public String getLocalName() throws GSSException;</span>
+<span class="new">+</span>
+<span class="new">+    /**</span>
+<span class="new">+     * Returns a local username form of a mechanism name, if available.</span>
+<span class="new">+     */</span>
+<span class="new">+    public String getLocalName(Oid mech) throws GSSException;</span>
+<span class="new">+</span>
+<span class="new">+    /**</span>
+      * Returns a textual representation of the &lt;code&gt;GSSName&lt;/code&gt; object.  To retrieve
+      * the printed name format, which determines the syntax of the returned
+      * string, use the {@link #getStringNameType() getStringNameType}
+      * method.
+      *
+      * @return a String representing this name in printable form.
+      */
+     public String toString();
+ 
+     /**
+<span class="new">+     * Returns a textual representation of the &lt;code&gt;GSSName&lt;/code&gt; object.</span>
+<span class="new">+     *</span>
+<span class="new">+     * If &lt;code&gt;this&lt;/code&gt; is not an MN then the returned name should be the</span>
+<span class="new">+     * same as the generic name used to construct it.  Otherwise the returned</span>
+<span class="new">+     * name may be a mechanism-specific name string.</span>
+<span class="new">+     *</span>
+<span class="new">+     * @return a String representing this name in printable form.</span>
+<span class="new">+     */</span>
+<span class="new">+    public String getName();</span>
+<span class="new">+</span>
+<span class="new">+    /**</span>
+<span class="new">+     * Returns a textual representation of the &lt;code&gt;GSSName&lt;/code&gt; object</span>
+<span class="new">+     * element corresponding to the given &lt;code&gt;mech&lt;/code&gt;.  This will be a</span>
+<span class="new">+     * mechanism-specific representation of &lt;code&gt;this&lt;/code.</span>
+<span class="new">+     *</span>
+<span class="new">+     * @return a String representing this name in printable form.</span>
+<span class="new">+     */</span>
+<span class="new">+    public String getName(Oid mech) throws GSSException;</span>
+<span class="new">+</span>
+<span class="new">+    /**</span>
+      * Returns the name type of the printable
+      * representation of this name that can be obtained from the &lt;code&gt;
+      * toString&lt;/code&gt; method.
+      *
+      * @return an Oid representing the namespace of the name returned
+</pre></body></html>
+

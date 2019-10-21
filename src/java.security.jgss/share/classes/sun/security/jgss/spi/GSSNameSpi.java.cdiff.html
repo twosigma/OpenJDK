@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Cdiff src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSNameSpi.java</title>
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add isDefaultCredential() method to GSSCredentialSpi
+Add getLocalName() GSSName method</pre>
+        <pre>
+<hr></hr><span class="oldmarker">*** 98,107 ****</span>
+<span class="newmarker">--- 98,124 ----</span>
+       * @see #getStringNameType()
+       * @overrides Object#toString
+       */
+      public String toString();
+  
+<span class="new">+     /**</span>
+<span class="new">+      * Returns a local username (platform-specific) corresponding to the</span>
+<span class="new">+      * principal name, and may return null when no username is known for the</span>
+<span class="new">+      * principal name.</span>
+<span class="new">+      *</span>
+<span class="new">+      * @return username corresponding to this name, if any</span>
+<span class="new">+      */</span>
+<span class="new">+     public String getLocalName() throws GSSException;</span>
+<span class="new">+ </span>
+<span class="new">+     /**</span>
+<span class="new">+      * Returns a local username (platform-specific) corresponding to the</span>
+<span class="new">+      * principal name, and may return null when no username is known for the</span>
+<span class="new">+      * principal name.</span>
+<span class="new">+      *</span>
+<span class="new">+      * @return username corresponding to this name, if any</span>
+<span class="new">+      */</span>
+<span class="new">+     public String getLocalName(Oid mech) throws GSSException;</span>
+  
+      /**
+       * Returns the oid describing the format of the printable name.
+       *
+       * @return the Oid for the format of the printed name
+<hr></hr><span class="oldmarker">*** 110,115 ****</span>
+<span class="newmarker">--- 127,138 ----</span>
+  
+      /**
+       * Indicates if this name object represents an Anonymous name.
+       */
+      public boolean isAnonymousName();
+<span class="new">+ </span>
+<span class="new">+     /**</span>
+<span class="new">+      * Indicates whether this name object refers to whatever name(s) the</span>
+<span class="new">+      * default credentials respond to.</span>
+<span class="new">+      */</span>
+<span class="new">+     public boolean isDefaultCredentialName();</span>
+  }
+</pre></body></html>
+

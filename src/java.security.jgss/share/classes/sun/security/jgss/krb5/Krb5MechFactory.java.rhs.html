@@ -1,0 +1,478 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().</pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package sun.security.jgss.krb5;
+  27 
+  28 import org.ietf.jgss.*;
+  29 import sun.security.jgss.GSSUtil;
+  30 import sun.security.jgss.GSSCaller;
+  31 import sun.security.jgss.spi.*;
+  32 import javax.security.auth.kerberos.ServicePermission;
+  33 import java.security.Provider;
+  34 import java.util.Vector;
+<a name="1" id="anc1"></a><span class="new">  35 import java.util.Map;</span>
+  36 
+  37 /**
+  38  * Krb5 Mechanism plug in for JGSS
+  39  * This is the properties object required by the JGSS framework.
+  40  * All mechanism specific information is defined here.
+  41  *
+  42  * @author Mayank Upadhyay
+  43  */
+  44 
+  45 public final class Krb5MechFactory implements MechanismFactory {
+  46 
+  47     private static final boolean DEBUG = Krb5Util.DEBUG;
+  48 
+  49     static final Provider PROVIDER =
+  50         new sun.security.jgss.SunProvider();
+  51 
+  52     static final Oid GSS_KRB5_MECH_OID =
+  53         createOid("1.2.840.113554.1.2.2");
+  54 
+  55     static final Oid NT_GSS_KRB5_PRINCIPAL =
+  56         createOid("1.2.840.113554.1.2.2.1");
+  57 
+  58     private static Oid[] nameTypes =
+  59         new Oid[] { GSSName.NT_USER_NAME,
+  60                         GSSName.NT_HOSTBASED_SERVICE,
+  61                         GSSName.NT_EXPORT_NAME,
+  62                         NT_GSS_KRB5_PRINCIPAL};
+  63 
+  64     final private GSSCaller caller;
+  65 
+  66     private static Krb5CredElement getCredFromSubject(GSSNameSpi name,
+  67                                                       boolean initiate)
+  68         throws GSSException {
+  69         Vector&lt;Krb5CredElement&gt; creds =
+  70             GSSUtil.searchSubject(name, GSS_KRB5_MECH_OID, initiate,
+  71                                   (initiate ?
+  72                                    Krb5InitCredential.class :
+  73                                    Krb5AcceptCredential.class));
+  74 
+  75         Krb5CredElement result = ((creds == null || creds.isEmpty()) ?
+  76                                   null : creds.firstElement());
+  77 
+  78         // Force permission check before returning the cred to caller
+  79         if (result != null) {
+  80             if (initiate) {
+  81                 checkInitCredPermission((Krb5NameElement) result.getName());
+  82             } else {
+  83                 checkAcceptCredPermission
+  84                     ((Krb5NameElement) result.getName(), name);
+  85             }
+  86         }
+  87         return result;
+  88     }
+  89 
+  90     public Krb5MechFactory() {
+  91         this(GSSCaller.CALLER_UNKNOWN);
+  92     }
+  93 
+  94     public Krb5MechFactory(GSSCaller caller) {
+  95         this.caller = caller;
+  96     }
+  97 
+  98     public GSSNameSpi getNameElement(String nameStr, Oid nameType)
+  99         throws GSSException {
+ 100         return Krb5NameElement.getInstance(nameStr, nameType);
+ 101     }
+ 102 
+ 103     public GSSNameSpi getNameElement(byte[] name, Oid nameType)
+ 104         throws GSSException {
+ 105         // At this point, even an exported name is stripped down to safe
+ 106         // bytes only
+ 107         // XXX Use encoding here
+ 108         return Krb5NameElement.getInstance(new String(name), nameType);
+ 109     }
+ 110 
+ 111     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+<a name="2" id="anc2"></a><span class="changed"> 112            String password, int initLifetime, int acceptLifetime,</span>
+ 113            int usage) throws GSSException {
+ 114 
+<a name="3" id="anc3"></a><span class="new"> 115         if (password != null) {</span>
+<span class="new"> 116             // XXX Implement!  Shouldn't be too hard...</span>
+<span class="new"> 117             throw new GSSException(GSSException.UNAVAILABLE, -1,</span>
+<span class="new"> 118                     "The Kerberos mechanism Java implementation does not " +</span>
+<span class="new"> 119                     "currently support acquiring GSS credentials handle " +</span>
+<span class="new"> 120                     "elements with a password");</span>
+<span class="new"> 121         }</span>
+<span class="new"> 122 </span>
+ 123         if (name != null &amp;&amp; !(name instanceof Krb5NameElement)) {
+ 124             name = Krb5NameElement.getInstance(name.toString(),
+ 125                                        name.getStringNameType());
+ 126         }
+ 127 
+ 128         Krb5CredElement credElement = getCredFromSubject
+ 129             (name, (usage != GSSCredential.ACCEPT_ONLY));
+ 130 
+ 131         if (credElement == null) {
+ 132             if (usage == GSSCredential.INITIATE_ONLY ||
+ 133                 usage == GSSCredential.INITIATE_AND_ACCEPT) {
+ 134                 credElement = Krb5InitCredential.getInstance
+ 135                     (caller, (Krb5NameElement) name, initLifetime);
+ 136                 credElement = Krb5ProxyCredential.tryImpersonation(
+ 137                         caller, (Krb5InitCredential)credElement);
+ 138                 checkInitCredPermission
+ 139                     ((Krb5NameElement) credElement.getName());
+ 140             } else if (usage == GSSCredential.ACCEPT_ONLY) {
+ 141                 credElement =
+ 142                     Krb5AcceptCredential.getInstance(caller,
+ 143                                                      (Krb5NameElement) name);
+ 144                 checkAcceptCredPermission
+ 145                     ((Krb5NameElement) credElement.getName(), name);
+ 146             } else
+ 147                 throw new GSSException(GSSException.FAILURE, -1,
+ 148                                        "Unknown usage mode requested");
+ 149         }
+ 150         return credElement;
+ 151     }
+ 152 
+<a name="4" id="anc4"></a><span class="new"> 153     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,</span>
+<span class="new"> 154            Map&lt;String,String&gt; store, int initLifetime, int acceptLifetime,</span>
+<span class="new"> 155            int usage) throws GSSException {</span>
+<span class="new"> 156 </span>
+<span class="new"> 157         if (store != null) {</span>
+<span class="new"> 158             // XXX Implement!  Shouldn't be too hard...</span>
+<span class="new"> 159             throw new GSSException(GSSException.UNAVAILABLE, -1,</span>
+<span class="new"> 160                     "The Kerberos mechanism Java implementation does not " +</span>
+<span class="new"> 161                     "currently support acquiring GSS credentials handle " +</span>
+<span class="new"> 162                     "elements using a \"credential store\"");</span>
+<span class="new"> 163         }</span>
+<span class="new"> 164 </span>
+<span class="new"> 165         if (name != null &amp;&amp; !(name instanceof Krb5NameElement)) {</span>
+<span class="new"> 166             name = Krb5NameElement.getInstance(name.toString(),</span>
+<span class="new"> 167                                        name.getStringNameType());</span>
+<span class="new"> 168         }</span>
+<span class="new"> 169 </span>
+<span class="new"> 170         Krb5CredElement credElement = getCredFromSubject</span>
+<span class="new"> 171             (name, (usage != GSSCredential.ACCEPT_ONLY));</span>
+<span class="new"> 172 </span>
+<span class="new"> 173         if (credElement == null) {</span>
+<span class="new"> 174             if (usage == GSSCredential.INITIATE_ONLY ||</span>
+<span class="new"> 175                 usage == GSSCredential.INITIATE_AND_ACCEPT) {</span>
+<span class="new"> 176                 credElement = Krb5InitCredential.getInstance</span>
+<span class="new"> 177                     (caller, (Krb5NameElement) name, initLifetime);</span>
+<span class="new"> 178                 checkInitCredPermission</span>
+<span class="new"> 179                     ((Krb5NameElement) credElement.getName());</span>
+<span class="new"> 180             } else if (usage == GSSCredential.ACCEPT_ONLY) {</span>
+<span class="new"> 181                 credElement =</span>
+<span class="new"> 182                     Krb5AcceptCredential.getInstance(caller,</span>
+<span class="new"> 183                                                      (Krb5NameElement) name);</span>
+<span class="new"> 184                 checkAcceptCredPermission</span>
+<span class="new"> 185                     ((Krb5NameElement) credElement.getName(), name);</span>
+<span class="new"> 186             } else</span>
+<span class="new"> 187                 throw new GSSException(GSSException.FAILURE, -1,</span>
+<span class="new"> 188                                        "Unknown usage mode requested");</span>
+<span class="new"> 189         }</span>
+<span class="new"> 190         return credElement;</span>
+<span class="new"> 191     }</span>
+<span class="new"> 192 </span>
+<span class="new"> 193     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,</span>
+<span class="new"> 194             int initLifetime, int acceptLifetime, int usage)</span>
+<span class="new"> 195         throws GSSException {</span>
+<span class="new"> 196         return getCredentialElement(name, initLifetime, acceptLifetime,</span>
+<span class="new"> 197             usage);</span>
+<span class="new"> 198     }</span>
+<span class="new"> 199 </span>
+<span class="new"> 200     public void storeCredInto(GSSCredentialSpi cred, int usage,</span>
+<span class="new"> 201                               boolean overwrite, boolean defaultCred,</span>
+<span class="new"> 202                               Map&lt;String,String&gt; store) throws GSSException {</span>
+<span class="new"> 203         throw new GSSException(GSSException.UNAVAILABLE, -1,</span>
+<span class="new"> 204                 "The Kerberos mechanism Java implementation does not " +</span>
+<span class="new"> 205                 "currently support storing GSS credentials handle " +</span>
+<span class="new"> 206                 "elements into a \"credential store\"");</span>
+<span class="new"> 207     }</span>
+<span class="new"> 208 </span>
+ 209     public static void checkInitCredPermission(Krb5NameElement name) {
+ 210         SecurityManager sm = System.getSecurityManager();
+ 211         if (sm != null) {
+ 212             String realm = (name.getKrb5PrincipalName()).getRealmAsString();
+ 213             String tgsPrincipal =
+ 214                 new String("krbtgt/" + realm + '@' + realm);
+ 215             ServicePermission perm =
+ 216                 new ServicePermission(tgsPrincipal, "initiate");
+ 217             try {
+ 218                 sm.checkPermission(perm);
+ 219             } catch (SecurityException e) {
+ 220                 if (DEBUG) {
+<a name="5" id="anc5"></a><span class="changed"> 221                     System.out.println("Permission to initiate " +</span>
+ 222                         "kerberos init credential" + e.getMessage());
+ 223                 }
+ 224                 throw e;
+ 225             }
+ 226         }
+ 227     }
+ 228 
+ 229     public static void checkAcceptCredPermission(Krb5NameElement name,
+ 230                                            GSSNameSpi originalName) {
+ 231         SecurityManager sm = System.getSecurityManager();
+ 232         if (sm != null &amp;&amp; name != null) {
+ 233             ServicePermission perm = new ServicePermission
+ 234                 (name.getKrb5PrincipalName().getName(), "accept");
+ 235             try {
+ 236                 sm.checkPermission(perm);
+ 237             } catch (SecurityException e) {
+ 238                 if (originalName == null) {
+ 239                     // Don't disclose the name of the principal
+ 240                     e = new SecurityException("No permission to acquire "
+ 241                                       + "Kerberos accept credential");
+ 242                     // Don't call e.initCause() with caught exception
+ 243                 }
+ 244                 throw e;
+ 245             }
+ 246         }
+ 247     }
+ 248 
+ 249     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+ 250                              GSSCredentialSpi myInitiatorCred, int lifetime)
+ 251         throws GSSException {
+ 252         if (peer != null &amp;&amp; !(peer instanceof Krb5NameElement)) {
+ 253             peer = Krb5NameElement.getInstance(peer.toString(),
+ 254                                        peer.getStringNameType());
+ 255         }
+ 256         // XXX Convert myInitiatorCred to Krb5CredElement
+ 257         if (myInitiatorCred == null) {
+ 258             myInitiatorCred = getCredentialElement(null, lifetime, 0,
+ 259                 GSSCredential.INITIATE_ONLY);
+ 260         }
+ 261         return new Krb5Context(caller, (Krb5NameElement)peer,
+ 262                                (Krb5CredElement)myInitiatorCred, lifetime);
+ 263     }
+ 264 
+ 265     public GSSContextSpi getMechanismContext(GSSCredentialSpi myAcceptorCred)
+ 266         throws GSSException {
+ 267         // XXX Convert myAcceptorCred to Krb5CredElement
+ 268         if (myAcceptorCred == null) {
+ 269             myAcceptorCred = getCredentialElement(null, 0,
+ 270                 GSSCredential.INDEFINITE_LIFETIME, GSSCredential.ACCEPT_ONLY);
+ 271         }
+ 272         return new Krb5Context(caller, (Krb5CredElement)myAcceptorCred);
+ 273     }
+ 274 
+ 275     public GSSContextSpi getMechanismContext(byte[] exportedContext)
+ 276         throws GSSException {
+ 277         return new Krb5Context(caller, exportedContext);
+ 278     }
+ 279 
+ 280 
+ 281     public final Oid getMechanismOid() {
+ 282         return GSS_KRB5_MECH_OID;
+ 283     }
+ 284 
+ 285     public Provider getProvider() {
+ 286         return PROVIDER;
+ 287     }
+ 288 
+ 289     public Oid[] getNameTypes() {
+ 290         // nameTypes is cloned in GSSManager.getNamesForMech
+ 291         return nameTypes;
+ 292     }
+ 293 
+ 294     private static Oid createOid(String oidStr) {
+ 295         Oid retVal = null;
+ 296         try {
+ 297             retVal = new Oid(oidStr);
+ 298         } catch (GSSException e) {
+ 299             // Should not happen!
+ 300         }
+ 301         return retVal;
+ 302     }
+ 303 }
+<a name="6" id="anc6"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="6" type="hidden"></input></form></body></html>

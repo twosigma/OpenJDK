@@ -1,0 +1,168 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Sdiff test/jdk/sun/security/jgss/DefaultGssConfig.java</title>
+</head><body id="SUNWwebrev">
+<a class="print" href="javascript:print()">Print this page</a>
+<pre>Add GssLoginModule
+This module is to be used for GSS applications in preference to
+Krb5LoginModule, especially when using the native GSS provider.</pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+  41 public class DefaultGssConfig {
+  42 
+  43     public static void main(String[] argv) throws Exception {
+  44 
+  45         // 1. Make sure the FileNotFoundException is hidden
+  46         try {
+  47             Configuration.getInstance("JavaLoginConfig", new URIParameter(new URI("file:///no/such/file")));
+  48         } catch (NoSuchAlgorithmException nsae) {
+  49             if (nsae.getCause() instanceof IOException &amp;&amp;
+  50                     !(nsae.getCause() instanceof FileNotFoundException)) {
+  51                 // ignore
+  52             } else {
+  53                 throw nsae;
+  54             }
+  55         }
+  56 
+  57         // 2. Make sure there's always a Configuration even if no config file exists
+  58         Configuration.getConfiguration();
+  59 
+  60         // 3. Make sure there're default entries for GSS krb5 client/server
+
+
+
+
+  61         LoginConfigImpl lc = new LoginConfigImpl(GSSCaller.CALLER_INITIATE, GSSUtil.GSS_KRB5_MECH_OID);
+  62         if (lc.getAppConfigurationEntry("").length == 0) {
+  63             throw new Exception("No default config for GSS krb5 client");
+  64         }
+  65         lc = new LoginConfigImpl(GSSCaller.CALLER_ACCEPT, GSSUtil.GSS_KRB5_MECH_OID);
+  66         if (lc.getAppConfigurationEntry("").length == 0) {
+  67             throw new Exception("No default config for GSS krb5 server");
+  68         }
+  69     }
+  70 }
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+  41 public class DefaultGssConfig {
+  42 
+  43     public static void main(String[] argv) throws Exception {
+  44 
+  45         // 1. Make sure the FileNotFoundException is hidden
+  46         try {
+  47             Configuration.getInstance("JavaLoginConfig", new URIParameter(new URI("file:///no/such/file")));
+  48         } catch (NoSuchAlgorithmException nsae) {
+  49             if (nsae.getCause() instanceof IOException &amp;&amp;
+  50                     !(nsae.getCause() instanceof FileNotFoundException)) {
+  51                 // ignore
+  52             } else {
+  53                 throw nsae;
+  54             }
+  55         }
+  56 
+  57         // 2. Make sure there's always a Configuration even if no config file exists
+  58         Configuration.getConfiguration();
+  59 
+  60         // 3. Make sure there're default entries for GSS krb5 client/server
+<span class="new">  61         //</span>
+<span class="new">  62         // FIXME Why be so Kerberos-specific?  This is wrong.  Instead we could</span>
+<span class="new">  63         // use a command-line argument to deal with a specific (or all)</span>
+<span class="new">  64         // mechanisms.</span>
+  65         LoginConfigImpl lc = new LoginConfigImpl(GSSCaller.CALLER_INITIATE, GSSUtil.GSS_KRB5_MECH_OID);
+  66         if (lc.getAppConfigurationEntry("").length == 0) {
+  67             throw new Exception("No default config for GSS krb5 client");
+  68         }
+  69         lc = new LoginConfigImpl(GSSCaller.CALLER_ACCEPT, GSSUtil.GSS_KRB5_MECH_OID);
+  70         if (lc.getAppConfigurationEntry("").length == 0) {
+  71             throw new Exception("No default config for GSS krb5 server");
+  72         }
+  73     }
+  74 }
+</pre></td>
+</tr></table>
+</body></html>

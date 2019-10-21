@@ -1,0 +1,381 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java
+</span><span class='added'>          +++ new/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">17 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  package sun.security.jgss.wrapper;
+  27   27  
+<span class='added'>       28 +import java.util.Map;
+       29 +import java.util.ArrayList;
+</span>  28   30  import java.util.Hashtable;
+  29   31  import org.ietf.jgss.Oid;
+  30   32  import org.ietf.jgss.GSSName;
+  31   33  import org.ietf.jgss.ChannelBinding;
+  32   34  import org.ietf.jgss.MessageProp;
+  33   35  import org.ietf.jgss.GSSException;
+  34   36  import sun.security.jgss.GSSUtil;
+  35   37  
+  36   38  /**
+  37   39   * This class is essentially a JNI calling stub for all wrapper classes.
+</pre>
+<pre id='elided2' class='elided' style='display: none'>  38   40   *
+  39   41   * @author Valerie Peng
+  40   42   * @since 1.6
+  41   43   */
+  42   44  
+  43   45  class GSSLibStub {
+  44   46  
+  45   47      private Oid mech;
+  46   48      private long pMech;
+  47   49  
+  48   50      /**
+  49   51       * Initialization routine to dynamically load function pointers.
+  50   52       *
+  51   53       * @param lib library name to dlopen
+  52   54       * @param debug set to true for reporting native debugging info
+  53   55       * @return true if succeeded, false otherwise.
+  54   56       */
+  55   57      static native boolean init(String lib, boolean debug);
+  56   58      private static native long getMechPtr(byte[] oidDerEncoding);
+  57   59  
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">20 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  58   60      // Miscellaneous routines
+  59   61      static native Oid[] indicateMechs();
+  60   62      native Oid[] inquireNamesForMech() throws GSSException;
+  61   63  
+  62   64      // Name related routines
+  63   65      native void releaseName(long pName);
+  64   66      native long importName(byte[] name, Oid type);
+  65   67      native boolean compareName(long pName1, long pName2);
+  66   68      native long canonicalizeName(long pName);
+  67   69      native byte[] exportName(long pName) throws GSSException;
+<span class='added'>       70 +    native String localName(long pName, Oid mech) throws GSSException;
+</span>  68   71      native Object[] displayName(long pName) throws GSSException;
+  69   72  
+  70   73      // Credential related routines
+<span class='subtracted'>  71      -    native long acquireCred(long pName, int lifetime, int usage)
+  72      -                                        throws GSSException;
+</span><span class='added'>       74 +    native long acquireCred(long pName, String password, String[] store,
+       75 +                            int lifetime, int usage) throws GSSException;
+       76 +    native long storeCred(long pCred, int usage, Oid mech,
+       77 +                          boolean overwrite, boolean defaultCred,
+       78 +                          String[] store) throws GSSException;
+</span>  73   79      native long releaseCred(long pCred);
+  74   80      native long getCredName(long pCred);
+  75   81      native int getCredTime(long pCred);
+  76   82      native int getCredUsage(long pCred);
+  77   83  
+  78   84      // Context related routines
+  79   85      native NativeGSSContext importContext(byte[] interProcToken);
+  80   86      native byte[] initContext(long pCred, long targetName, ChannelBinding cb,
+  81   87                                byte[] inToken, NativeGSSContext context);
+  82   88      native byte[] acceptContext(long pCred, ChannelBinding cb,
+</pre>
+<pre id='elided3' class='elided' style='display: none'>  83   89                                  byte[] inToken, NativeGSSContext context);
+  84   90      native long[] inquireContext(long pContext);
+  85   91      native Oid getContextMech(long pContext);
+  86   92      native long getContextName(long pContext, boolean isSrc);
+  87   93      native int getContextTime(long pContext);
+  88   94      native long deleteContext(long pContext);
+  89   95      native int wrapSizeLimit(long pContext, int flags, int qop, int outSize);
+  90   96      native byte[] exportContext(long pContext);
+  91   97      native byte[] getMic(long pContext, int qop, byte[] msg);
+  92   98      native void verifyMic(long pContext, byte[] token, byte[] msg,
+  93   99                            MessageProp prop) ;
+  94  100      native byte[] wrap(long pContext, byte[] msg, MessageProp prop);
+  95  101      native byte[] unwrap(long pContext, byte[] msgToken, MessageProp prop);
+  96  102  
+  97  103      private static Hashtable&lt;Oid, GSSLibStub&gt;
+  98  104          table = new Hashtable&lt;Oid, GSSLibStub&gt;(5);
+  99  105  
+ 100  106      static GSSLibStub getInstance(Oid mech) throws GSSException {
+ 101  107          GSSLibStub s = table.get(mech);
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">19 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 102  108          if (s == null) {
+ 103  109              s = new GSSLibStub(mech);
+ 104  110              table.put(mech, s);
+ 105  111          }
+ 106  112          return s;
+ 107  113      }
+ 108  114      private GSSLibStub(Oid mech) throws GSSException {
+ 109  115          SunNativeProvider.debug("Created GSSLibStub for mech " + mech);
+ 110  116          this.mech = mech;
+ 111  117          this.pMech = getMechPtr(mech.getDER());
+<span class='added'>      118 +    }
+      119 +    private static String[] map2array(Map&lt;String,String&gt; m) {
+      120 +        if (m == null)
+      121 +            return null;
+      122 +        ArrayList&lt;String&gt; l = new ArrayList&lt;String&gt;();
+      123 +        for (var e : m.entrySet()) {
+      124 +            l.add(e.getKey());
+      125 +            l.add(e.getValue());
+      126 +        }
+      127 +        return l.toArray(new String[0]);
+      128 +    }
+      129 +    public long acquireCred(long pName, String password,
+      130 +                            Map&lt;String,String&gt; store,
+      131 +                            int lifetime, int usage) throws GSSException {
+      132 +        return acquireCred(pName, password, map2array(store), lifetime, usage);
+      133 +    }
+      134 +    public long storeCred(long pCred, int usage, Oid mech,
+      135 +                          boolean overwrite, boolean defaultCred,
+      136 +                          Map&lt;String,String&gt; store) throws GSSException {
+      137 +        return storeCred(pCred, usage, mech, overwrite, defaultCred,
+      138 +            map2array(store));
+</span> 112  139      }
+ 113  140      public boolean equals(Object obj) {
+ 114  141          if (obj == this) return true;
+ 115  142          if (!(obj instanceof GSSLibStub)) {
+ 116  143              return false;
+ 117  144          }
+ 118  145          return (mech.equals(((GSSLibStub) obj).getMech()));
+ 119  146      }
+ 120  147      public int hashCode() {
+ 121  148          return mech.hashCode();
+ 122  149      }
+ 123  150      Oid getMech() {
+ 124  151          return mech;
+ 125  152      }
+ 126  153  }
+    </pre>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 3; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 3; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

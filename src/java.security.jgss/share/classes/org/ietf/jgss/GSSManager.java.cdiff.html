@@ -1,0 +1,365 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Cdiff src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java</title>
+</head>
+<body id="SUNWwebrev">
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().</pre>
+        <pre>
+<hr></hr><span class="oldmarker">*** 23,32 ****</span>
+<span class="newmarker">--- 23,33 ----</span>
+   * questions.
+   */
+  
+  package org.ietf.jgss;
+  
+<span class="new">+ import java.util.Map;</span>
+  import java.security.Provider;
+  
+  /**
+   * This class serves as a factory for other important
+   * GSS-API classes and also provides information about the mechanisms that
+<hr></hr><span class="oldmarker">*** 422,431 ****</span>
+<span class="newmarker">--- 423,543 ----</span>
+      public abstract GSSCredential createCredential (GSSName name,
+                                    int lifetime, Oid mech, int usage)
+          throws GSSException;
+  
+      /**
+<span class="new">+      * Factory method for acquiring a single mechanism credential with a</span>
+<span class="new">+      * password.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * GSS-API mechanism providers must impose a local access-control</span>
+<span class="new">+      * policy on callers to prevent unauthorized callers from acquiring</span>
+<span class="new">+      * credentials to which they are not entitled. The kinds of permissions</span>
+<span class="new">+      * needed by different mechanism providers will be documented on a</span>
+<span class="new">+      * per-mechanism basis. A failed permission check might cause a {@link</span>
+<span class="new">+      * java.lang.SecurityException SecurityException} to be thrown from</span>
+<span class="new">+      * this method. &lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * Non-default values for lifetime cannot always be honored by the</span>
+<span class="new">+      * underlying mechanisms, thus applications should be prepared to call</span>
+<span class="new">+      * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}</span>
+<span class="new">+      * on the returned credential.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * @param name the name of the principal for whom this credential is to be</span>
+<span class="new">+      * acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default principal.</span>
+<span class="new">+      * @param password The password for the principal.</span>
+<span class="new">+      * @param lifetime The number of seconds that credentials should remain</span>
+<span class="new">+      * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME</span>
+<span class="new">+      * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials</span>
+<span class="new">+      * have the maximum permitted lifetime.  Use {@link</span>
+<span class="new">+      * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to</span>
+<span class="new">+      * request default credential lifetime.</span>
+<span class="new">+      * @param mech the Oid of the desired mechanism.  Use &lt;code&gt;(Oid) null</span>
+<span class="new">+      * &lt;/code&gt; to request the default mechanism.</span>
+<span class="new">+      * @param usage The intended usage for this credential object. The value</span>
+<span class="new">+      * of this parameter must be one of:</span>
+<span class="new">+      * {@link GSSCredential#INITIATE_AND_ACCEPT</span>
+<span class="new">+      * GSSCredential.INITIATE_AND_ACCEPT},</span>
+<span class="new">+      * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and</span>
+<span class="new">+      * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.</span>
+<span class="new">+      * @return a GSSCredential of the requested type.</span>
+<span class="new">+      *</span>
+<span class="new">+      * @see GSSCredential</span>
+<span class="new">+      *</span>
+<span class="new">+      * @throws GSSException containing the following</span>
+<span class="new">+      * major error codes:</span>
+<span class="new">+      *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},</span>
+<span class="new">+      *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},</span>
+<span class="new">+      *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},</span>
+<span class="new">+      *    {@link GSSException#CREDENTIALS_EXPIRED</span>
+<span class="new">+      *                                   GSSException.CREDENTIALS_EXPIRED},</span>
+<span class="new">+      *    {@link GSSException#NO_CRED GSSException.NO_CRED},</span>
+<span class="new">+      *    {@link GSSException#FAILURE GSSException.FAILURE}</span>
+<span class="new">+      */</span>
+<span class="new">+     public abstract GSSCredential createCredential (GSSName name,</span>
+<span class="new">+                                   String password, int lifetime, Oid mech,</span>
+<span class="new">+                                   int usage)</span>
+<span class="new">+         throws GSSException;</span>
+<span class="new">+ </span>
+<span class="new">+     /**</span>
+<span class="new">+      * Factory method for acquiring a single mechanism credential from</span>
+<span class="new">+      * an external credential store.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * GSS-API mechanism providers must impose a local access-control</span>
+<span class="new">+      * policy on callers to prevent unauthorized callers from acquiring</span>
+<span class="new">+      * credentials to which they are not entitled. The kinds of permissions</span>
+<span class="new">+      * needed by different mechanism providers will be documented on a</span>
+<span class="new">+      * per-mechanism basis. A failed permission check might cause a {@link</span>
+<span class="new">+      * java.lang.SecurityException SecurityException} to be thrown from</span>
+<span class="new">+      * this method. &lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * Non-default values for lifetime cannot always be honored by the</span>
+<span class="new">+      * underlying mechanisms, thus applications should be prepared to call</span>
+<span class="new">+      * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}</span>
+<span class="new">+      * on the returned credential.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * @param name the name of the principal for whom this credential is to be</span>
+<span class="new">+      * acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default principal.</span>
+<span class="new">+      * @param store A description of an external credential store.</span>
+<span class="new">+      * Common keys supported by platform-native GSS-API providers</span>
+<span class="new">+      * include: {@code ccache} and {@code keytab}, with the values being</span>
+<span class="new">+      * typically file paths.  Consult the documentation for your</span>
+<span class="new">+      * platform's native GSS-API providers.  The Java-native Krb5</span>
+<span class="new">+      * provider does not support this method at this time.</span>
+<span class="new">+      * @param lifetime The number of seconds that credentials should remain</span>
+<span class="new">+      * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME</span>
+<span class="new">+      * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials</span>
+<span class="new">+      * have the maximum permitted lifetime.  Use {@link</span>
+<span class="new">+      * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to</span>
+<span class="new">+      * request default credential lifetime.</span>
+<span class="new">+      * @param mech the Oid of the desired mechanism.  Use &lt;code&gt;(Oid) null</span>
+<span class="new">+      * &lt;/code&gt; to request the default mechanism.</span>
+<span class="new">+      * @param usage The intended usage for this credential object. The value</span>
+<span class="new">+      * of this parameter must be one of:</span>
+<span class="new">+      * {@link GSSCredential#INITIATE_AND_ACCEPT</span>
+<span class="new">+      * GSSCredential.INITIATE_AND_ACCEPT},</span>
+<span class="new">+      * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and</span>
+<span class="new">+      * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.</span>
+<span class="new">+      * @return a GSSCredential of the requested type.</span>
+<span class="new">+      *</span>
+<span class="new">+      * @see GSSCredential</span>
+<span class="new">+      *</span>
+<span class="new">+      * @throws GSSException containing the following</span>
+<span class="new">+      * major error codes:</span>
+<span class="new">+      *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},</span>
+<span class="new">+      *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},</span>
+<span class="new">+      *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},</span>
+<span class="new">+      *    {@link GSSException#CREDENTIALS_EXPIRED</span>
+<span class="new">+      *                                   GSSException.CREDENTIALS_EXPIRED},</span>
+<span class="new">+      *    {@link GSSException#NO_CRED GSSException.NO_CRED},</span>
+<span class="new">+      *    {@link GSSException#FAILURE GSSException.FAILURE}</span>
+<span class="new">+      */</span>
+<span class="new">+     public abstract GSSCredential createCredential (GSSName name,</span>
+<span class="new">+                                   Map&lt;String,String&gt; store, int lifetime,</span>
+<span class="new">+                                   Oid mech, int usage)</span>
+<span class="new">+         throws GSSException;</span>
+<span class="new">+ </span>
+<span class="new">+     /**</span>
+       * Factory method for acquiring credentials over a set of
+       * mechanisms. This method attempts to acquire credentials for
+       * each of the mechanisms specified in the array called mechs.  To
+       * determine the list of mechanisms for which the acquisition of
+       * credentials succeeded, the caller should use the {@link
+<hr></hr><span class="oldmarker">*** 479,488 ****</span>
+<span class="newmarker">--- 591,721 ----</span>
+      public abstract GSSCredential createCredential(GSSName name,
+                                        int lifetime, Oid mechs[], int usage)
+          throws GSSException;
+  
+      /**
+<span class="new">+      * Factory method for acquiring credentials with a password over a set of</span>
+<span class="new">+      * mechanisms. This method attempts to acquire credentials for</span>
+<span class="new">+      * each of the mechanisms specified in the array called mechs.  To</span>
+<span class="new">+      * determine the list of mechanisms for which the acquisition of</span>
+<span class="new">+      * credentials succeeded, the caller should use the {@link</span>
+<span class="new">+      * GSSCredential#getMechs() GSSCredential.getMechs} method.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * GSS-API mechanism providers must impose a local access-control</span>
+<span class="new">+      * policy on callers to prevent unauthorized callers from acquiring</span>
+<span class="new">+      * credentials to which they are not entitled. The kinds of permissions</span>
+<span class="new">+      * needed by different mechanism providers will be documented on a</span>
+<span class="new">+      * per-mechanism basis. A failed permission check might cause a {@link</span>
+<span class="new">+      * java.lang.SecurityException SecurityException} to be thrown from</span>
+<span class="new">+      * this method.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * Non-default values for lifetime cannot always be honored by the</span>
+<span class="new">+      * underlying mechanisms, thus applications should be prepared to call</span>
+<span class="new">+      * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}</span>
+<span class="new">+      * on the returned credential.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * @param name the name of the principal for whom this credential is to</span>
+<span class="new">+      * be acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default</span>
+<span class="new">+      * principal.</span>
+<span class="new">+      * @param password The password for the principal.</span>
+<span class="new">+      * @param lifetime The number of seconds that credentials should remain</span>
+<span class="new">+      * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME</span>
+<span class="new">+      * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials</span>
+<span class="new">+      * have the maximum permitted lifetime.  Use {@link</span>
+<span class="new">+      * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to</span>
+<span class="new">+      * request default credential lifetime.</span>
+<span class="new">+      * @param mechs an array of Oid's indicating the mechanisms over which</span>
+<span class="new">+      * the credential is to be acquired.  Use &lt;code&gt;(Oid[]) null&lt;/code&gt; for</span>
+<span class="new">+      * requesting a system specific default set of mechanisms.</span>
+<span class="new">+      * @param usage The intended usage for this credential object. The value</span>
+<span class="new">+      * of this parameter must be one of:</span>
+<span class="new">+      * {@link GSSCredential#INITIATE_AND_ACCEPT</span>
+<span class="new">+      * GSSCredential.INITIATE_AND_ACCEPT},</span>
+<span class="new">+      * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and</span>
+<span class="new">+      * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.</span>
+<span class="new">+      * @return a GSSCredential of the requested type.</span>
+<span class="new">+      *</span>
+<span class="new">+      * @see GSSCredential</span>
+<span class="new">+      *</span>
+<span class="new">+      * @throws GSSException containing the following</span>
+<span class="new">+      * major error codes:</span>
+<span class="new">+      *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},</span>
+<span class="new">+      *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},</span>
+<span class="new">+      *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},</span>
+<span class="new">+      *    {@link GSSException#CREDENTIALS_EXPIRED</span>
+<span class="new">+      *                                   GSSException.CREDENTIALS_EXPIRED},</span>
+<span class="new">+      *    {@link GSSException#NO_CRED GSSException.NO_CRED},</span>
+<span class="new">+      *    {@link GSSException#FAILURE GSSException.FAILURE}</span>
+<span class="new">+      */</span>
+<span class="new">+     public abstract GSSCredential createCredential(GSSName name,</span>
+<span class="new">+                                       String password, int lifetime,</span>
+<span class="new">+                                       Oid mechs[], int usage)</span>
+<span class="new">+         throws GSSException;</span>
+<span class="new">+ </span>
+<span class="new">+     /**</span>
+<span class="new">+      * Factory method for acquiring credentials with a "credential</span>
+<span class="new">+      * store" over a set of mechanisms. This method attempts to acquire</span>
+<span class="new">+      * credentials for each of the mechanisms specified in the array</span>
+<span class="new">+      * called mechs.  To determine the list of mechanisms for which the</span>
+<span class="new">+      * acquisition of credentials succeeded, the caller should use the</span>
+<span class="new">+      * {@link GSSCredential#getMechs() GSSCredential.getMechs}</span>
+<span class="new">+      * method.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * GSS-API mechanism providers must impose a local access-control</span>
+<span class="new">+      * policy on callers to prevent unauthorized callers from acquiring</span>
+<span class="new">+      * credentials to which they are not entitled. The kinds of permissions</span>
+<span class="new">+      * needed by different mechanism providers will be documented on a</span>
+<span class="new">+      * per-mechanism basis. A failed permission check might cause a {@link</span>
+<span class="new">+      * java.lang.SecurityException SecurityException} to be thrown from</span>
+<span class="new">+      * this method.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * Non-default values for lifetime cannot always be honored by the</span>
+<span class="new">+      * underlying mechanisms, thus applications should be prepared to call</span>
+<span class="new">+      * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}</span>
+<span class="new">+      * on the returned credential.&lt;p&gt;</span>
+<span class="new">+      *</span>
+<span class="new">+      * @param name the name of the principal for whom this credential is to</span>
+<span class="new">+      * be acquired.  Use &lt;code&gt;null&lt;/code&gt; to specify the default</span>
+<span class="new">+      * principal.</span>
+<span class="new">+      * @param store Map of string key and values describing how to</span>
+<span class="new">+      * acquire the credential. Consult the documentation for the various</span>
+<span class="new">+      * GSS mechanisms.</span>
+<span class="new">+      * @param lifetime The number of seconds that credentials should remain</span>
+<span class="new">+      * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME</span>
+<span class="new">+      * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials</span>
+<span class="new">+      * have the maximum permitted lifetime.  Use {@link</span>
+<span class="new">+      * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to</span>
+<span class="new">+      * request default credential lifetime.</span>
+<span class="new">+      * @param mechs an array of Oid's indicating the mechanisms over which</span>
+<span class="new">+      * the credential is to be acquired.  Use &lt;code&gt;(Oid[]) null&lt;/code&gt; for</span>
+<span class="new">+      * requesting a system specific default set of mechanisms.</span>
+<span class="new">+      * @param usage The intended usage for this credential object. The value</span>
+<span class="new">+      * of this parameter must be one of:</span>
+<span class="new">+      * {@link GSSCredential#INITIATE_AND_ACCEPT</span>
+<span class="new">+      * GSSCredential.INITIATE_AND_ACCEPT},</span>
+<span class="new">+      * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and</span>
+<span class="new">+      * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.</span>
+<span class="new">+      * @return a GSSCredential of the requested type.</span>
+<span class="new">+      *</span>
+<span class="new">+      * @see GSSCredential</span>
+<span class="new">+      *</span>
+<span class="new">+      * @throws GSSException containing the following</span>
+<span class="new">+      * major error codes:</span>
+<span class="new">+      *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},</span>
+<span class="new">+      *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},</span>
+<span class="new">+      *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},</span>
+<span class="new">+      *    {@link GSSException#CREDENTIALS_EXPIRED</span>
+<span class="new">+      *                                   GSSException.CREDENTIALS_EXPIRED},</span>
+<span class="new">+      *    {@link GSSException#NO_CRED GSSException.NO_CRED},</span>
+<span class="new">+      *    {@link GSSException#FAILURE GSSException.FAILURE}</span>
+<span class="new">+      */</span>
+<span class="new">+     public abstract GSSCredential createCredential(GSSName name,</span>
+<span class="new">+                                       Map&lt;String,String&gt; store, int lifetime,</span>
+<span class="new">+                                       Oid mechs[], int usage)</span>
+<span class="new">+         throws GSSException;</span>
+<span class="new">+ </span>
+<span class="new">+     /**</span>
+       * Factory method for creating a context on the initiator's
+       * side.
+       *
+       * Some mechanism providers might require that the caller be granted
+       * permission to initiate a security context. A failed permission check
+</pre></body></html>
+

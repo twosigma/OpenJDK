@@ -1,0 +1,2419 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/native/libj2gss/GSSLibStub.c</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add JGSS JNI bindings for gss cred store functions
+fixup SEAM bug uncomments
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method
+Add actual mechanism to native GSSNameElement state
+Fix loss of GSS_S_FAILURE major status in importContext
+Revert initGSSBuffer to JDK7 non-copy behaviour
+Fix error handling in GSSLibStub
+Also improve object size handling in NativeUtil.
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+</span><span class='added'>          +++ new/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  #include "sun_security_jgss_wrapper_GSSLibStub.h"
+  27   27  #include "NativeUtil.h"
+  28   28  #include "NativeFunc.h"
+  29   29  #include "jlong.h"
+  30   30  #include &lt;jni.h&gt;
+  31   31  
+  32   32  /* Constants for indicating what type of info is needed for inquiries */
+  33   33  const int TYPE_CRED_NAME = 10;
+  34   34  const int TYPE_CRED_TIME = 11;
+  35   35  const int TYPE_CRED_USAGE = 12;
+  36   36  
+  37   37  /*
+  38   38   * Class:     sun_security_jgss_wrapper_GSSLibStub
+  39   39   * Method:    init
+  40   40   * Signature: (Ljava/lang/String;Z)Z
+  41   41   */
+  42   42  JNIEXPORT jboolean JNICALL
+  43   43  Java_sun_security_jgss_wrapper_GSSLibStub_init(JNIEnv *env,
+  44   44                                                 jclass jcls,
+  45   45                                                 jstring jlibName,
+  46   46                                                 jboolean jDebug) {
+  47   47      const char *libName;
+  48   48      int failed;
+  49   49      char *error = NULL;
+  50   50  
+  51   51      if (!jDebug) {
+  52   52        JGSS_DEBUG = 0;
+  53   53      } else {
+  54   54        JGSS_DEBUG = 1;
+  55   55      }
+  56   56  
+  57   57      if (jlibName == NULL) {
+  58   58          TRACE0("[GSSLibStub_init] GSS lib name is NULL");
+  59   59          return JNI_FALSE;
+  60   60      }
+  61   61  
+  62   62      libName = (*env)-&gt;GetStringUTFChars(env, jlibName, NULL);
+  63   63      if (libName == NULL) {
+  64   64          return JNI_FALSE;
+  65   65      }
+  66   66      TRACE1("[GSSLibStub_init] libName=%s", libName);
+  67   67  
+  68   68      /* initialize global function table */
+  69   69      failed = loadNative(libName);
+  70   70      (*env)-&gt;ReleaseStringUTFChars(env, jlibName, libName);
+  71   71  
+  72   72      if (!failed) {
+  73   73          return JNI_TRUE;
+  74   74      } else {
+  75   75          if (JGSS_DEBUG) {
+  76   76  #ifdef WIN32
+  77   77              #define MAX_MSG_SIZE 256
+  78   78              static CHAR szMsgBuf[MAX_MSG_SIZE];
+  79   79              DWORD dwRes;
+  80   80              DWORD dwError = GetLastError();
+  81   81              dwRes = FormatMessage (
+  82   82                      FORMAT_MESSAGE_FROM_SYSTEM,
+  83   83                      NULL,
+  84   84                      dwError,
+  85   85                      0,
+  86   86                      szMsgBuf,
+  87   87                      MAX_MSG_SIZE,
+  88   88                      NULL);
+  89   89              if (0 == dwRes) {
+  90   90                  printf("GSS-API: Unknown failure %d\n", dwError);
+  91   91              } else {
+  92   92                  printf("GSS-API: %s\n",szMsgBuf);
+  93   93              }
+  94   94  #else
+  95   95              char* error = dlerror();
+  96   96              if (error) {
+  97   97                  TRACE0(error);
+  98   98              }
+  99   99  #endif
+ 100  100          }
+ 101  101          return JNI_FALSE;
+ 102  102      }
+ 103  103  }
+ 104  104  
+ 105  105  /*
+ 106  106   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 107  107   * Method:    getMechPtr
+ 108  108   * Signature: ([B)J
+ 109  109   */
+ 110  110  JNIEXPORT jlong JNICALL
+ 111  111  Java_sun_security_jgss_wrapper_GSSLibStub_getMechPtr(JNIEnv *env,
+ 112  112                                                       jclass jcls,
+ 113  113                                                       jbyteArray jbytes) {
+ 114  114    gss_OID cOid;
+ 115  115    unsigned int i, len;
+ 116  116    jbyte* bytes;
+ 117  117    int found;
+ 118  118  
+ 119  119    if (jbytes != NULL) {
+ 120  120      found = 0;
+ 121  121      len = (unsigned int)((*env)-&gt;GetArrayLength(env, jbytes) - 2);
+ 122  122      bytes = (*env)-&gt;GetByteArrayElements(env, jbytes, NULL);
+ 123  123      if (bytes == NULL) {
+ 124  124        return ptr_to_jlong(NULL);
+ 125  125      }
+ 126  126      for (i = 0; i &lt; ftab-&gt;mechs-&gt;count; i++) {
+ 127  127        cOid = &amp;(ftab-&gt;mechs-&gt;elements[i]);
+ 128  128        if (len == cOid-&gt;length &amp;&amp;
+ 129  129            (memcmp(cOid-&gt;elements, (bytes + 2), len) == 0)) {
+ 130  130          // Found a match
+ 131  131          found = 1;
+ 132  132          break;
+ 133  133        }
+ 134  134      }
+ 135  135      (*env)-&gt;ReleaseByteArrayElements(env, jbytes, bytes, 0);
+ 136  136  
+ 137  137      if (found != 1) {
+ 138  138        checkStatus(env, NULL, GSS_S_BAD_MECH, 0, "[GSSLibStub_getMechPtr]");
+ 139  139        return ptr_to_jlong(NULL);
+ 140  140      } else {
+ 141  141        return ptr_to_jlong(cOid);
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">141 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 142  142      }
+ 143  143    } else {
+ 144  144      return ptr_to_jlong(GSS_C_NO_OID);
+ 145  145    }
+ 146  146  }
+ 147  147  
+ 148  148  /*
+ 149  149   * Utility routine which releases the specified gss_channel_bindings_t
+ 150  150   * structure.
+ 151  151   */
+<span class='subtracted'> 152      -void deleteGSSCB(gss_channel_bindings_t cb) {
+ 153      -
+</span><span class='added'>      152 +static void deleteGSSCB(JNIEnv *env, gss_channel_bindings_t cb) {
+</span> 154  153    if (cb == GSS_C_NO_CHANNEL_BINDINGS) return;
+ 155  154  
+ 156  155    /* release initiator address */
+ 157  156    if (cb-&gt;initiator_addrtype != GSS_C_AF_NULLADDR) {
+<span class='subtracted'> 158      -    resetGSSBuffer(&amp;(cb-&gt;initiator_address));
+</span><span class='added'>      157 +    resetGSSBuffer(env, NULL, &amp;(cb-&gt;initiator_address));
+</span> 159  158    }
+ 160  159    /* release acceptor address */
+ 161  160    if (cb-&gt;acceptor_addrtype != GSS_C_AF_NULLADDR) {
+<span class='subtracted'> 162      -    resetGSSBuffer(&amp;(cb-&gt;acceptor_address));
+</span><span class='added'>      161 +    resetGSSBuffer(env, NULL, &amp;(cb-&gt;acceptor_address));
+</span> 163  162    }
+ 164  163    /* release application data */
+<span class='subtracted'> 165      -  if (cb-&gt;application_data.length != 0) {
+ 166      -    resetGSSBuffer(&amp;(cb-&gt;application_data));
+</span><span class='added'>      164 +  if (cb-&gt;application_data.value != NULL) {
+      165 +    resetGSSBuffer(env, NULL, &amp;(cb-&gt;application_data));
+</span> 167  166    }
+ 168  167    free(cb);
+ 169  168  }
+ 170  169  
+ 171  170  /*
+ 172  171   * Utility routine which creates a gss_channel_bindings_t structure
+ 173  172   * using the specified org.ietf.jgss.ChannelBinding object.
+ 174  173   * NOTE: must call deleteGSSCB() to free up the resources.
+ 175  174   */
+ 176  175  gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
+</pre>
+<pre id='elided2' class='elided' style='display: none'> 177  176    gss_channel_bindings_t cb;
+ 178  177    jobject jinetAddr;
+ 179  178    jbyteArray value;
+ 180  179  
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">4 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 181  180    if (jcb == NULL) {
+ 182  181      return GSS_C_NO_CHANNEL_BINDINGS;
+ 183  182    }
+ 184  183  
+ 185  184    cb = malloc(sizeof(struct gss_channel_bindings_struct));
+ 186  185    if (cb == NULL) {
+ 187  186      throwOutOfMemoryError(env,NULL);
+ 188  187      return NULL;
+ 189  188    }
+ 190  189  
+<span class='subtracted'> 191      -  // initialize addrtype in CB first
+</span><span class='added'>      190 +  /* Fully initialize to a state safe for cleanup */
+</span> 192  191    cb-&gt;initiator_addrtype = GSS_C_AF_NULLADDR;
+ 193  192    cb-&gt;acceptor_addrtype = GSS_C_AF_NULLADDR;
+<span class='added'>      193 +  cb-&gt;application_data.length = 0;
+      194 +  cb-&gt;application_data.value = NULL;
+</span> 194  195  
+ 195  196    // addresses needs to be initialized to empty
+ 196  197    memset(&amp;cb-&gt;initiator_address, 0, sizeof(cb-&gt;initiator_address));
+ 197  198    memset(&amp;cb-&gt;acceptor_address, 0, sizeof(cb-&gt;acceptor_address));
+ 198  199  
+ 199  200    /* set up initiator address */
+ 200  201    jinetAddr = (*env)-&gt;CallObjectMethod(env, jcb,
+ 201  202        MID_ChannelBinding_getInitiatorAddr);
+ 202  203    if ((*env)-&gt;ExceptionCheck(env)) {
+ 203  204      goto cleanup;
+ 204  205    }
+ 205  206    if (jinetAddr != NULL) {
+ 206  207      value = (*env)-&gt;CallObjectMethod(env, jinetAddr,
+ 207  208                                       MID_InetAddress_getAddr);
+ 208  209      if ((*env)-&gt;ExceptionCheck(env)) {
+ 209  210        goto cleanup;
+ 210  211      }
+<span class='subtracted'> 211      -    cb-&gt;initiator_addrtype = GSS_C_AF_INET;
+ 212      -    initGSSBuffer(env, value, &amp;(cb-&gt;initiator_address));
+</span><span class='added'>      212 +    initGSSBuffer(env, value, &amp;(cb-&gt;initiator_address), JNI_TRUE);
+</span> 213  213      if ((*env)-&gt;ExceptionCheck(env)) {
+ 214  214        goto cleanup;
+ 215  215      }
+<span class='added'>      216 +    cb-&gt;initiator_addrtype = GSS_C_AF_INET;
+</span> 216  217    }
+ 217  218    /* set up acceptor address */
+ 218  219    jinetAddr = (*env)-&gt;CallObjectMethod(env, jcb,
+ 219  220        MID_ChannelBinding_getAcceptorAddr);
+ 220  221    if ((*env)-&gt;ExceptionCheck(env)) {
+ 221  222      goto cleanup;
+ 222  223    }
+ 223  224    if (jinetAddr != NULL) {
+ 224  225      value = (*env)-&gt;CallObjectMethod(env, jinetAddr,
+ 225  226                                       MID_InetAddress_getAddr);
+ 226  227      if ((*env)-&gt;ExceptionCheck(env)) {
+ 227  228        goto cleanup;
+ 228  229      }
+<span class='subtracted'> 229      -    cb-&gt;acceptor_addrtype = GSS_C_AF_INET;
+ 230      -    initGSSBuffer(env, value, &amp;(cb-&gt;acceptor_address));
+</span><span class='added'>      230 +    initGSSBuffer(env, value, &amp;(cb-&gt;acceptor_address), JNI_TRUE);
+</span> 231  231      if ((*env)-&gt;ExceptionCheck(env)) {
+ 232  232        goto cleanup;
+ 233  233      }
+<span class='added'>      234 +    cb-&gt;acceptor_addrtype = GSS_C_AF_INET;
+</span> 234  235    }
+ 235  236    /* set up application data */
+ 236  237    value = (*env)-&gt;CallObjectMethod(env, jcb,
+ 237  238                                     MID_ChannelBinding_getAppData);
+ 238  239    if ((*env)-&gt;ExceptionCheck(env)) {
+ 239  240      goto cleanup;
+ 240  241    }
+<span class='subtracted'> 241      -  initGSSBuffer(env, value, &amp;(cb-&gt;application_data));
+</span><span class='added'>      242 +  initGSSBuffer(env, value, &amp;(cb-&gt;application_data), JNI_TRUE);
+</span> 242  243    if ((*env)-&gt;ExceptionCheck(env)) {
+ 243  244      goto cleanup;
+ 244  245    }
+ 245  246    return cb;
+ 246  247  cleanup:
+<span class='subtracted'> 247      -  deleteGSSCB(cb);
+</span><span class='added'>      248 +  deleteGSSCB(env, cb);
+</span> 248  249    return NULL;
+ 249  250  }
+ 250  251  
+ 251  252  /*
+ 252  253   * Utility routine for storing the supplementary information
+ 253  254   * into the specified org.ietf.jgss.MessageProp object.
+ 254  255   */
+ 255  256  void setSupplementaryInfo(JNIEnv *env, jobject jstub, jobject jprop,
+ 256  257                            int suppInfo, int minor) {
+ 257  258    jboolean isDuplicate, isOld, isUnseq, hasGap;
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 258  259    jstring minorMsg;
+ 259  260  
+ 260  261    if (suppInfo != GSS_S_COMPLETE) {
+ 261  262      isDuplicate = ((suppInfo &amp; GSS_S_DUPLICATE_TOKEN) != 0);
+ 262  263      isOld = ((suppInfo &amp; GSS_S_OLD_TOKEN) != 0);
+ 263  264      isUnseq = ((suppInfo &amp; GSS_S_UNSEQ_TOKEN) != 0);
+ 264  265      hasGap = ((suppInfo &amp; GSS_S_GAP_TOKEN) != 0);
+ 265  266      minorMsg = getMinorMessage(env, jstub, minor);
+ 266  267      if ((*env)-&gt;ExceptionCheck(env)) {
+ 267  268        return;
+ 268  269      }
+ 269  270      (*env)-&gt;CallVoidMethod(env, jprop, MID_MessageProp_setSupplementaryStates,
+ 270  271                             isDuplicate, isOld, isUnseq, hasGap, minor,
+ 271  272                             minorMsg);
+ 272  273    }
+ 273  274  }
+ 274  275  
+ 275  276  /*
+ 276  277   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 277  278   * Method:    indicateMechs
+ 278  279   * Signature: ()[Lorg/ietf/jgss/Oid;
+ 279  280   */
+ 280  281  JNIEXPORT jobjectArray JNICALL
+ 281  282  Java_sun_security_jgss_wrapper_GSSLibStub_indicateMechs(JNIEnv *env,
+ 282  283                                                          jclass jcls)
+ 283  284  {
+ 284  285    if (ftab-&gt;mechs != NULL &amp;&amp; ftab-&gt;mechs != GSS_C_NO_OID_SET) {
+ 285  286      return getJavaOIDArray(env, ftab-&gt;mechs);
+ 286  287    } else return NULL;
+ 287  288  }
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">30 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 288  289  
+ 289  290  /*
+ 290  291   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 291  292   * Method:    inquireNamesForMech
+ 292  293   * Signature: ()[Lorg/ietf/jgss/Oid;
+ 293  294   */
+ 294  295  JNIEXPORT jobjectArray JNICALL
+ 295  296  Java_sun_security_jgss_wrapper_GSSLibStub_inquireNamesForMech(JNIEnv *env,
+ 296  297                                                                jobject jobj)
+ 297  298  {
+<span class='subtracted'> 298      -  OM_uint32 minor, major;
+</span><span class='added'>      299 +  OM_uint32 minor, major, dummy;
+</span> 299  300    gss_OID mech;
+ 300  301    gss_OID_set nameTypes;
+ 301  302    jobjectArray result;
+ 302  303  
+ 303  304    if (ftab-&gt;inquireNamesForMech != NULL) {
+ 304  305      mech = (gss_OID)jlong_to_ptr((*env)-&gt;GetLongField(env, jobj, FID_GSSLibStub_pMech));
+ 305  306      nameTypes = GSS_C_NO_OID_SET;
+ 306  307  
+ 307  308      /* gss_inquire_names_for_mech(...) =&gt; N/A */
+ 308  309      major = (*ftab-&gt;inquireNamesForMech)(&amp;minor, mech, &amp;nameTypes);
+ 309  310  
+ 310  311      /* release intermediate buffers before checking status */
+ 311  312      result = getJavaOIDArray(env, nameTypes);
+<span class='subtracted'> 312      -    deleteGSSOIDSet(nameTypes);
+</span><span class='added'>      313 +    (*ftab-&gt;releaseOidSet)(&amp;dummy, &amp;nameTypes);
+</span> 313  314      if ((*env)-&gt;ExceptionCheck(env)) {
+ 314  315        return NULL;
+ 315  316      }
+ 316  317  
+ 317  318      checkStatus(env, jobj, major, minor, "[GSSLibStub_inquireNamesForMech]");
+ 318  319      if ((*env)-&gt;ExceptionCheck(env)) {
+ 319  320        return NULL;
+ 320  321      }
+ 321  322      return result;
+ 322  323    }
+</pre>
+<pre id='elided4' class='elided' style='display: none'> 323  324    return NULL;
+ 324  325  }
+ 325  326  
+ 326  327  /*
+ 327  328   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 328  329   * Method:    releaseName
+ 329  330   * Signature: (J)V
+ 330  331   */
+ 331  332  JNIEXPORT void JNICALL
+ 332  333  Java_sun_security_jgss_wrapper_GSSLibStub_releaseName(JNIEnv *env,
+ 333  334                                                        jobject jobj,
+ 334  335                                                        jlong pName)
+ 335  336  {
+ 336  337    OM_uint32 minor, major;
+ 337  338    gss_name_t nameHdl;
+ 338  339  
+ 339  340    nameHdl = (gss_name_t) jlong_to_ptr(pName);
+ 340  341  
+ 341  342    TRACE1("[GSSLibStub_releaseName] %ld", (long) pName);
+ 342  343  
+ 343  344    if (nameHdl != GSS_C_NO_NAME) {
+ 344  345      /* gss_release_name(...) =&gt; GSS_S_BAD_NAME */
+ 345  346      major = (*ftab-&gt;releaseName)(&amp;minor, &amp;nameHdl);
+ 346  347      checkStatus(env, jobj, major, minor, "[GSSLibStub_releaseName]");
+ 347  348    }
+ 348  349  }
+ 349  350  
+ 350  351  /*
+ 351  352   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 352  353   * Method:    importName
+ 353  354   * Signature: ([BLorg/ietf/jgss/Oid;)J
+ 354  355   */
+ 355  356  JNIEXPORT jlong JNICALL
+ 356  357  Java_sun_security_jgss_wrapper_GSSLibStub_importName(JNIEnv *env,
+ 357  358                                                       jobject jobj,
+ 358  359                                                       jbyteArray jnameVal,
+</pre>
+<table id='hb-elided4' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">36 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided4", "hb-elided4", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 359  360                                                       jobject jnameType)
+ 360  361  {
+ 361  362    OM_uint32 minor, major;
+ 362  363    gss_buffer_desc nameVal;
+ 363  364    gss_OID nameType;
+ 364  365    gss_name_t nameHdl;
+ 365  366    nameHdl = GSS_C_NO_NAME;
+ 366  367  
+ 367  368    TRACE0("[GSSLibStub_importName]");
+ 368  369  
+<span class='subtracted'> 369      -  initGSSBuffer(env, jnameVal, &amp;nameVal);
+</span><span class='added'>      370 +  initGSSBuffer(env, jnameVal, &amp;nameVal, JNI_FALSE);
+</span> 370  371    if ((*env)-&gt;ExceptionCheck(env)) {
+ 371  372        return jlong_zero;
+ 372  373    }
+ 373  374  
+ 374  375    nameType = newGSSOID(env, jnameType);
+ 375  376    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='subtracted'> 376      -    resetGSSBuffer(&amp;nameVal);
+</span><span class='added'>      377 +    resetGSSBuffer(env, jnameVal, &amp;nameVal);
+</span> 377  378      return jlong_zero;
+ 378  379    }
+ 379  380  
+ 380  381    /* gss_import_name(...) =&gt; GSS_S_BAD_NAMETYPE, GSS_S_BAD_NAME,
+ 381  382       GSS_S_BAD_MECH */
+ 382  383    major = (*ftab-&gt;importName)(&amp;minor, &amp;nameVal, nameType, &amp;nameHdl);
+ 383  384  
+ 384  385    TRACE1("[GSSLibStub_importName] %" PRIuPTR  "", (uintptr_t) nameHdl);
+ 385  386  
+ 386  387    /* release intermediate buffers */
+ 387  388    deleteGSSOID(nameType);
+<span class='subtracted'> 388      -  resetGSSBuffer(&amp;nameVal);
+</span><span class='added'>      389 +  resetGSSBuffer(env, jnameVal, &amp;nameVal);
+</span> 389  390  
+ 390  391    checkStatus(env, jobj, major, minor, "[GSSLibStub_importName]");
+ 391  392    if ((*env)-&gt;ExceptionCheck(env)) {
+ 392  393      return jlong_zero;
+ 393  394    }
+ 394  395    return ptr_to_jlong(nameHdl);
+ 395  396  }
+ 396  397  
+ 397  398  
+ 398  399  /*
+</pre>
+<pre id='elided5' class='elided' style='display: none'> 399  400   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 400  401   * Method:    compareName
+ 401  402   * Signature: (JJ)Z
+ 402  403   */
+ 403  404  JNIEXPORT jboolean JNICALL
+ 404  405  Java_sun_security_jgss_wrapper_GSSLibStub_compareName(JNIEnv *env,
+ 405  406                                                        jobject jobj,
+ 406  407                                                        jlong pName1,
+ 407  408                                                        jlong pName2)
+ 408  409  {
+ 409  410    OM_uint32 minor, major;
+ 410  411    gss_name_t nameHdl1, nameHdl2;
+ 411  412    int isEqual;
+ 412  413  
+ 413  414    isEqual = 0;
+ 414  415    nameHdl1 = (gss_name_t) jlong_to_ptr(pName1);
+ 415  416    nameHdl2 = (gss_name_t) jlong_to_ptr(pName2);
+ 416  417  
+ 417  418    TRACE2("[GSSLibStub_compareName] %ld %ld", (long)pName1, (long)pName2);
+ 418  419  
+ 419  420    if ((nameHdl1 != GSS_C_NO_NAME) &amp;&amp; (nameHdl2 != GSS_C_NO_NAME)) {
+ 420  421  
+ 421  422      /* gss_compare_name(...) =&gt; GSS_S_BAD_NAMETYPE, GSS_S_BAD_NAME(!) */
+ 422  423      major = (*ftab-&gt;compareName)(&amp;minor, nameHdl1, nameHdl2, &amp;isEqual);
+ 423  424  
+ 424  425      checkStatus(env, jobj, major, minor, "[GSSLibStub_compareName]");
+ 425  426    }
+ 426  427    return (isEqual != 0);
+ 427  428  }
+ 428  429  
+ 429  430  /*
+ 430  431   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 431  432   * Method:    canonicalizeName
+ 432  433   * Signature: (J)J
+ 433  434   */
+ 434  435  JNIEXPORT jlong JNICALL
+ 435  436  Java_sun_security_jgss_wrapper_GSSLibStub_canonicalizeName(JNIEnv *env,
+ 436  437                                                             jobject jobj,
+ 437  438                                                             jlong pName)
+ 438  439  {
+ 439  440    OM_uint32 minor, major;
+ 440  441    gss_name_t nameHdl, mnNameHdl;
+ 441  442    gss_OID mech;
+ 442  443  
+ 443  444    nameHdl = (gss_name_t) jlong_to_ptr(pName);
+ 444  445  
+ 445  446    TRACE1("[GSSLibStub_canonicalizeName] %ld", (long) pName);
+ 446  447  
+ 447  448    if (nameHdl != GSS_C_NO_NAME) {
+ 448  449      mech = (gss_OID) jlong_to_ptr((*env)-&gt;GetLongField(env, jobj, FID_GSSLibStub_pMech));
+ 449  450      mnNameHdl = GSS_C_NO_NAME;
+ 450  451  
+ 451  452      /* gss_canonicalize_name(...) may return GSS_S_BAD_NAMETYPE,
+ 452  453         GSS_S_BAD_NAME, GSS_S_BAD_MECH */
+ 453  454      major = (*ftab-&gt;canonicalizeName)(&amp;minor, nameHdl, mech, &amp;mnNameHdl);
+ 454  455  
+ 455  456      TRACE1("[GSSLibStub_canonicalizeName] MN=%" PRIuPTR "", (uintptr_t)mnNameHdl);
+ 456  457  
+ 457  458      checkStatus(env, jobj, major, minor, "[GSSLibStub_canonicalizeName]");
+ 458  459      if ((*env)-&gt;ExceptionCheck(env)) {
+ 459  460        return ptr_to_jlong(GSS_C_NO_NAME);
+ 460  461      }
+ 461  462      return ptr_to_jlong(mnNameHdl);
+ 462  463    }
+ 463  464    return ptr_to_jlong(GSS_C_NO_NAME);
+ 464  465  }
+</pre>
+<table id='hb-elided5' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided5", "hb-elided5", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">66 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided5", "hb-elided5", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 465  466  
+ 466  467  /*
+ 467  468   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 468  469   * Method:    exportName
+ 469  470   * Signature: (J)[B
+ 470  471   */
+ 471  472  JNIEXPORT jbyteArray JNICALL
+ 472  473  Java_sun_security_jgss_wrapper_GSSLibStub_exportName(JNIEnv *env,
+ 473  474                                                       jobject jobj,
+ 474  475                                                       jlong pName) {
+<span class='subtracted'> 475      -  OM_uint32 minor, major;
+</span><span class='added'>      476 +  OM_uint32 minor, major, dummy;
+</span> 476  477    gss_name_t nameHdl, mNameHdl;
+<span class='subtracted'> 477      -  gss_buffer_desc outBuf;
+ 478      -  jbyteArray jresult;
+</span><span class='added'>      478 +  gss_buffer_desc outBuf = GSS_C_EMPTY_BUFFER;
+</span> 479  479  
+ 480  480    nameHdl = (gss_name_t) jlong_to_ptr(pName);
+ 481  481  
+ 482  482    TRACE1("[GSSLibStub_exportName] %ld", (long) pName);
+ 483  483  
+ 484  484    /* gss_export_name(...) =&gt; GSS_S_NAME_NOT_MN, GSS_S_BAD_NAMETYPE,
+ 485  485       GSS_S_BAD_NAME */
+ 486  486    major = (*ftab-&gt;exportName)(&amp;minor, nameHdl, &amp;outBuf);
+ 487  487  
+ 488  488    /* canonicalize the internal name to MN and retry */
+</pre>
+<pre id='elided6' class='elided' style='display: none'> 489  489    if (major == GSS_S_NAME_NOT_MN) {
+ 490  490      /* release intermediate buffers before retrying */
+ 491  491      (*ftab-&gt;releaseBuffer)(&amp;minor, &amp;outBuf);
+ 492  492  
+</pre>
+<table id='hb-elided6' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided6", "hb-elided6", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">4 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided6", "hb-elided6", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 493  493      TRACE0("[GSSLibStub_exportName] canonicalize and re-try");
+ 494  494  
+ 495  495      mNameHdl = (gss_name_t)jlong_to_ptr(
+ 496  496          Java_sun_security_jgss_wrapper_GSSLibStub_canonicalizeName
+ 497  497                                          (env, jobj, pName));
+ 498  498      if ((*env)-&gt;ExceptionCheck(env)) {
+ 499  499          return NULL;
+ 500  500      }
+ 501  501  
+ 502  502      major = (*ftab-&gt;exportName)(&amp;minor, mNameHdl, &amp;outBuf);
+<span class='subtracted'> 503      -    Java_sun_security_jgss_wrapper_GSSLibStub_releaseName
+ 504      -                                        (env, jobj, ptr_to_jlong(mNameHdl));
+ 505      -    if ((*env)-&gt;ExceptionCheck(env)) {
+ 506      -      /* release intermediate buffers */
+ 507      -      (*ftab-&gt;releaseBuffer)(&amp;minor, &amp;outBuf);
+ 508      -      return NULL;
+ 509      -    }
+</span><span class='added'>      503 +    (void) (*ftab-&gt;releaseName)(&amp;dummy, &amp;mNameHdl);
+</span> 510  504    }
+ 511  505  
+<span class='subtracted'> 512      -  /* release intermediate buffers before checking status */
+ 513      -  jresult = getJavaBuffer(env, &amp;outBuf);
+</span><span class='added'>      506 +  checkStatus(env, jobj, major, minor, "[GSSLibStub_exportName]");
+</span> 514  507    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>      508 +    (void) (*ftab-&gt;releaseBuffer)(&amp;dummy, &amp;outBuf);
+</span> 515  509      return NULL;
+ 516  510    }
+<span class='added'>      511 +  /* Map outBuf to byteArray result and release */
+      512 +  return getJavaBuffer(env, &amp;outBuf, JNI_TRUE);
+      513 +}
+</span> 517  514  
+<span class='subtracted'> 518      -  checkStatus(env, jobj, major, minor, "[GSSLibStub_exportName]");
+ 519      -  if ((*env)-&gt;ExceptionCheck(env)) {
+</span><span class='added'>      515 +/*
+      516 + * Class:     sun_security_jgss_wrapper_GSSLibStub
+      517 + * Method:    localName
+      518 + * Signature: (J)Ljava/lang/String;
+      519 + */
+      520 +JNIEXPORT jstring JNICALL
+      521 +Java_sun_security_jgss_wrapper_GSSLibStub_localName(JNIEnv *env,
+      522 +                                                    jobject jobj,
+      523 +                                                    jlong pName,
+      524 +                                                    jobject jOid)
+      525 +{
+      526 +  OM_uint32 minor, major, dummy;
+      527 +  gss_name_t nameHdl, mnNameHdl;
+      528 +  gss_buffer_desc outBuf = GSS_C_EMPTY_BUFFER;
+      529 +  gss_OID mech;
+      530 +
+      531 +  nameHdl = (gss_name_t) jlong_to_ptr(pName);
+      532 +
+      533 +  if (ftab-&gt;localName == NULL) {
+      534 +    TRACE0("GSSLibStub_localName not supported by GSS provider");
+      535 +    checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0,
+      536 +                "[GSSLibStub_localName]");
+</span> 520  537      return NULL;
+ 521  538    }
+<span class='subtracted'> 522      -  return jresult;
+</span><span class='added'>      539 +  mech = newGSSOID(env, jOid);
+      540 +
+      541 +  /* gss_localname(...) =&gt; GSS_S_NAME_NOT_MN, GSS_S_BAD_NAMETYPE,
+      542 +     GSS_S_BAD_NAME */
+      543 +  major = (*ftab-&gt;localName)(&amp;minor, nameHdl, mech, &amp;outBuf);
+      544 +  if (major == GSS_S_COMPLETE) {
+      545 +    deleteGSSOID(mech);
+      546 +    return getJavaString(env, &amp;outBuf);
+      547 +  }
+      548 +  (*ftab-&gt;releaseBuffer)(&amp;minor, &amp;outBuf);
+      549 +
+      550 +  if (major != GSS_S_NAME_NOT_MN) {
+      551 +    checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
+      552 +    goto err;
+      553 +  }
+      554 +
+      555 +  /* canonicalize the internal name to MN and retry */
+      556 +  TRACE0("[GSSLibStub_localName] canonicalize and re-try");
+      557 +
+      558 +  major = (*ftab-&gt;canonicalizeName)(&amp;minor, nameHdl, mech, &amp;mnNameHdl);
+      559 +  checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
+      560 +  if ((*env)-&gt;ExceptionCheck(env))
+      561 +    goto err;
+      562 +
+      563 +  major = (*ftab-&gt;localName)(&amp;minor, mnNameHdl, mech, &amp;outBuf);
+      564 +  (void) (*ftab-&gt;releaseName)(&amp;dummy, &amp;mnNameHdl);
+      565 +
+      566 +  checkStatus(env, jobj, major, minor, "[GSSLibStub_localName]");
+      567 +  if ((*env)-&gt;ExceptionCheck(env) == JNI_FALSE &amp;&amp; major == GSS_S_COMPLETE) {
+      568 +    deleteGSSOID(mech);
+      569 +    return getJavaString(env, &amp;outBuf);
+      570 +  }
+      571 +  (*ftab-&gt;releaseBuffer)(&amp;minor, &amp;outBuf);
+      572 +
+      573 +err:
+      574 +  deleteGSSOID(mech);
+      575 +  return NULL;
+</span> 523  576  }
+ 524  577  
+ 525  578  /*
+ 526  579   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 527  580   * Method:    displayName
+ 528  581   * Signature: (J)[Ljava/lang/Object;
+ 529  582   */
+ 530  583  JNIEXPORT jobjectArray JNICALL
+ 531  584  Java_sun_security_jgss_wrapper_GSSLibStub_displayName(JNIEnv *env,
+ 532  585                                                        jobject jobj,
+ 533  586                                                        jlong pName) {
+ 534  587    OM_uint32 minor, major;
+ 535  588    gss_name_t nameHdl;
+<span class='subtracted'> 536      -  gss_buffer_desc outNameBuf;
+</span><span class='added'>      589 +  gss_buffer_desc outNameBuf = GSS_C_EMPTY_BUFFER;
+</span> 537  590    gss_OID outNameType;
+ 538  591    jstring jname;
+ 539  592    jobject jtype;
+ 540  593    jobjectArray jresult;
+ 541  594  
+ 542  595    nameHdl = (gss_name_t) jlong_to_ptr(pName);
+ 543  596  
+ 544  597    TRACE1("[GSSLibStub_displayName] %ld", (long) pName);
+ 545  598  
+ 546  599    if (nameHdl == GSS_C_NO_NAME) {
+</pre>
+<pre id='elided7' class='elided' style='display: none'> 547  600      checkStatus(env, jobj, GSS_S_BAD_NAME, 0, "[GSSLibStub_displayName]");
+ 548  601      return NULL;
+ 549  602    }
+ 550  603  
+ 551  604    /* gss_display_name(...) =&gt; GSS_S_BAD_NAME */
+ 552  605    major = (*ftab-&gt;displayName)(&amp;minor, nameHdl, &amp;outNameBuf, &amp;outNameType);
+ 553  606  
+ 554  607    /* release intermediate buffers before checking status */
+ 555  608    jname = getJavaString(env, &amp;outNameBuf);
+ 556  609    if ((*env)-&gt;ExceptionCheck(env)) {
+ 557  610      return NULL;
+ 558  611    }
+ 559  612  
+ 560  613    checkStatus(env, jobj, major, minor, "[GSSLibStub_displayName]");
+ 561  614    if ((*env)-&gt;ExceptionCheck(env)) {
+ 562  615      return NULL;
+ 563  616    }
+ 564  617  
+ 565  618    jtype = getJavaOID(env, outNameType);
+ 566  619    if ((*env)-&gt;ExceptionCheck(env)) {
+ 567  620      return NULL;
+ 568  621    }
+ 569  622  
+ 570  623    jresult = (*env)-&gt;NewObjectArray(env, 2, CLS_Object, NULL);
+ 571  624    /* return immediately if an exception has occurred */
+ 572  625    if ((*env)-&gt;ExceptionCheck(env)) {
+ 573  626      return NULL;
+ 574  627    }
+ 575  628  
+ 576  629    (*env)-&gt;SetObjectArrayElement(env, jresult, 0, jname);
+ 577  630    if ((*env)-&gt;ExceptionCheck(env)) {
+ 578  631      return NULL;
+ 579  632    }
+ 580  633    (*env)-&gt;SetObjectArrayElement(env, jresult, 1, jtype);
+</pre>
+<table id='hb-elided7' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided7", "hb-elided7", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">34 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided7", "hb-elided7", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 581  634    if ((*env)-&gt;ExceptionCheck(env)) {
+ 582  635      return NULL;
+ 583  636    }
+ 584  637  
+ 585  638    return jresult;
+ 586  639  }
+ 587  640  
+ 588  641  /*
+ 589  642   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 590  643   * Method:    acquireCred
+<span class='subtracted'> 591      - * Signature: (JII)J
+</span><span class='added'>      644 + * Signature: (JLjava/lang/String;[II)J
+</span> 592  645   */
+ 593  646  JNIEXPORT jlong JNICALL
+ 594  647  Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
+ 595  648                                                        jobject jobj,
+ 596  649                                                        jlong pName,
+<span class='added'>      650 +                                                      jstring jPassword,
+      651 +                                                      jarray jCredStore,
+</span> 597  652                                                        jint reqTime,
+ 598  653                                                        jint usage)
+ 599  654  {
+ 600  655    OM_uint32 minor, major;
+ 601  656    gss_OID mech;
+<span class='added'>      657 +  gss_OID_set_desc singleton;
+</span> 602  658    gss_OID_set mechs;
+ 603  659    gss_cred_usage_t credUsage;
+ 604  660    gss_name_t nameHdl;
+ 605  661    gss_cred_id_t credHdl;
+ 606  662    credHdl = GSS_C_NO_CREDENTIAL;
+ 607  663  
+ 608  664    TRACE0("[GSSLibStub_acquireCred]");
+ 609  665  
+ 610  666    mech = (gss_OID) jlong_to_ptr((*env)-&gt;GetLongField(env, jobj, FID_GSSLibStub_pMech));
+<span class='subtracted'> 611      -  mechs = newGSSOIDSet(mech);
+</span><span class='added'>      667 +  mechs = makeGSSOIDSet(&amp;singleton, mech);
+</span> 612  668    credUsage = (gss_cred_usage_t) usage;
+ 613  669    nameHdl = (gss_name_t) jlong_to_ptr(pName);
+ 614  670  
+ 615  671    TRACE2("[GSSLibStub_acquireCred] pName=%ld, usage=%d", (long)pName, usage);
+ 616  672  
+ 617  673    /* gss_acquire_cred(...) =&gt; GSS_S_BAD_MECH, GSS_S_BAD_NAMETYPE,
+ 618  674       GSS_S_BAD_NAME, GSS_S_CREDENTIALS_EXPIRED, GSS_S_NO_CRED */
+<span class='subtracted'> 619      -  major =
+ 620      -    (*ftab-&gt;acquireCred)(&amp;minor, nameHdl, reqTime, mechs,
+ 621      -                     credUsage, &amp;credHdl, NULL, NULL);
+ 622      -  /* release intermediate buffers */
+ 623      -  deleteGSSOIDSet(mechs);
+</span><span class='added'>      675 +  if (jPassword == NULL &amp;&amp; jCredStore == NULL) {
+      676 +    major = (*ftab-&gt;acquireCred)(&amp;minor, nameHdl, reqTime, mechs, credUsage,
+      677 +                                 &amp;credHdl, NULL, NULL);
+      678 +  } else if (jPassword != NULL) {
+      679 +    gss_buffer_desc password;
+      680 +
+      681 +    if (ftab-&gt;acquireCredWithPassword == NULL) {
+      682 +      const char *msg = "GSSLibStub_acquireCred with password not supported "
+      683 +          "by GSS provider";
+      684 +
+      685 +      TRACE0(msg);
+      686 +      checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0, msg);
+      687 +      return ptr_to_jlong(NULL);
+      688 +    }
+      689 +
+      690 +    initGSSBufferString(env, jPassword, &amp;password);
+      691 +    if ((*env)-&gt;ExceptionCheck(env)) {
+      692 +      return jlong_zero;
+      693 +    }
+      694 +    major = (*ftab-&gt;acquireCredWithPassword)(&amp;minor, nameHdl, &amp;password,
+      695 +                                             reqTime, mechs, credUsage,
+      696 +                                             &amp;credHdl, NULL, NULL);
+      697 +    resetGSSBufferString(env, jPassword, &amp;password);
+      698 +  } else {
+      699 +    gss_key_value_set_desc credStore = {0, 0};
+      700 +
+      701 +    if (ftab-&gt;acquireCredFrom == NULL) {
+      702 +      const char *msg = "GSSLibStub_acquireCred from credential store not "
+      703 +          "supported by GSS provider";
+      704 +
+      705 +      TRACE0("[GSSLibStub_acquireCred] acquiring from a specific credential "
+      706 +             "store not supported by GSS provider");
+      707 +      checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0,
+      708 +                  "[GSSLibStub_acquireCred]");
+      709 +      return ptr_to_jlong(NULL);
+      710 +    }
+      711 +
+      712 +    initGSSCredStore(env, jCredStore, &amp;credStore);
+      713 +    if ((*env)-&gt;ExceptionCheck(env)) {
+      714 +      return jlong_zero;
+      715 +    }
+      716 +    major = (*ftab-&gt;acquireCredFrom)(&amp;minor, nameHdl, reqTime, mechs,
+      717 +                                     credUsage, &amp;credStore, &amp;credHdl,
+      718 +                                     NULL, NULL);
+      719 +    resetGSSCredStore(env, jCredStore, &amp;credStore);
+      720 +  }
+</span> 624  721  
+ 625  722    TRACE1("[GSSLibStub_acquireCred] pCred=%" PRIuPTR "", (uintptr_t) credHdl);
+ 626  723  
+ 627  724    checkStatus(env, jobj, major, minor, "[GSSLibStub_acquireCred]");
+ 628  725    if ((*env)-&gt;ExceptionCheck(env)) {
+ 629  726      return jlong_zero;
+ 630  727    }
+ 631  728    return ptr_to_jlong(credHdl);
+ 632  729  }
+ 633  730  
+ 634  731  /*
+ 635  732   * Class:     sun_security_jgss_wrapper_GSSLibStub
+<span class='added'>      733 + * Method:    storeCred
+      734 + * Signature: (JILorg/ietf/jgss/Oid;ZZ[)J
+      735 + */
+      736 +JNIEXPORT jlong JNICALL
+      737 +Java_sun_security_jgss_wrapper_GSSLibStub_storeCred(JNIEnv *env,
+      738 +                                                    jobject jobj,
+      739 +                                                    jlong pCred,
+      740 +                                                    jint usage,
+      741 +                                                    jobject jmech,
+      742 +                                                    jboolean overwrite,
+      743 +                                                    jboolean defaultCred,
+      744 +                                                    jarray jCredStore)
+      745 +{
+      746 +  OM_uint32 minor, major;
+      747 +  gss_key_value_set_desc credStore;
+      748 +  gss_cred_usage_t credUsage;
+      749 +  gss_cred_id_t credHdl;
+      750 +  gss_OID mech;
+      751 +
+      752 +  TRACE0("[GSSLibStub_storeCred]");
+      753 +
+      754 +  credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
+      755 +  credUsage = (gss_cred_usage_t) usage;
+      756 +
+      757 +  mech = newGSSOID(env, jmech);
+      758 +  if ((*env)-&gt;ExceptionCheck(env)) {
+      759 +    return jlong_zero;
+      760 +  }
+      761 +
+      762 +  TRACE2("[GSSLibStub_storeCred] pCred=%ld, usage=%d", (long)pCred, usage);
+      763 +
+      764 +  if (ftab-&gt;storeCredInto == NULL) {
+      765 +    TRACE0("[GSSLibStub_storeCred] GSSLibStub_storeCred not supported by "
+      766 +           "GSS provider");
+      767 +    checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0, "[GSSLibStub_storeCred]");
+      768 +    return ptr_to_jlong(NULL);
+      769 +  }
+      770 +
+      771 +  initGSSCredStore(env, jCredStore, &amp;credStore);
+      772 +  if ((*env)-&gt;ExceptionCheck(env)) {
+      773 +    return jlong_zero;
+      774 +  }
+      775 +  major = (*ftab-&gt;storeCredInto)(&amp;minor, credHdl, credUsage, mech,
+      776 +                                 overwrite, defaultCred, &amp;credStore,
+      777 +                                 NULL, NULL);
+      778 +  resetGSSCredStore(env, jCredStore, &amp;credStore);
+      779 +
+      780 +  TRACE1("[GSSLibStub_storeCred] pCred=%" PRIuPTR "", (uintptr_t) credHdl);
+      781 +
+      782 +  checkStatus(env, jobj, major, minor, "[GSSLibStub_storeCred]");
+      783 +  if ((*env)-&gt;ExceptionCheck(env)) {
+      784 +    return jlong_zero;
+      785 +  }
+      786 +  return ptr_to_jlong(credHdl);
+      787 +}
+      788 +
+      789 +/*
+      790 + * Class:     sun_security_jgss_wrapper_GSSLibStub
+</span> 636  791   * Method:    releaseCred
+ 637  792   * Signature: (J)J
+ 638  793   */
+ 639  794  JNIEXPORT jlong JNICALL
+ 640  795  Java_sun_security_jgss_wrapper_GSSLibStub_releaseCred(JNIEnv *env,
+ 641  796                                                        jobject jobj,
+ 642  797                                                        jlong pCred)
+ 643  798  {
+ 644  799    OM_uint32 minor, major;
+ 645  800    gss_cred_id_t credHdl;
+</pre>
+<pre id='elided8' class='elided' style='display: none'> 646  801  
+ 647  802    credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
+ 648  803  
+ 649  804    TRACE1("[GSSLibStub_releaseCred] %ld", (long int)pCred);
+ 650  805  
+ 651  806    if (credHdl != GSS_C_NO_CREDENTIAL) {
+ 652  807      /* gss_release_cred(...) =&gt; GSS_S_NO_CRED(!) */
+ 653  808      major = (*ftab-&gt;releaseCred)(&amp;minor, &amp;credHdl);
+ 654  809  
+ 655  810      checkStatus(env, jobj, major, minor, "[GSSLibStub_releaseCred]");
+ 656  811      if ((*env)-&gt;ExceptionCheck(env)) {
+ 657  812        return jlong_zero;
+ 658  813      }
+ 659  814    }
+ 660  815    return ptr_to_jlong(credHdl);
+ 661  816  }
+ 662  817  
+ 663  818  /*
+ 664  819   * Utility routine for obtaining info about a credential.
+ 665  820   */
+ 666  821  void inquireCred(JNIEnv *env, jobject jobj, gss_cred_id_t pCred,
+ 667  822                   jint type, void *result) {
+ 668  823    OM_uint32 minor=0, major=0;
+ 669  824    OM_uint32 routineErr;
+ 670  825    gss_cred_id_t credHdl;
+ 671  826  
+ 672  827    credHdl = pCred;
+ 673  828  
+ 674  829    TRACE1("[gss_inquire_cred] %" PRIuPTR "", (uintptr_t) pCred);
+ 675  830  
+ 676  831    /* gss_inquire_cred(...) =&gt; GSS_S_DEFECTIVE_CREDENTIAL(!),
+ 677  832       GSS_S_CREDENTIALS_EXPIRED(!), GSS_S_NO_CRED(!) */
+ 678  833    if (type == TYPE_CRED_NAME) {
+ 679  834      major = (*ftab-&gt;inquireCred)(&amp;minor, credHdl, result, NULL, NULL, NULL);
+ 680  835    } else if (type == TYPE_CRED_TIME) {
+ 681  836      major = (*ftab-&gt;inquireCred)(&amp;minor, credHdl, NULL, result, NULL, NULL);
+ 682  837    } else if (type == TYPE_CRED_USAGE) {
+ 683  838      major = (*ftab-&gt;inquireCred)(&amp;minor, credHdl, NULL, NULL, result, NULL);
+ 684  839    }
+ 685  840  
+ 686  841    routineErr = GSS_ROUTINE_ERROR(major);
+ 687  842    if (routineErr == GSS_S_CREDENTIALS_EXPIRED) {
+ 688  843      /* ignore GSS_S_CREDENTIALS_EXPIRED for query  */
+ 689  844      major = GSS_CALLING_ERROR(major) |
+ 690  845        GSS_SUPPLEMENTARY_INFO(major);
+ 691  846    } else if (routineErr == GSS_S_NO_CRED) {
+ 692  847      /* twik since Java API throws BAD_MECH instead of NO_CRED */
+ 693  848      major = GSS_CALLING_ERROR(major) |
+ 694  849        GSS_S_BAD_MECH  | GSS_SUPPLEMENTARY_INFO(major);
+ 695  850    }
+ 696  851    checkStatus(env, jobj, major, minor, "[gss_inquire_cred]");
+ 697  852  }
+ 698  853  
+ 699  854  /*
+ 700  855   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 701  856   * Method:    getCredName
+ 702  857   * Signature: (J)J
+ 703  858   */
+ 704  859  JNIEXPORT jlong JNICALL
+ 705  860  Java_sun_security_jgss_wrapper_GSSLibStub_getCredName(JNIEnv *env,
+ 706  861                                                        jobject jobj,
+ 707  862                                                        jlong pCred)
+ 708  863  {
+ 709  864    gss_name_t nameHdl;
+ 710  865    gss_cred_id_t credHdl;
+ 711  866  
+ 712  867    credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
+ 713  868  
+ 714  869    TRACE1("[GSSLibStub_getCredName] %ld", (long int)pCred);
+ 715  870  
+ 716  871    nameHdl = GSS_C_NO_NAME;
+ 717  872    inquireCred(env, jobj, credHdl, TYPE_CRED_NAME, &amp;nameHdl);
+ 718  873    /* return immediately if an exception has occurred */
+ 719  874    if ((*env)-&gt;ExceptionCheck(env)) {
+ 720  875      return jlong_zero;
+ 721  876    }
+ 722  877  
+ 723  878    TRACE1("[GSSLibStub_getCredName] pName=%" PRIuPTR "", (uintptr_t) nameHdl);
+ 724  879    return ptr_to_jlong(nameHdl);
+ 725  880  }
+ 726  881  
+ 727  882  /*
+ 728  883   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 729  884   * Method:    getCredTime
+ 730  885   * Signature: (J)I
+ 731  886   */
+ 732  887  JNIEXPORT jint JNICALL
+ 733  888  Java_sun_security_jgss_wrapper_GSSLibStub_getCredTime(JNIEnv *env,
+ 734  889                                                        jobject jobj,
+ 735  890                                                        jlong pCred)
+ 736  891  {
+ 737  892    gss_cred_id_t credHdl;
+ 738  893    OM_uint32 lifetime;
+ 739  894  
+ 740  895    credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
+ 741  896  
+ 742  897    TRACE1("[GSSLibStub_getCredTime] %ld", (long int)pCred);
+ 743  898  
+ 744  899    lifetime = 0;
+ 745  900    inquireCred(env, jobj, credHdl, TYPE_CRED_TIME, &amp;lifetime);
+ 746  901    /* return immediately if an exception has occurred */
+ 747  902    if ((*env)-&gt;ExceptionCheck(env)) {
+ 748  903      return 0;
+ 749  904    }
+ 750  905    return getJavaTime(lifetime);
+ 751  906  }
+ 752  907  
+ 753  908  /*
+ 754  909   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 755  910   * Method:    getCredUsage
+ 756  911   * Signature: (J)I
+ 757  912   */
+ 758  913  JNIEXPORT jint JNICALL
+ 759  914  Java_sun_security_jgss_wrapper_GSSLibStub_getCredUsage(JNIEnv *env,
+ 760  915                                                         jobject jobj,
+ 761  916                                                         jlong pCred)
+ 762  917  {
+ 763  918    gss_cred_usage_t usage;
+ 764  919    gss_cred_id_t credHdl;
+ 765  920  
+ 766  921    credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
+ 767  922  
+ 768  923    TRACE1("[GSSLibStub_getCredUsage] %ld", (long int)pCred);
+ 769  924  
+ 770  925    inquireCred(env, jobj, credHdl, TYPE_CRED_USAGE, &amp;usage);
+ 771  926    /* return immediately if an exception has occurred */
+ 772  927    if ((*env)-&gt;ExceptionCheck(env)) {
+ 773  928      return -1;
+ 774  929    }
+ 775  930    return (jint) usage;
+ 776  931  }
+ 777  932  /*
+ 778  933   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 779  934   * Method:    importContext
+ 780  935   * Signature: ([B)Lsun/security/jgss/wrapper/NativeGSSContext;
+ 781  936   */
+ 782  937  JNIEXPORT jobject JNICALL
+ 783  938  Java_sun_security_jgss_wrapper_GSSLibStub_importContext(JNIEnv *env,
+ 784  939                                                          jobject jobj,
+</pre>
+<table id='hb-elided8' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided8", "hb-elided8", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">139 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided8", "hb-elided8", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 785  940                                                          jbyteArray jctxtToken)
+ 786  941  {
+ 787  942    OM_uint32 minor, major;
+ 788  943    gss_buffer_desc ctxtToken;
+ 789  944    gss_ctx_id_t contextHdl;
+ 790  945    gss_OID mech, mech2;
+ 791  946  
+ 792  947    TRACE0("[GSSLibStub_importContext]");
+ 793  948  
+ 794  949    contextHdl = GSS_C_NO_CONTEXT;
+<span class='subtracted'> 795      -  initGSSBuffer(env, jctxtToken, &amp;ctxtToken);
+</span><span class='added'>      950 +  initGSSBuffer(env, jctxtToken, &amp;ctxtToken, JNI_FALSE);
+</span> 796  951    if ((*env)-&gt;ExceptionCheck(env)) {
+ 797  952      return NULL;
+ 798  953    }
+ 799  954  
+ 800  955    /* gss_import_sec_context(...) =&gt; GSS_S_NO_CONTEXT, GSS_S_DEFECTIVE_TOKEN,
+ 801  956       GSS_S_UNAVAILABLE, GSS_S_UNAUTHORIZED */
+ 802  957    major = (*ftab-&gt;importSecContext)(&amp;minor, &amp;ctxtToken, &amp;contextHdl);
+ 803  958  
+ 804  959    TRACE1("[GSSLibStub_importContext] pContext=%" PRIuPTR "", (uintptr_t) contextHdl);
+ 805  960  
+ 806  961    /* release intermediate buffers */
+<span class='subtracted'> 807      -  resetGSSBuffer(&amp;ctxtToken);
+</span><span class='added'>      962 +  resetGSSBuffer(env, jctxtToken, &amp;ctxtToken);
+</span> 808  963  
+ 809  964    checkStatus(env, jobj, major, minor, "[GSSLibStub_importContext]");
+ 810  965    /* return immediately if an exception has occurred */
+ 811  966    if ((*env)-&gt;ExceptionCheck(env)) {
+ 812  967      return NULL;
+ 813  968    }
+ 814  969  
+ 815  970    /* now that the context has been imported, proceed to find out
+ 816  971       its mech */
+ 817  972    major = (*ftab-&gt;inquireContext)(&amp;minor, contextHdl, NULL, NULL,
+</pre>
+<pre id='elided9' class='elided' style='display: none'> 818  973                                NULL, &amp;mech, NULL, NULL, NULL);
+ 819  974  
+ 820  975    checkStatus(env, jobj, major, minor, "[GSSLibStub_importContext] getMech");
+ 821  976    /* return immediately if an exception has occurred */
+ 822  977    if ((*env)-&gt;ExceptionCheck(env)) {
+ 823  978      return NULL;
+ 824  979    }
+ 825  980  
+ 826  981    mech2 = (gss_OID) jlong_to_ptr((*env)-&gt;GetLongField(env, jobj,
+</pre>
+<table id='hb-elided9' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided9", "hb-elided9", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">9 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided9", "hb-elided9", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 827  982        FID_GSSLibStub_pMech));
+ 828  983  
+ 829  984    if (sameMech(mech, mech2) == JNI_TRUE) {
+ 830  985      /* mech match - return the context object */
+ 831  986      return (*env)-&gt;NewObject(env, CLS_NativeGSSContext,
+ 832  987                                   MID_NativeGSSContext_ctor,
+ 833  988                                   ptr_to_jlong(contextHdl), jobj);
+ 834  989    } else {
+ 835  990      /* mech mismatch - clean up then return null */
+ 836  991      major = (*ftab-&gt;deleteSecContext)(&amp;minor, &amp;contextHdl, GSS_C_NO_BUFFER);
+<span class='subtracted'> 837      -    checkStatus(env, jobj, major, minor,
+</span><span class='added'>      992 +    checkStatus(env, jobj, GSS_S_FAILURE, minor,
+</span> 838  993          "[GSSLibStub_importContext] cleanup");
+ 839  994      return NULL;
+ 840  995    }
+ 841  996  }
+ 842  997  
+ 843  998  /*
+ 844  999   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 845 1000   * Method:    initContext
+ 846 1001   * Signature: (JJLorg/ietf/jgss/ChannelBinding;[BLsun/security/jgss/wrapper/NativeGSSContext;)[B
+ 847 1002   */
+ 848 1003  JNIEXPORT jbyteArray JNICALL
+ 849 1004  Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
+ 850 1005                                                        jobject jobj,
+ 851 1006                                                        jlong pCred,
+ 852 1007                                                        jlong pName,
+ 853 1008                                                        jobject jcb,
+ 854 1009                                                        jbyteArray jinToken,
+ 855 1010                                                        jobject jcontextSpi)
+ 856 1011  {
+<span class='subtracted'> 857      -  OM_uint32 minor, major;
+</span><span class='added'>     1012 +  OM_uint32 minor, major, dummy;
+</span> 858 1013    gss_cred_id_t credHdl ;
+ 859 1014    gss_ctx_id_t contextHdl, contextHdlSave;
+ 860 1015    gss_name_t targetName;
+ 861 1016    gss_OID mech;
+ 862 1017    OM_uint32 flags, aFlags;
+ 863 1018    OM_uint32 time, aTime;
+ 864 1019    gss_channel_bindings_t cb;
+ 865 1020    gss_buffer_desc inToken;
+<span class='subtracted'> 866      -  gss_buffer_desc outToken;
+ 867      -  jbyteArray jresult;
+ 868      -/* UNCOMMENT after SEAM bug#6287358 is backported to S10
+</span><span class='added'>     1021 +  gss_buffer_desc outToken = GSS_C_EMPTY_BUFFER;
+</span> 869 1022    gss_OID aMech;
+ 870 1023    jobject jMech;
+<span class='subtracted'> 871      -*/
+</span> 872 1024  
+ 873 1025    TRACE0("[GSSLibStub_initContext]");
+ 874 1026  
+ 875 1027    credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
+ 876 1028    contextHdl = contextHdlSave = (gss_ctx_id_t) jlong_to_ptr(
+ 877 1029      (*env)-&gt;GetLongField(env, jcontextSpi, FID_NativeGSSContext_pContext));
+ 878 1030    targetName = (gss_name_t) jlong_to_ptr(pName);
+ 879 1031    mech = (gss_OID) jlong_to_ptr((*env)-&gt;GetLongField(env, jobj, FID_GSSLibStub_pMech));
+ 880 1032    flags = (OM_uint32) (*env)-&gt;GetIntField(env, jcontextSpi,
+ 881 1033                                            FID_NativeGSSContext_flags);
+ 882 1034    time = getGSSTime((*env)-&gt;GetIntField(env, jcontextSpi,
+ 883 1035                                          FID_NativeGSSContext_lifetime));
+ 884 1036    cb = newGSSCB(env, jcb);
+ 885 1037    if ((*env)-&gt;ExceptionCheck(env)) {
+ 886 1038      return NULL;
+ 887 1039    }
+ 888 1040  
+<span class='subtracted'> 889      -  initGSSBuffer(env, jinToken, &amp;inToken);
+</span><span class='added'>     1041 +  initGSSBuffer(env, jinToken, &amp;inToken, JNI_FALSE);
+</span> 890 1042    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='subtracted'> 891      -    deleteGSSCB(cb);
+</span><span class='added'>     1043 +    deleteGSSCB(env, cb);
+</span> 892 1044      return NULL;
+ 893 1045    }
+ 894 1046  
+ 895 1047    TRACE2( "[GSSLibStub_initContext] before: pCred=%" PRIuPTR ", pContext=%" PRIuPTR "",
+ 896 1048            (uintptr_t)credHdl, (uintptr_t)contextHdl);
+ 897 1049  
+ 898 1050    /* gss_init_sec_context(...) =&gt; GSS_S_CONTINUE_NEEDED(!),
+ 899 1051       GSS_S_DEFECTIVE_TOKEN, GSS_S_NO_CRED, GSS_S_DEFECTIVE_CREDENTIAL(!),
+ 900 1052       GSS_S_CREDENTIALS_EXPIRED, GSS_S_BAD_BINDINGS, GSS_S_BAD_MIC,
+ 901 1053       GSS_S_OLD_TOKEN, GSS_S_DUPLICATE_TOKEN, GSS_S_NO_CONTEXT(!),
+ 902 1054       GSS_S_BAD_NAMETYPE, GSS_S_BAD_NAME(!), GSS_S_BAD_MECH */
+ 903 1055    major = (*ftab-&gt;initSecContext)(&amp;minor, credHdl,
+ 904 1056                                   &amp;contextHdl, targetName, mech,
+<span class='subtracted'> 905      -                                 flags, time, cb, &amp;inToken, NULL /*aMech*/,
+</span><span class='added'>     1057 +                                 flags, time, cb, &amp;inToken, &amp;aMech,
+</span> 906 1058                                   &amp;outToken, &amp;aFlags, &amp;aTime);
+ 907 1059  
+ 908 1060    TRACE2("[GSSLibStub_initContext] after: pContext=%" PRIuPTR ", outToken len=%ld",
+ 909 1061              (uintptr_t)contextHdl, (long)outToken.length);
+ 910 1062  
+ 911 1063    // update context handle with the latest value if changed
+ 912 1064    // this is to work with both MIT and Solaris. Former deletes half-built
+ 913 1065    // context if error occurs
+ 914 1066    if (contextHdl != contextHdlSave) {
+ 915 1067      (*env)-&gt;SetLongField(env, jcontextSpi, FID_NativeGSSContext_pContext,
+</pre>
+<pre id='elided10' class='elided' style='display: none'> 916 1068                           ptr_to_jlong(contextHdl));
+ 917 1069      TRACE1("[GSSLibStub_initContext] set pContext=%" PRIuPTR "", (uintptr_t)contextHdl);
+ 918 1070    }
+ 919 1071  
+ 920 1072    if (GSS_ERROR(major) == GSS_S_COMPLETE) {
+ 921 1073      /* update member values if needed */
+ 922 1074      (*env)-&gt;SetIntField(env, jcontextSpi, FID_NativeGSSContext_flags, aFlags);
+ 923 1075      TRACE1("[GSSLibStub_initContext] set flags=0x%x", aFlags);
+</pre>
+<table id='hb-elided10' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided10", "hb-elided10", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">8 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided10", "hb-elided10", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 924 1076  
+ 925 1077      if (major == GSS_S_COMPLETE) {
+ 926 1078        (*env)-&gt;SetIntField(env, jcontextSpi, FID_NativeGSSContext_lifetime,
+ 927 1079                            getJavaTime(aTime));
+ 928 1080        TRACE0("[GSSLibStub_initContext] context established");
+ 929 1081  
+ 930 1082        (*env)-&gt;SetBooleanField(env, jcontextSpi,
+ 931 1083                                FID_NativeGSSContext_isEstablished,
+ 932 1084                                JNI_TRUE);
+ 933 1085  
+<span class='subtracted'> 934      -/* UNCOMMENT after SEAM bug#6287358 is backported to S10
+ 935      -      jMech = getJavaOID(env, aMech);
+ 936      -      (*env)-&gt;SetObjectField(env, jcontextSpi,
+ 937      -                             FID_NativeGSSContext_actualMech, jMech);
+ 938      -*/
+</span><span class='added'>     1086 +      jMech = (aMech == GSS_C_NO_OID) ? NULL : getJavaOID(env, aMech);
+     1087 +      if (!(*env)-&gt;ExceptionCheck(env)) {
+     1088 +        (*env)-&gt;SetObjectField(env, jcontextSpi,
+     1089 +                               FID_NativeGSSContext_actualMech, jMech);
+     1090 +      }
+</span> 939 1091      } else if (major &amp; GSS_S_CONTINUE_NEEDED) {
+ 940 1092        TRACE0("[GSSLibStub_initContext] context not established");
+<span class='subtracted'> 941      -      major -= GSS_S_CONTINUE_NEEDED;
+</span><span class='added'>     1093 +      major &amp;= ~GSS_S_CONTINUE_NEEDED;
+</span> 942 1094      }
+ 943 1095    }
+ 944 1096  
+ 945 1097    /* release intermediate buffers before checking status */
+<span class='subtracted'> 946      -  deleteGSSCB(cb);
+ 947      -  resetGSSBuffer(&amp;inToken);
+ 948      -  jresult = getJavaBuffer(env, &amp;outToken);
+ 949      -  if ((*env)-&gt;ExceptionCheck(env)) {
+ 950      -    return NULL;
+ 951      -  }
+</span><span class='added'>     1098 +  deleteGSSCB(env, cb);
+     1099 +  resetGSSBuffer(env, jinToken, &amp;inToken);
+</span> 952 1100  
+ 953 1101    checkStatus(env, jobj, major, minor, "[GSSLibStub_initContext]");
+ 954 1102    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1103 +    (void) (*ftab-&gt;releaseBuffer)(&amp;dummy, &amp;outToken);
+</span> 955 1104      return NULL;
+ 956 1105    }
+<span class='subtracted'> 957      -  return jresult;
+</span><span class='added'>     1106 +  /* Map outToken to byteArray result and release */
+     1107 +  return getJavaBuffer(env, &amp;outToken, JNI_TRUE);
+</span> 958 1108  }
+ 959 1109  
+ 960 1110  /*
+ 961 1111   * Class:     sun_security_jgss_wrapper_GSSLibStub
+ 962 1112   * Method:    acceptContext
+ 963 1113   * Signature: (JLorg/ietf/jgss/ChannelBinding;[BLsun/security/jgss/wrapper/NativeGSSContext;)[B
+ 964 1114   */
+ 965 1115  JNIEXPORT jbyteArray JNICALL
+ 966 1116  Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
+ 967 1117                                                          jobject jobj,
+ 968 1118                                                          jlong pCred,
+ 969 1119                                                          jobject jcb,
+ 970 1120                                                          jbyteArray jinToken,
+ 971 1121                                                          jobject jcontextSpi)
+ 972 1122  {
+<span class='subtracted'> 973      -  OM_uint32 minor, major;
+</span><span class='added'>     1123 +  OM_uint32 minor, major, dummy;
+</span> 974 1124    OM_uint32 minor2, major2;
+ 975 1125    gss_ctx_id_t contextHdl, contextHdlSave;
+ 976 1126    gss_cred_id_t credHdl;
+ 977 1127    gss_buffer_desc inToken;
+ 978 1128    gss_channel_bindings_t cb;
+<span class='subtracted'> 979      -  gss_name_t srcName;
+ 980      -  gss_buffer_desc outToken;
+</span><span class='added'>     1129 +  gss_name_t srcName = GSS_C_NO_NAME;
+     1130 +  gss_buffer_desc outToken = GSS_C_EMPTY_BUFFER;
+</span> 981 1131    gss_OID aMech;
+ 982 1132    OM_uint32 aFlags;
+ 983 1133    OM_uint32 aTime;
+<span class='subtracted'> 984      -  gss_cred_id_t delCred;
+</span><span class='added'>     1134 +  gss_cred_id_t delCred = GSS_C_NO_CREDENTIAL;
+</span> 985 1135    jobject jsrcName = NULL;
+ 986 1136    jobject jdelCred;
+<span class='subtracted'> 987      -  jobject jMech;
+</span><span class='added'>     1137 +  jobject jMech = NULL;
+</span> 988 1138    jboolean setTarget;
+<span class='subtracted'> 989      -  gss_name_t targetName;
+</span><span class='added'>     1139 +  gss_name_t targetName = GSS_C_NO_NAME;
+</span> 990 1140    jobject jtargetName;
+ 991 1141  
+ 992 1142    TRACE0("[GSSLibStub_acceptContext]");
+ 993 1143  
+ 994 1144    contextHdl = contextHdlSave = (gss_ctx_id_t)jlong_to_ptr(
+ 995 1145      (*env)-&gt;GetLongField(env, jcontextSpi, FID_NativeGSSContext_pContext));
+ 996 1146    credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
+<span class='subtracted'> 997      -  initGSSBuffer(env, jinToken, &amp;inToken);
+</span><span class='added'>     1147 +  initGSSBuffer(env, jinToken, &amp;inToken, JNI_FALSE);
+</span> 998 1148    if ((*env)-&gt;ExceptionCheck(env)) {
+ 999 1149      return NULL;
+1000 1150    }
+1001 1151    cb = newGSSCB(env, jcb);
+1002 1152    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='subtracted'>1003      -    resetGSSBuffer(&amp;inToken);
+</span><span class='added'>     1153 +    resetGSSBuffer(env, jinToken, &amp;inToken);
+</span>1004 1154      return NULL;
+1005 1155    }
+<span class='subtracted'>1006      -  srcName = targetName = GSS_C_NO_NAME;
+1007      -  delCred = GSS_C_NO_CREDENTIAL;
+</span>1008 1156    setTarget = (credHdl == GSS_C_NO_CREDENTIAL);
+1009 1157    aFlags = 0;
+1010 1158  
+1011 1159    TRACE2( "[GSSLibStub_acceptContext] before: pCred=%" PRIuPTR ", pContext=%" PRIuPTR "",
+1012 1160            (uintptr_t) credHdl, (uintptr_t) contextHdl);
+1013 1161  
+1014 1162    /* gss_accept_sec_context(...) =&gt; GSS_S_CONTINUE_NEEDED(!),
+1015 1163       GSS_S_DEFECTIVE_TOKEN, GSS_S_DEFECTIVE_CREDENTIAL(!),
+1016 1164       GSS_S_NO_CRED, GSS_S_CREDENTIALS_EXPIRED, GSS_S_BAD_BINDINGS,
+1017 1165       GSS_S_NO_CONTEXT(!), GSS_S_BAD_MIC, GSS_S_OLD_TOKEN,
+1018 1166       GSS_S_DUPLICATE_TOKEN, GSS_S_BAD_MECH */
+1019 1167    major =
+1020 1168      (*ftab-&gt;acceptSecContext)(&amp;minor, &amp;contextHdl, credHdl,
+1021 1169                             &amp;inToken, cb, &amp;srcName, &amp;aMech, &amp;outToken,
+1022 1170                             &amp;aFlags, &amp;aTime, &amp;delCred);
+1023 1171    /* release intermediate buffers before checking status */
+1024 1172  
+<span class='subtracted'>1025      -  deleteGSSCB(cb);
+1026      -  resetGSSBuffer(&amp;inToken);
+</span><span class='added'>     1173 +  deleteGSSCB(env, cb);
+     1174 +  resetGSSBuffer(env, jinToken, &amp;inToken);
+</span>1027 1175  
+1028 1176    TRACE3("[GSSLibStub_acceptContext] after: pCred=%" PRIuPTR ", pContext=%" PRIuPTR ", pDelegCred=%" PRIuPTR "",
+1029 1177          (uintptr_t)credHdl, (uintptr_t)contextHdl, (uintptr_t) delCred);
+1030 1178  
+1031 1179    // update context handle with the latest value if changed
+1032 1180    // this is to work with both MIT and Solaris. Former deletes half-built
+1033 1181    // context if error occurs
+1034 1182    if (contextHdl != contextHdlSave) {
+1035 1183      (*env)-&gt;SetLongField(env, jcontextSpi, FID_NativeGSSContext_pContext,
+1036 1184                           ptr_to_jlong(contextHdl));
+1037 1185      TRACE1("[GSSLibStub_acceptContext] set pContext=%" PRIuPTR "", (uintptr_t)contextHdl);
+1038 1186    }
+1039 1187  
+1040 1188    if (GSS_ERROR(major) == GSS_S_COMPLETE) {
+1041 1189      /* update member values if needed */
+<span class='subtracted'>1042      -    // WORKAROUND for a Heimdal bug
+</span><span class='added'>     1190 +
+     1191 +    jMech = (aMech == GSS_C_NO_OID) ? NULL : getJavaOID(env, aMech);
+     1192 +    if (!(*env)-&gt;ExceptionCheck(env)) {
+     1193 +      (*env)-&gt;SetObjectField(env, jcontextSpi,
+     1194 +                             FID_NativeGSSContext_actualMech, jMech);
+     1195 +    }
+     1196 +    if ((*env)-&gt;ExceptionCheck(env)) {
+     1197 +      goto error;
+     1198 +    }
+     1199 +
+     1200 +    /* WORKAROUND for an old Heimdal bug */
+</span>1043 1201      if (delCred == GSS_C_NO_CREDENTIAL) {
+<span class='subtracted'>1044      -        aFlags &amp;= 0xfffffffe;
+</span><span class='added'>     1202 +        aFlags &amp;= ~GSS_C_DELEG_FLAG;
+</span>1045 1203      }
+1046 1204      (*env)-&gt;SetIntField(env, jcontextSpi, FID_NativeGSSContext_flags, aFlags);
+1047 1205      TRACE1("[GSSLibStub_acceptContext] set flags=0x%x", aFlags);
+1048 1206  
+1049 1207      if (setTarget) {
+1050 1208        major2 = (*ftab-&gt;inquireContext)(&amp;minor2, contextHdl, NULL,
+1051 1209                                &amp;targetName, NULL, NULL, NULL,
+1052 1210                                NULL, NULL);
+1053 1211        checkStatus(env, jobj, major2, minor2,
+1054 1212                      "[GSSLibStub_acceptContext] inquire");
+1055 1213        if ((*env)-&gt;ExceptionCheck(env)) {
+1056 1214           goto error;
+1057 1215        }
+1058 1216  
+1059 1217        jtargetName = (*env)-&gt;NewObject(env, CLS_GSSNameElement,
+1060 1218                                  MID_GSSNameElement_ctor,
+<span class='subtracted'>1061      -                                ptr_to_jlong(targetName), jobj);
+</span><span class='added'>     1219 +                                ptr_to_jlong(targetName), jMech, jobj);
+</span>1062 1220        if ((*env)-&gt;ExceptionCheck(env)) {
+1063 1221          goto error;
+1064 1222        }
+1065 1223  
+1066 1224        TRACE1("[GSSLibStub_acceptContext] set targetName=%" PRIuPTR "",
+1067 1225                (uintptr_t)targetName);
+<span class='added'>     1226 +      targetName = GSS_C_NO_NAME;
+</span>1068 1227  
+1069 1228        (*env)-&gt;SetObjectField(env, jcontextSpi, FID_NativeGSSContext_targetName,
+1070 1229                               jtargetName);
+1071 1230        if ((*env)-&gt;ExceptionCheck(env)) {
+1072 1231          goto error;
+1073 1232        }
+1074 1233      }
+1075 1234      if (srcName != GSS_C_NO_NAME) {
+1076 1235        jsrcName = (*env)-&gt;NewObject(env, CLS_GSSNameElement,
+1077 1236                                     MID_GSSNameElement_ctor,
+<span class='subtracted'>1078      -                                   ptr_to_jlong(srcName), jobj);
+</span><span class='added'>     1237 +                                   ptr_to_jlong(srcName), jMech, jobj);
+</span>1079 1238        if ((*env)-&gt;ExceptionCheck(env)) {
+1080 1239          goto error;
+1081 1240        }
+1082 1241  
+1083 1242        TRACE1("[GSSLibStub_acceptContext] set srcName=%" PRIuPTR "", (uintptr_t)srcName);
+<span class='added'>     1243 +      srcName = GSS_C_NO_NAME;
+</span>1084 1244  
+1085 1245        (*env)-&gt;SetObjectField(env, jcontextSpi, FID_NativeGSSContext_srcName,
+1086 1246                               jsrcName);
+1087 1247        if ((*env)-&gt;ExceptionCheck(env)) {
+1088 1248          goto error;
+1089 1249        }
+1090 1250      }
+1091 1251      if (major == GSS_S_COMPLETE) {
+1092 1252        TRACE0("[GSSLibStub_acceptContext] context established");
+1093 1253  
+1094 1254        (*env)-&gt;SetIntField(env, jcontextSpi, FID_NativeGSSContext_lifetime,
+1095 1255                            getJavaTime(aTime));
+1096 1256        (*env)-&gt;SetBooleanField(env, jcontextSpi,
+1097 1257                                FID_NativeGSSContext_isEstablished,
+1098 1258                                JNI_TRUE);
+<span class='subtracted'>1099      -      jMech = getJavaOID(env, aMech);
+1100      -      if ((*env)-&gt;ExceptionCheck(env)) {
+1101      -        goto error;
+1102      -      }
+1103      -      (*env)-&gt;SetObjectField(env, jcontextSpi,
+1104      -                             FID_NativeGSSContext_actualMech, jMech);
+</span>1105 1259        if ((*env)-&gt;ExceptionCheck(env)) {
+1106 1260          goto error;
+1107 1261        }
+1108 1262        if (delCred != GSS_C_NO_CREDENTIAL) {
+1109 1263          jdelCred = (*env)-&gt;NewObject(env, CLS_GSSCredElement,
+1110 1264                                       MID_GSSCredElement_ctor,
+1111 1265                                       ptr_to_jlong(delCred), jsrcName, jMech);
+1112 1266          if ((*env)-&gt;ExceptionCheck(env)) {
+1113 1267            goto error;
+1114 1268          }
+<span class='added'>     1269 +        TRACE1("[GSSLibStub_acceptContext] set delegatedCred=%" PRIuPTR "",
+     1270 +                (uintptr_t) delCred);
+     1271 +        delCred = GSS_C_NO_CREDENTIAL;
+</span>1115 1272          (*env)-&gt;SetObjectField(env, jcontextSpi,
+1116 1273                                 FID_NativeGSSContext_delegatedCred,
+1117 1274                                 jdelCred);
+<span class='subtracted'>1118      -        TRACE1("[GSSLibStub_acceptContext] set delegatedCred=%" PRIuPTR "",
+1119      -                (uintptr_t) delCred);
+</span>1120 1275  
+1121 1276          if ((*env)-&gt;ExceptionCheck(env)) {
+1122 1277            goto error;
+1123 1278          }
+1124 1279        }
+1125 1280      } else if (major &amp; GSS_S_CONTINUE_NEEDED) {
+1126 1281        TRACE0("[GSSLibStub_acceptContext] context not established");
+1127 1282  
+1128 1283        if (aFlags &amp; GSS_C_PROT_READY_FLAG) {
+1129 1284          (*env)-&gt;SetIntField(env, jcontextSpi, FID_NativeGSSContext_lifetime,
+1130 1285                              getJavaTime(aTime));
+1131 1286        }
+<span class='subtracted'>1132      -      major -= GSS_S_CONTINUE_NEEDED;
+</span><span class='added'>     1287 +      major &amp;= ~GSS_S_CONTINUE_NEEDED;
+</span>1133 1288      }
+1134 1289    }
+<span class='subtracted'>1135      -  return getJavaBuffer(env, &amp;outToken);
+</span><span class='added'>     1290 +
+     1291 +  checkStatus(env, jobj, major, minor, "[GSSLibStub_acceptContext]");
+     1292 +  if ((*env)-&gt;ExceptionCheck(env)) {
+     1293 +    (void) (*ftab-&gt;releaseBuffer)(&amp;dummy, &amp;outToken);
+     1294 +    return NULL;
+     1295 +  }
+     1296 +
+     1297 +  /* Map outToken to byteArray result and release */
+     1298 +  return getJavaBuffer(env, &amp;outToken, JNI_TRUE);
+</span>1136 1299  
+1137 1300  error:
+1138 1301    (*ftab-&gt;releaseBuffer)(&amp;minor, &amp;outToken);
+1139 1302    if (srcName != GSS_C_NO_NAME) {
+1140 1303      (*ftab-&gt;releaseName)(&amp;minor, &amp;srcName);
+1141 1304    }
+1142 1305    if (targetName != GSS_C_NO_NAME) {
+1143 1306      (*ftab-&gt;releaseName)(&amp;minor, &amp;targetName);
+1144 1307    }
+1145 1308    if (delCred != GSS_C_NO_CREDENTIAL) {
+</pre>
+<pre id='elided11' class='elided' style='display: none'>1146 1309      (*ftab-&gt;releaseCred) (&amp;minor, &amp;delCred);
+1147 1310    }
+1148 1311    return NULL;
+1149 1312  }
+1150 1313  
+</pre>
+<table id='hb-elided11' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided11", "hb-elided11", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">5 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided11", "hb-elided11", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>1151 1314  /*
+1152 1315   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1153 1316   * Method:    inquireContext
+1154 1317   * Signature: (J)[J
+1155 1318   */
+1156 1319  JNIEXPORT jlongArray JNICALL
+1157 1320  Java_sun_security_jgss_wrapper_GSSLibStub_inquireContext(JNIEnv *env,
+1158 1321                                                           jobject jobj,
+1159 1322                                                           jlong pContext)
+1160 1323  {
+<span class='subtracted'>1161      -  OM_uint32 minor, major;
+</span><span class='added'>     1324 +  OM_uint32 minor, major, dummy;
+</span>1162 1325    gss_ctx_id_t contextHdl;
+<span class='subtracted'>1163      -  gss_name_t srcName, targetName;
+1164      -  OM_uint32 time;
+1165      -  OM_uint32 flags;
+1166      -  int isInitiator, isEstablished;
+</span><span class='added'>     1326 +  gss_name_t srcName = GSS_C_NO_NAME;
+     1327 +  gss_name_t targetName = GSS_C_NO_NAME;
+     1328 +  OM_uint32 time = 0;
+     1329 +  OM_uint32 flags = 0;
+     1330 +  int isInitiator = 0;
+     1331 +  int isEstablished = 0;
+</span>1167 1332    jlong result[6];
+1168 1333    jlongArray jresult;
+1169 1334  
+1170 1335    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1171 1336  
+1172 1337    TRACE1("[GSSLibStub_inquireContext] %" PRIuPTR "", (uintptr_t)contextHdl);
+1173 1338  
+<span class='subtracted'>1174      -  srcName = targetName = GSS_C_NO_NAME;
+1175      -  time = 0;
+1176      -  flags = isInitiator = isEstablished = 0;
+1177      -
+</span>1178 1339    /* gss_inquire_context(...) =&gt; GSS_S_NO_CONTEXT(!) */
+1179 1340    major = (*ftab-&gt;inquireContext)(&amp;minor, contextHdl, &amp;srcName,
+1180 1341                                &amp;targetName, &amp;time, NULL, &amp;flags,
+1181 1342                                &amp;isInitiator, &amp;isEstablished);
+1182 1343    /* update member values if needed */
+1183 1344    TRACE2("[GSSLibStub_inquireContext] srcName %" PRIuPTR ", targetName %" PRIuPTR "",
+1184 1345        (uintptr_t)srcName, (uintptr_t)targetName);
+1185 1346  
+1186 1347    checkStatus(env, jobj, major, minor, "[GSSLibStub_inquireContext]");
+1187 1348    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1349 +    (void) (*ftab-&gt;releaseName)(&amp;dummy, &amp;srcName);
+     1350 +    (void) (*ftab-&gt;releaseName)(&amp;dummy, &amp;targetName);
+</span>1188 1351      return NULL;
+1189 1352    }
+1190 1353    result[0] = ptr_to_jlong(srcName);
+1191 1354    result[1] = ptr_to_jlong(targetName);
+1192 1355    result[2] = (jlong) isInitiator;
+1193 1356    result[3] = (jlong) isEstablished;
+1194 1357    result[4] = (jlong) flags;
+1195 1358    result[5] = (jlong) getJavaTime(time);
+1196 1359  
+1197 1360    jresult = (*env)-&gt;NewLongArray(env, 6);
+<span class='subtracted'>1198      -  if (jresult == NULL) {
+1199      -    return NULL;
+</span><span class='added'>     1361 +  if (jresult != NULL) {
+     1362 +    (*env)-&gt;SetLongArrayRegion(env, jresult, 0, 6, result);
+</span>1200 1363    }
+<span class='subtracted'>1201      -  (*env)-&gt;SetLongArrayRegion(env, jresult, 0, 6, result);
+</span>1202 1364    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1365 +    (void) (*ftab-&gt;releaseName)(&amp;dummy, &amp;srcName);
+     1366 +    (void) (*ftab-&gt;releaseName)(&amp;dummy, &amp;targetName);
+</span>1203 1367      return NULL;
+1204 1368    }
+1205 1369    return jresult;
+1206 1370  }
+1207 1371  
+1208 1372  /*
+1209 1373   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1210 1374   * Method:    getContextMech
+1211 1375   * Signature: (J)Lorg/ietf/jgss/Oid;
+1212 1376   */
+</pre>
+<pre id='elided12' class='elided' style='display: none'>1213 1377  JNIEXPORT jobject JNICALL
+1214 1378  Java_sun_security_jgss_wrapper_GSSLibStub_getContextMech(JNIEnv *env,
+1215 1379                                                           jobject jobj,
+1216 1380                                                           jlong pContext)
+1217 1381  {
+1218 1382    OM_uint32 minor, major;
+1219 1383    gss_OID mech;
+1220 1384    gss_ctx_id_t contextHdl;
+1221 1385  
+1222 1386    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1223 1387  
+1224 1388    TRACE1("[GSSLibStub_getContextMech] %ld", (long int)pContext);
+1225 1389  
+1226 1390    major = (*ftab-&gt;inquireContext)(&amp;minor, contextHdl, NULL, NULL,
+1227 1391                                  NULL, &amp;mech, NULL,  NULL, NULL);
+1228 1392  
+1229 1393    checkStatus(env, jobj, major, minor, "[GSSLibStub_getContextMech]");
+1230 1394    /* return immediately if an exception has occurred */
+1231 1395    if ((*env)-&gt;ExceptionCheck(env)) {
+1232 1396      return NULL;
+1233 1397    }
+1234 1398  
+1235 1399    return getJavaOID(env, mech);
+1236 1400  }
+1237 1401  
+</pre>
+<table id='hb-elided12' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided12", "hb-elided12", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">25 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided12", "hb-elided12", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>1238 1402  /*
+1239 1403   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1240 1404   * Method:    getContextName
+1241 1405   * Signature: (JZ)J
+1242 1406   */
+1243 1407  JNIEXPORT jlong JNICALL
+1244 1408  Java_sun_security_jgss_wrapper_GSSLibStub_getContextName(JNIEnv *env,
+1245 1409    jobject jobj, jlong pContext, jboolean isSrc)
+1246 1410  {
+1247 1411    OM_uint32 minor, major;
+<span class='subtracted'>1248      -  gss_name_t nameHdl;
+</span><span class='added'>     1412 +  gss_name_t nameHdl = GSS_C_NO_NAME;
+</span>1249 1413    gss_ctx_id_t contextHdl;
+1250 1414  
+1251 1415    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1252 1416  
+1253 1417    TRACE2("[GSSLibStub_getContextName] %" PRIuPTR ", isSrc=%d",
+1254 1418            (uintptr_t)contextHdl, isSrc);
+1255 1419  
+<span class='subtracted'>1256      -  nameHdl = GSS_C_NO_NAME;
+</span>1257 1420    if (isSrc == JNI_TRUE) {
+1258 1421      major = (*ftab-&gt;inquireContext)(&amp;minor, contextHdl, &amp;nameHdl, NULL,
+1259 1422                                  NULL, NULL, NULL,  NULL, NULL);
+1260 1423    } else {
+1261 1424      major = (*ftab-&gt;inquireContext)(&amp;minor, contextHdl, NULL, &amp;nameHdl,
+1262 1425                                  NULL, NULL, NULL,  NULL, NULL);
+1263 1426    }
+1264 1427  
+1265 1428    checkStatus(env, jobj, major, minor, "[GSSLibStub_inquireContextAll]");
+1266 1429    /* return immediately if an exception has occurred */
+</pre>
+<pre id='elided13' class='elided' style='display: none'>1267 1430    if ((*env)-&gt;ExceptionCheck(env)) {
+1268 1431      return jlong_zero;
+1269 1432    }
+1270 1433  
+1271 1434    TRACE1("[GSSLibStub_getContextName] pName=%" PRIuPTR "", (uintptr_t) nameHdl);
+1272 1435  
+1273 1436    return ptr_to_jlong(nameHdl);
+1274 1437  }
+1275 1438  
+1276 1439  /*
+1277 1440   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1278 1441   * Method:    getContextTime
+1279 1442   * Signature: (J)I
+1280 1443   */
+1281 1444  JNIEXPORT jint JNICALL
+1282 1445  Java_sun_security_jgss_wrapper_GSSLibStub_getContextTime(JNIEnv *env,
+1283 1446                                                           jobject jobj,
+1284 1447                                                           jlong pContext) {
+1285 1448    OM_uint32 minor, major;
+1286 1449    gss_ctx_id_t contextHdl;
+1287 1450    OM_uint32 time;
+1288 1451  
+1289 1452    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1290 1453  
+1291 1454    TRACE1("[GSSLibStub_getContextTime] %" PRIuPTR "", (uintptr_t)contextHdl);
+1292 1455  
+1293 1456    if (contextHdl == GSS_C_NO_CONTEXT) return 0;
+1294 1457  
+1295 1458    /* gss_context_time(...) =&gt; GSS_S_CONTEXT_EXPIRED(!),
+1296 1459       GSS_S_NO_CONTEXT(!) */
+1297 1460    major = (*ftab-&gt;contextTime)(&amp;minor, contextHdl, &amp;time);
+1298 1461    if (GSS_ROUTINE_ERROR(major) == GSS_S_CONTEXT_EXPIRED) {
+1299 1462      major = GSS_CALLING_ERROR(major) | GSS_SUPPLEMENTARY_INFO(major);
+1300 1463    }
+1301 1464    checkStatus(env, jobj, major, minor, "[GSSLibStub_getContextTime]");
+1302 1465    if ((*env)-&gt;ExceptionCheck(env)) {
+1303 1466      return 0;
+1304 1467    }
+1305 1468    return getJavaTime(time);
+1306 1469  }
+1307 1470  
+1308 1471  /*
+1309 1472   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1310 1473   * Method:    deleteContext
+1311 1474   * Signature: (J)J
+1312 1475   */
+1313 1476  JNIEXPORT jlong JNICALL
+1314 1477  Java_sun_security_jgss_wrapper_GSSLibStub_deleteContext(JNIEnv *env,
+1315 1478                                                          jobject jobj,
+1316 1479                                                          jlong pContext)
+1317 1480  {
+1318 1481    OM_uint32 minor, major;
+1319 1482    gss_ctx_id_t contextHdl;
+1320 1483  
+1321 1484    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1322 1485  
+1323 1486    TRACE1("[GSSLibStub_deleteContext] %" PRIuPTR "", (uintptr_t)contextHdl);
+1324 1487  
+1325 1488    if (contextHdl == GSS_C_NO_CONTEXT) return ptr_to_jlong(GSS_C_NO_CONTEXT);
+1326 1489  
+1327 1490    /* gss_delete_sec_context(...) =&gt; GSS_S_NO_CONTEXT(!) */
+1328 1491    major = (*ftab-&gt;deleteSecContext)(&amp;minor, &amp;contextHdl, GSS_C_NO_BUFFER);
+1329 1492  
+1330 1493    checkStatus(env, jobj, major, minor, "[GSSLibStub_deleteContext]");
+1331 1494    if ((*env)-&gt;ExceptionCheck(env)) {
+1332 1495      return jlong_zero;
+1333 1496    }
+1334 1497    return (jlong) ptr_to_jlong(contextHdl);
+1335 1498  }
+1336 1499  
+1337 1500  /*
+1338 1501   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1339 1502   * Method:    wrapSizeLimit
+1340 1503   * Signature: (JIII)I
+1341 1504   */
+1342 1505  JNIEXPORT jint JNICALL
+1343 1506  Java_sun_security_jgss_wrapper_GSSLibStub_wrapSizeLimit(JNIEnv *env,
+</pre>
+<table id='hb-elided13' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided13", "hb-elided13", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">77 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided13", "hb-elided13", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>1344 1507                                                          jobject jobj,
+1345 1508                                                          jlong pContext,
+1346 1509                                                          jint reqFlag,
+1347 1510                                                          jint jqop,
+1348 1511                                                          jint joutSize)
+1349 1512  {
+1350 1513    OM_uint32 minor, major;
+1351 1514    gss_ctx_id_t contextHdl;
+1352 1515    OM_uint32 outSize, maxInSize;
+1353 1516    gss_qop_t qop;
+<span class='added'>     1517 +  jint result;
+</span>1354 1518  
+1355 1519    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1356 1520  
+1357 1521    TRACE1("[GSSLibStub_wrapSizeLimit] %" PRIuPTR "", (uintptr_t)contextHdl);
+1358 1522  
+1359 1523    if (contextHdl == GSS_C_NO_CONTEXT) {
+1360 1524      // Twik per javadoc
+1361 1525      checkStatus(env, jobj, GSS_S_NO_CONTEXT, 0,
+1362 1526          "[GSSLibStub_wrapSizeLimit]");
+1363 1527      return 0;
+</pre>
+<pre id='elided14' class='elided' style='display: none'>1364 1528    }
+1365 1529  
+1366 1530    qop = (gss_qop_t) jqop;
+</pre>
+<table id='hb-elided14' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided14", "hb-elided14", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">3 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided14", "hb-elided14", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>1367 1531    outSize = (OM_uint32) joutSize;
+1368 1532    /* gss_wrap_size_limit(...) =&gt; GSS_S_NO_CONTEXT(!), GSS_S_CONTEXT_EXPIRED,
+1369 1533       GSS_S_BAD_QOP */
+1370 1534    major = (*ftab-&gt;wrapSizeLimit)(&amp;minor, contextHdl, reqFlag,
+1371 1535                                qop, outSize, &amp;maxInSize);
+1372 1536  
+1373 1537    checkStatus(env, jobj, major, minor, "[GSSLibStub_wrapSizeLimit]");
+1374 1538    if ((*env)-&gt;ExceptionCheck(env)) {
+1375 1539      return 0;
+1376 1540    }
+<span class='subtracted'>1377      -  return (jint) maxInSize;
+</span><span class='added'>     1541 +
+     1542 +  /* Right-shift maxInSize until it fits into jint */
+     1543 +  result = (jint)maxInSize;
+     1544 +  while (result &lt; 0 || maxInSize != (OM_uint32)result) {
+     1545 +    result = (jint)(maxInSize &gt;&gt;= 1);
+     1546 +  }
+     1547 +
+     1548 +  return result;
+</span>1378 1549  }
+1379 1550  
+1380 1551  /*
+1381 1552   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1382 1553   * Method:    exportContext
+1383 1554   * Signature: (J)[B
+1384 1555   */
+1385 1556  JNIEXPORT jbyteArray JNICALL
+1386 1557  Java_sun_security_jgss_wrapper_GSSLibStub_exportContext(JNIEnv *env,
+1387 1558                                                          jobject jobj,
+1388 1559                                                          jlong pContext)
+1389 1560  {
+<span class='subtracted'>1390      -  OM_uint32 minor, major;
+</span><span class='added'>     1561 +  OM_uint32 minor, major, dummy;
+</span>1391 1562    gss_ctx_id_t contextHdl;
+<span class='subtracted'>1392      -  gss_buffer_desc interProcToken;
+1393      -  jbyteArray jresult;
+</span><span class='added'>     1563 +  gss_buffer_desc interProcToken = GSS_C_EMPTY_BUFFER;
+</span>1394 1564  
+1395 1565    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1396 1566  
+1397 1567    TRACE1("[GSSLibStub_exportContext] %" PRIuPTR "", (uintptr_t)contextHdl);
+1398 1568  
+1399 1569    if (contextHdl == GSS_C_NO_CONTEXT) {
+1400 1570      // Twik per javadoc
+1401 1571      checkStatus(env, jobj, GSS_S_NO_CONTEXT, 0, "[GSSLibStub_exportContext]");
+1402 1572      return NULL;
+1403 1573    }
+1404 1574    /* gss_export_sec_context(...) =&gt; GSS_S_CONTEXT_EXPIRED,
+1405 1575       GSS_S_NO_CONTEXT, GSS_S_UNAVAILABLE */
+1406 1576    major =
+1407 1577      (*ftab-&gt;exportSecContext)(&amp;minor, &amp;contextHdl, &amp;interProcToken);
+1408 1578  
+<span class='subtracted'>1409      -  /* release intermediate buffers */
+1410      -  jresult = getJavaBuffer(env, &amp;interProcToken);
+1411      -  if ((*env)-&gt;ExceptionCheck(env)) {
+1412      -    return NULL;
+1413      -  }
+</span>1414 1579    checkStatus(env, jobj, major, minor, "[GSSLibStub_exportContext]");
+1415 1580    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1581 +    (void) (*ftab-&gt;releaseBuffer)(&amp;dummy, &amp;interProcToken);
+</span>1416 1582      return NULL;
+1417 1583    }
+1418 1584  
+<span class='subtracted'>1419      -  return jresult;
+</span><span class='added'>     1585 +  /* Map interProcToken to byteArray result and release */
+     1586 +  return getJavaBuffer(env, &amp;interProcToken, JNI_TRUE);
+</span>1420 1587  }
+1421 1588  
+1422 1589  /*
+1423 1590   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1424 1591   * Method:    getMic
+1425 1592   * Signature: (JI[B)[B
+1426 1593   */
+1427 1594  JNIEXPORT jbyteArray JNICALL
+1428 1595  Java_sun_security_jgss_wrapper_GSSLibStub_getMic(JNIEnv *env, jobject jobj,
+1429 1596                                                   jlong pContext, jint jqop,
+1430 1597                                                   jbyteArray jmsg)
+1431 1598  {
+<span class='subtracted'>1432      -  OM_uint32 minor, major;
+</span><span class='added'>     1599 +  OM_uint32 minor, major, dummy;
+</span>1433 1600    gss_ctx_id_t contextHdl;
+1434 1601    gss_qop_t qop;
+1435 1602    gss_buffer_desc msg;
+<span class='subtracted'>1436      -  gss_buffer_desc msgToken;
+1437      -  jbyteArray jresult;
+</span><span class='added'>     1603 +  gss_buffer_desc msgToken = GSS_C_EMPTY_BUFFER;
+</span>1438 1604  
+1439 1605    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1440 1606  
+1441 1607    TRACE1("[GSSLibStub_getMic] %" PRIuPTR "", (uintptr_t)contextHdl);
+1442 1608  
+1443 1609    if (contextHdl == GSS_C_NO_CONTEXT) {
+1444 1610      // Twik per javadoc
+1445 1611      checkStatus(env, jobj, GSS_S_CONTEXT_EXPIRED, 0, "[GSSLibStub_getMic]");
+1446 1612      return NULL;
+1447 1613    }
+1448 1614    qop = (gss_qop_t) jqop;
+<span class='subtracted'>1449      -  initGSSBuffer(env, jmsg, &amp;msg);
+</span><span class='added'>     1615 +  initGSSBuffer(env, jmsg, &amp;msg, JNI_FALSE);
+</span>1450 1616    if ((*env)-&gt;ExceptionCheck(env)) {
+1451 1617      return NULL;
+1452 1618    }
+1453 1619  
+1454 1620    /* gss_get_mic(...) =&gt; GSS_S_CONTEXT_EXPIRED, GSS_S_NO_CONTEXT(!),
+1455 1621       GSS_S_BAD_QOP */
+<span class='subtracted'>1456      -  major =
+1457      -    (*ftab-&gt;getMic)(&amp;minor, contextHdl, qop, &amp;msg, &amp;msgToken);
+</span><span class='added'>     1622 +  major = (*ftab-&gt;getMic)(&amp;minor, contextHdl, qop, &amp;msg, &amp;msgToken);
+</span>1458 1623  
+1459 1624    /* release intermediate buffers */
+<span class='subtracted'>1460      -  resetGSSBuffer(&amp;msg);
+1461      -  jresult = getJavaBuffer(env, &amp;msgToken);
+1462      -  if ((*env)-&gt;ExceptionCheck(env)) {
+1463      -    return NULL;
+1464      -  }
+</span><span class='added'>     1625 +  resetGSSBuffer(env, jmsg, &amp;msg);
+</span>1465 1626    checkStatus(env, jobj, major, minor, "[GSSLibStub_getMic]");
+1466 1627    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1628 +    (void) (*ftab-&gt;releaseBuffer)(&amp;dummy, &amp;msgToken);
+</span>1467 1629      return NULL;
+1468 1630    }
+1469 1631  
+<span class='subtracted'>1470      -  return jresult;
+</span><span class='added'>     1632 +  /* Map msgToken to byteArray result and release */
+     1633 +  return getJavaBuffer(env, &amp;msgToken, JNI_TRUE);
+</span>1471 1634  }
+1472 1635  
+1473 1636  /*
+1474 1637   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1475 1638   * Method:    verifyMic
+1476 1639   * Signature: (J[B[BLorg/ietf/jgss/MessageProp;)V
+1477 1640   */
+1478 1641  JNIEXPORT void JNICALL
+1479 1642  Java_sun_security_jgss_wrapper_GSSLibStub_verifyMic(JNIEnv *env,
+1480 1643                                                      jobject jobj,
+</pre>
+<pre id='elided15' class='elided' style='display: none'>1481 1644                                                      jlong pContext,
+1482 1645                                                      jbyteArray jmsgToken,
+1483 1646                                                      jbyteArray jmsg,
+1484 1647                                                      jobject jprop)
+1485 1648  {
+1486 1649    OM_uint32 minor, major;
+1487 1650    gss_ctx_id_t contextHdl;
+1488 1651    gss_buffer_desc msg;
+1489 1652    gss_buffer_desc msgToken;
+1490 1653    gss_qop_t qop;
+1491 1654  
+1492 1655    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1493 1656  
+1494 1657    TRACE1("[GSSLibStub_verifyMic] %" PRIuPTR "", (uintptr_t)contextHdl);
+1495 1658  
+</pre>
+<table id='hb-elided15' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided15", "hb-elided15", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">15 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided15", "hb-elided15", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>1496 1659    if (contextHdl == GSS_C_NO_CONTEXT) {
+1497 1660      // Twik per javadoc
+1498 1661      checkStatus(env, jobj, GSS_S_CONTEXT_EXPIRED, 0,
+1499 1662          "[GSSLibStub_verifyMic]");
+1500 1663      return;
+1501 1664    }
+1502 1665  
+1503 1666    qop = (gss_qop_t) (*env)-&gt;CallIntMethod(env, jprop, MID_MessageProp_getQOP);
+1504 1667    if ((*env)-&gt;ExceptionCheck(env)) { return; }
+1505 1668  
+<span class='subtracted'>1506      -  initGSSBuffer(env, jmsg, &amp;msg);
+</span><span class='added'>     1669 +  initGSSBuffer(env, jmsg, &amp;msg, JNI_FALSE);
+</span>1507 1670    if ((*env)-&gt;ExceptionCheck(env)) { return; }
+1508 1671  
+<span class='subtracted'>1509      -  initGSSBuffer(env, jmsgToken, &amp;msgToken);
+</span><span class='added'>     1672 +  initGSSBuffer(env, jmsgToken, &amp;msgToken, JNI_FALSE);
+</span>1510 1673    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='subtracted'>1511      -    resetGSSBuffer(&amp;msg);
+</span><span class='added'>     1674 +    resetGSSBuffer(env, jmsg, &amp;msg);
+</span>1512 1675      return;
+1513 1676    }
+1514 1677  
+1515 1678    /* gss_verify_mic(...) =&gt; GSS_S_DEFECTIVE_TOKEN, GSS_S_BAD_MIC,
+1516 1679       GSS_S_CONTEXT_EXPIRED, GSS_S_DUPLICATE_TOKEN(!), GSS_S_OLD_TOKEN(!),
+1517 1680       GSS_S_UNSEQ_TOKEN(!), GSS_S_GAP_TOKEN(!), GSS_S_NO_CONTEXT(!) */
+1518 1681    major =
+1519 1682      (*ftab-&gt;verifyMic)(&amp;minor, contextHdl, &amp;msg, &amp;msgToken, &amp;qop);
+1520 1683  
+1521 1684    /* release intermediate buffers */
+<span class='subtracted'>1522      -  resetGSSBuffer(&amp;msg);
+1523      -  resetGSSBuffer(&amp;msgToken);
+</span><span class='added'>     1685 +  resetGSSBuffer(env, jmsg, &amp;msg);
+     1686 +  resetGSSBuffer(env, jmsgToken, &amp;msgToken);
+</span>1524 1687  
+<span class='added'>     1688 +  /*
+     1689 +   * We don't throw on supplementary status codes here, instead we pass only
+     1690 +   * GSS_ERROR(major) to checkStatus() and set the supplementary status in the
+     1691 +   * message properties.
+     1692 +   */
+</span>1525 1693    checkStatus(env, jobj, GSS_ERROR(major), minor, "[GSSLibStub_verifyMic]");
+1526 1694    if ((*env)-&gt;ExceptionCheck(env)) {
+1527 1695      return;
+1528 1696    }
+1529 1697  
+1530 1698    (*env)-&gt;CallVoidMethod(env, jprop, MID_MessageProp_setQOP, qop);
+1531 1699    if ((*env)-&gt;ExceptionCheck(env)) {
+1532 1700      return;
+1533 1701    }
+1534 1702  
+1535 1703    setSupplementaryInfo(env, jobj, jprop, GSS_SUPPLEMENTARY_INFO(major),
+1536 1704                         minor);
+<span class='subtracted'>1537      -  if ((*env)-&gt;ExceptionCheck(env)) {
+1538      -    return;
+1539      -  }
+</span>1540 1705  }
+1541 1706  
+1542 1707  /*
+1543 1708   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1544 1709   * Method:    wrap
+1545 1710   * Signature: (J[BLorg/ietf/jgss/MessageProp;)[B
+1546 1711   */
+1547 1712  JNIEXPORT jbyteArray JNICALL
+1548 1713  Java_sun_security_jgss_wrapper_GSSLibStub_wrap(JNIEnv *env,
+1549 1714                                                 jobject jobj,
+1550 1715                                                 jlong pContext,
+1551 1716                                                 jbyteArray jmsg,
+1552 1717                                                 jobject jprop)
+1553 1718  {
+<span class='subtracted'>1554      -  OM_uint32 minor, major;
+</span><span class='added'>     1719 +  OM_uint32 minor, major, dummy;
+</span>1555 1720    jboolean confFlag;
+1556 1721    gss_qop_t qop;
+1557 1722    gss_buffer_desc msg;
+<span class='subtracted'>1558      -  gss_buffer_desc msgToken;
+</span><span class='added'>     1723 +  gss_buffer_desc msgToken = GSS_C_EMPTY_BUFFER;
+</span>1559 1724    int confState;
+1560 1725    gss_ctx_id_t contextHdl;
+1561 1726    jbyteArray jresult;
+1562 1727  
+1563 1728    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1564 1729  
+1565 1730    TRACE1("[GSSLibStub_wrap] %" PRIuPTR "", (uintptr_t)contextHdl);
+1566 1731  
+1567 1732    if (contextHdl == GSS_C_NO_CONTEXT) {
+1568 1733      // Twik per javadoc
+</pre>
+<pre id='elided16' class='elided' style='display: none'>1569 1734      checkStatus(env, jobj, GSS_S_CONTEXT_EXPIRED, 0, "[GSSLibStub_wrap]");
+1570 1735      return NULL;
+1571 1736    }
+1572 1737  
+1573 1738    confFlag =
+1574 1739      (*env)-&gt;CallBooleanMethod(env, jprop, MID_MessageProp_getPrivacy);
+</pre>
+<table id='hb-elided16' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided16", "hb-elided16", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">6 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided16", "hb-elided16", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>1575 1740    if ((*env)-&gt;ExceptionCheck(env)) {
+1576 1741      return NULL;
+1577 1742    }
+1578 1743  
+1579 1744    qop = (gss_qop_t)
+1580 1745      (*env)-&gt;CallIntMethod(env, jprop, MID_MessageProp_getQOP);
+1581 1746    if ((*env)-&gt;ExceptionCheck(env)) {
+1582 1747      return NULL;
+1583 1748    }
+1584 1749  
+<span class='subtracted'>1585      -  initGSSBuffer(env, jmsg, &amp;msg);
+</span><span class='added'>     1750 +  initGSSBuffer(env, jmsg, &amp;msg, JNI_FALSE);
+</span>1586 1751    if ((*env)-&gt;ExceptionCheck(env)) {
+1587 1752      return NULL;
+1588 1753    }
+1589 1754  
+1590 1755    /* gss_wrap(...) =&gt; GSS_S_CONTEXT_EXPIRED, GSS_S_NO_CONTEXT(!),
+1591 1756       GSS_S_BAD_QOP */
+1592 1757    major = (*ftab-&gt;wrap)(&amp;minor, contextHdl, confFlag, qop, &amp;msg, &amp;confState,
+1593 1758                     &amp;msgToken);
+1594 1759  
+1595 1760    /* release intermediate buffers */
+<span class='subtracted'>1596      -  resetGSSBuffer(&amp;msg);
+1597      -  jresult = getJavaBuffer(env, &amp;msgToken);
+</span><span class='added'>     1761 +  resetGSSBuffer(env, jmsg, &amp;msg);
+     1762 +  checkStatus(env, jobj, major, minor, "[GSSLibStub_wrap]");
+     1763 +
+</span>1598 1764    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1765 +    (void) (*ftab-&gt;releaseBuffer)(&amp;dummy, &amp;msgToken);
+</span>1599 1766      return NULL;
+1600 1767    }
+1601 1768  
+<span class='subtracted'>1602      -  checkStatus(env, jobj, major, minor, "[GSSLibStub_wrap]");
+</span><span class='added'>     1769 +  /* Map msgToken to byteArray result and release */
+     1770 +  jresult = getJavaBuffer(env, &amp;msgToken, JNI_TRUE);
+</span>1603 1771    if ((*env)-&gt;ExceptionCheck(env)) {
+1604 1772      return NULL;
+1605 1773    }
+1606 1774  
+1607 1775    (*env)-&gt;CallVoidMethod(env, jprop, MID_MessageProp_setPrivacy,
+1608 1776                           (confState? JNI_TRUE:JNI_FALSE));
+1609 1777    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='subtracted'>1610      -    return NULL;
+</span><span class='added'>     1778 +    (*env)-&gt;DeleteLocalRef(env, jresult);
+     1779 +    jresult = NULL;
+</span>1611 1780    }
+1612 1781    return jresult;
+1613 1782  }
+1614 1783  
+1615 1784  /*
+1616 1785   * Class:     sun_security_jgss_wrapper_GSSLibStub
+1617 1786   * Method:    unwrap
+1618 1787   * Signature: (J[BLorg/ietf/jgss/MessageProp;)[B
+1619 1788   */
+1620 1789  JNIEXPORT jbyteArray JNICALL
+1621 1790  Java_sun_security_jgss_wrapper_GSSLibStub_unwrap(JNIEnv *env,
+1622 1791                                                   jobject jobj,
+1623 1792                                                   jlong pContext,
+1624 1793                                                   jbyteArray jmsgToken,
+1625 1794                                                   jobject jprop)
+1626 1795  {
+<span class='subtracted'>1627      -  OM_uint32 minor, major;
+</span><span class='added'>     1796 +  OM_uint32 minor, major, dummy;
+</span>1628 1797    gss_ctx_id_t contextHdl;
+1629 1798    gss_buffer_desc msgToken;
+<span class='subtracted'>1630      -  gss_buffer_desc msg;
+</span><span class='added'>     1799 +  gss_buffer_desc msg = GSS_C_EMPTY_BUFFER;
+</span>1631 1800    int confState;
+1632 1801    gss_qop_t qop;
+1633 1802    jbyteArray jresult;
+1634 1803  
+1635 1804    contextHdl = (gss_ctx_id_t) jlong_to_ptr(pContext);
+1636 1805  
+1637 1806    TRACE1("[GSSLibStub_unwrap] %" PRIuPTR "", (uintptr_t)contextHdl);
+1638 1807  
+1639 1808    if (contextHdl == GSS_C_NO_CONTEXT) {
+1640 1809      // Twik per javadoc
+1641 1810      checkStatus(env, jobj, GSS_S_CONTEXT_EXPIRED, 0, "[GSSLibStub_unwrap]");
+1642 1811      return NULL;
+1643 1812    }
+1644 1813  
+<span class='subtracted'>1645      -  initGSSBuffer(env, jmsgToken, &amp;msgToken);
+</span><span class='added'>     1814 +  initGSSBuffer(env, jmsgToken, &amp;msgToken, JNI_FALSE);
+</span>1646 1815    if ((*env)-&gt;ExceptionCheck(env)) {
+1647 1816      return NULL;
+1648 1817    }
+1649 1818  
+1650 1819    confState = 0;
+1651 1820    qop = GSS_C_QOP_DEFAULT;
+1652 1821    /* gss_unwrap(...) =&gt; GSS_S_DEFECTIVE_TOKEN, GSS_S_BAD_MIC,
+1653 1822       GSS_S_CONTEXT_EXPIRED, GSS_S_DUPLICATE_TOKEN(!), GSS_S_OLD_TOKEN(!),
+1654 1823       GSS_S_UNSEQ_TOKEN(!), GSS_S_GAP_TOKEN(!), GSS_S_NO_CONTEXT(!) */
+1655 1824    major =
+1656 1825      (*ftab-&gt;unwrap)(&amp;minor, contextHdl, &amp;msgToken, &amp;msg, &amp;confState, &amp;qop);
+1657 1826  
+1658 1827    /* release intermediate buffers */
+<span class='subtracted'>1659      -  resetGSSBuffer(&amp;msgToken);
+1660      -  jresult = getJavaBuffer(env, &amp;msg);
+</span><span class='added'>     1828 +  resetGSSBuffer(env, jmsgToken, &amp;msgToken);
+     1829 +
+     1830 +  /*
+     1831 +   * We don't throw on supplementary status codes here, instead we pass only
+     1832 +   * GSS_ERROR(major) to checkStatus() and set the supplementary status in the
+     1833 +   * message properties.
+     1834 +   */
+     1835 +  checkStatus(env, jobj, GSS_ERROR(major), minor, "[GSSLibStub_unwrap]");
+</span>1661 1836    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1837 +    (void) (*ftab-&gt;releaseBuffer)(&amp;dummy, &amp;msg);
+</span>1662 1838      return NULL;
+1663 1839    }
+1664 1840  
+<span class='subtracted'>1665      -  checkStatus(env, jobj, GSS_ERROR(major), minor, "[GSSLibStub_unwrap]");
+</span><span class='added'>     1841 +  /*
+     1842 +   * Map msg to byteArray result and release, zero length msg maps to empty
+     1843 +   * byte array, not null.
+     1844 +   */
+     1845 +  jresult = getJavaBuffer(env, &amp;msg, JNI_FALSE);
+</span>1666 1846    if ((*env)-&gt;ExceptionCheck(env)) {
+1667 1847      return NULL;
+1668 1848    }
+1669 1849  
+1670 1850    /* update the message prop with relevant info */
+1671 1851    (*env)-&gt;CallVoidMethod(env, jprop, MID_MessageProp_setPrivacy,
+1672 1852                           (confState != 0));
+1673 1853    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1854 +    (*env)-&gt;DeleteLocalRef(env, jresult);
+</span>1674 1855      return NULL;
+1675 1856    }
+1676 1857    (*env)-&gt;CallVoidMethod(env, jprop, MID_MessageProp_setQOP, qop);
+1677 1858    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1859 +    (*env)-&gt;DeleteLocalRef(env, jresult);
+</span>1678 1860      return NULL;
+1679 1861    }
+1680 1862    setSupplementaryInfo(env, jobj, jprop, GSS_SUPPLEMENTARY_INFO(major),
+1681 1863                           minor);
+1682 1864    if ((*env)-&gt;ExceptionCheck(env)) {
+<span class='added'>     1865 +    (*env)-&gt;DeleteLocalRef(env, jresult);
+</span>1683 1866      return NULL;
+1684 1867    }
+1685 1868  
+1686 1869    return jresult;
+1687 1870  }
+    </pre>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 16; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 16; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

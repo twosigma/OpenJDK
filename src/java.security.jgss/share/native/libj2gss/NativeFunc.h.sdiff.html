@@ -1,0 +1,376 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache"></meta>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=utf-8"></meta>
+<meta http-equiv="Pragma" content="no-cache"></meta>
+<meta http-equiv="Expires" content="-1"></meta>
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+span.chmod {
+    font-size: 0.7em;
+    color: #db7800;
+}
+a.print { font-size: x-small; }
+a:hover { background-color: #ffcc99; }
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>ws Sdiff src/java.security.jgss/share/native/libj2gss/NativeFunc.h</title>
+</head><body id="SUNWwebrev">
+<a class="print" href="javascript:print()">Print this page</a>
+<pre>Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method</pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+  67                                 gss_const_name_t name2,
+  68                                 int *name_equal);
+  69 
+  70 typedef OM_uint32 (*CANONICALIZE_NAME_FN_PTR)
+  71                                 (OM_uint32 *minor_status,
+  72                                 gss_const_name_t input_name,
+  73                                 gss_const_OID mech_type,
+  74                                 gss_name_t *output_name);
+  75 
+  76 typedef OM_uint32 (*EXPORT_NAME_FN_PTR)
+  77                                 (OM_uint32 *minor_status,
+  78                                 gss_const_name_t input_name,
+  79                                 gss_buffer_t exported_name);
+  80 
+  81 typedef OM_uint32 (*DISPLAY_NAME_FN_PTR)
+  82                                 (OM_uint32 *minor_status,
+  83                                 gss_const_name_t input_name,
+  84                                 gss_buffer_t output_name_buffer,
+  85                                 gss_OID *output_name_type);
+  86 
+
+
+
+
+
+
+  87 typedef OM_uint32 (*ACQUIRE_CRED_FN_PTR)
+  88                                 (OM_uint32 *minor_status,
+  89                                 gss_const_name_t desired_name,
+  90                                 OM_uint32 time_req,
+  91                                 gss_const_OID_set desired_mech,
+  92                                 gss_cred_usage_t cred_usage,
+  93                                 gss_cred_id_t *output_cred_handle,
+  94                                 gss_OID_set *actual_mechs,
+  95                                 OM_uint32 *time_rec);
+  96 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  97 typedef OM_uint32 (*RELEASE_CRED_FN_PTR)
+  98                                 (OM_uint32 *minor_status,
+  99                                 gss_cred_id_t *cred_handle);
+ 100 
+ 101 typedef OM_uint32 (*INQUIRE_CRED_FN_PTR)
+ 102                                 (OM_uint32 *minor_status,
+ 103                                 gss_const_cred_id_t cred_handle,
+ 104                                 gss_name_t *name,
+ 105                                 OM_uint32 *lifetime,
+ 106                                 gss_cred_usage_t *cred_usage,
+ 107                                 gss_OID_set *mechanisms);
+ 108 
+ 109 typedef OM_uint32 (*IMPORT_SEC_CONTEXT_FN_PTR)
+ 110                                 (OM_uint32 *minor_status,
+ 111                                 gss_const_buffer_t interprocess_token,
+ 112                                 gss_ctx_id_t *context_handle);
+ 113 
+ 114 typedef OM_uint32 (*INIT_SEC_CONTEXT_FN_PTR)
+ 115                                 (OM_uint32 *minor_status,
+ 116                                 gss_const_cred_id_t initiator_cred_handle,
+
+</pre><hr></hr><pre>
+ 232 
+ 233 typedef OM_uint32 (*RELEASE_OID_SET_FN_PTR)
+ 234                                 (OM_uint32 *minor_status,
+ 235                                 gss_OID_set *set);
+ 236 
+ 237 typedef OM_uint32 (*RELEASE_BUFFER_FN_PTR)
+ 238                                 (OM_uint32 *minor_status,
+ 239                                 gss_buffer_t buffer);
+ 240 
+ 241 
+ 242 /* dynamically resolved functions from gss library */
+ 243 
+ 244 typedef struct GSS_FUNCTION_TABLE {
+ 245     gss_OID_set                         mechs;
+ 246     RELEASE_NAME_FN_PTR                 releaseName;
+ 247     IMPORT_NAME_FN_PTR                  importName;
+ 248     COMPARE_NAME_FN_PTR                 compareName;
+ 249     CANONICALIZE_NAME_FN_PTR            canonicalizeName;
+ 250     EXPORT_NAME_FN_PTR                  exportName;
+ 251     DISPLAY_NAME_FN_PTR                 displayName;
+
+ 252     ACQUIRE_CRED_FN_PTR                 acquireCred;
+
+
+
+ 253     RELEASE_CRED_FN_PTR                 releaseCred;
+ 254     INQUIRE_CRED_FN_PTR                 inquireCred;
+ 255     IMPORT_SEC_CONTEXT_FN_PTR           importSecContext;
+ 256     INIT_SEC_CONTEXT_FN_PTR             initSecContext;
+ 257     ACCEPT_SEC_CONTEXT_FN_PTR           acceptSecContext;
+ 258     INQUIRE_CONTEXT_FN_PTR              inquireContext;
+ 259     DELETE_SEC_CONTEXT_FN_PTR           deleteSecContext;
+ 260     CONTEXT_TIME_FN_PTR                 contextTime;
+ 261     WRAP_SIZE_LIMIT_FN_PTR              wrapSizeLimit;
+ 262     EXPORT_SEC_CONTEXT_FN_PTR           exportSecContext;
+ 263     GET_MIC_FN_PTR                      getMic;
+ 264     VERIFY_MIC_FN_PTR                   verifyMic;
+ 265     WRAP_FN_PTR                         wrap;
+ 266     UNWRAP_FN_PTR                       unwrap;
+ 267     INDICATE_MECHS_FN_PTR               indicateMechs;
+ 268     INQUIRE_NAMES_FOR_MECH_FN_PTR       inquireNamesForMech;
+ 269     ADD_OID_SET_MEMBER_FN_PTR           addOidSetMember;
+ 270     DISPLAY_STATUS_FN_PTR               displayStatus;
+ 271     CREATE_EMPTY_OID_SET_FN_PTR         createEmptyOidSet;
+ 272     RELEASE_OID_SET_FN_PTR              releaseOidSet;
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+  67                                 gss_const_name_t name2,
+  68                                 int *name_equal);
+  69 
+  70 typedef OM_uint32 (*CANONICALIZE_NAME_FN_PTR)
+  71                                 (OM_uint32 *minor_status,
+  72                                 gss_const_name_t input_name,
+  73                                 gss_const_OID mech_type,
+  74                                 gss_name_t *output_name);
+  75 
+  76 typedef OM_uint32 (*EXPORT_NAME_FN_PTR)
+  77                                 (OM_uint32 *minor_status,
+  78                                 gss_const_name_t input_name,
+  79                                 gss_buffer_t exported_name);
+  80 
+  81 typedef OM_uint32 (*DISPLAY_NAME_FN_PTR)
+  82                                 (OM_uint32 *minor_status,
+  83                                 gss_const_name_t input_name,
+  84                                 gss_buffer_t output_name_buffer,
+  85                                 gss_OID *output_name_type);
+  86 
+<span class="new">  87 typedef OM_uint32 (*LOCAL_NAME_FN_PTR)</span>
+<span class="new">  88                                 (OM_uint32 *minor_status,</span>
+<span class="new">  89                                 gss_name_t input_name,</span>
+<span class="new">  90                                 gss_OID mech,</span>
+<span class="new">  91                                 gss_buffer_t output_name_buffer);</span>
+<span class="new">  92 </span>
+  93 typedef OM_uint32 (*ACQUIRE_CRED_FN_PTR)
+  94                                 (OM_uint32 *minor_status,
+  95                                 gss_const_name_t desired_name,
+  96                                 OM_uint32 time_req,
+  97                                 gss_const_OID_set desired_mech,
+  98                                 gss_cred_usage_t cred_usage,
+  99                                 gss_cred_id_t *output_cred_handle,
+ 100                                 gss_OID_set *actual_mechs,
+ 101                                 OM_uint32 *time_rec);
+ 102 
+<span class="new"> 103 typedef OM_uint32 (*ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)</span>
+<span class="new"> 104                                 (OM_uint32 *minor_status,</span>
+<span class="new"> 105                                 gss_name_t desired_name,</span>
+<span class="new"> 106                                 gss_buffer_t password,</span>
+<span class="new"> 107                                 OM_uint32 time_req,</span>
+<span class="new"> 108                                 gss_OID_set desired_mech,</span>
+<span class="new"> 109                                 gss_cred_usage_t cred_usage,</span>
+<span class="new"> 110                                 gss_cred_id_t *output_cred_handle,</span>
+<span class="new"> 111                                 gss_OID_set *actual_mechs,</span>
+<span class="new"> 112                                 OM_uint32 *time_rec);</span>
+<span class="new"> 113 </span>
+<span class="new"> 114 typedef OM_uint32 (*ACQUIRE_CRED_FROM_FN_PTR)</span>
+<span class="new"> 115                                 (OM_uint32 *minor_status,</span>
+<span class="new"> 116                                  gss_const_name_t desired_name,</span>
+<span class="new"> 117                                  OM_uint32 time_req,</span>
+<span class="new"> 118                                  const gss_OID_set desired_mechs,</span>
+<span class="new"> 119                                  gss_cred_usage_t cred_usage,</span>
+<span class="new"> 120                                  gss_const_key_value_set_t cred_store,</span>
+<span class="new"> 121                                  gss_cred_id_t * output_cred_handle,</span>
+<span class="new"> 122                                  gss_OID_set * actual_mechs,</span>
+<span class="new"> 123                                  OM_uint32 * time_rec);</span>
+<span class="new"> 124 </span>
+<span class="new"> 125 typedef OM_uint32 (*STORE_CRED_INTO_FN_PTR)</span>
+<span class="new"> 126                                 (OM_uint32 *minor_status,</span>
+<span class="new"> 127                                  gss_const_cred_id_t input_cred_handle,</span>
+<span class="new"> 128                                  gss_cred_usage_t input_usage,</span>
+<span class="new"> 129                                  const gss_OID desired_mech,</span>
+<span class="new"> 130                                  OM_uint32 overwrite_cred,</span>
+<span class="new"> 131                                  OM_uint32 default_cred,</span>
+<span class="new"> 132                                  gss_const_key_value_set_t cred_store,</span>
+<span class="new"> 133                                  gss_OID_set * elements_stored,</span>
+<span class="new"> 134                                  gss_cred_usage_t * cred_usage_stored);</span>
+<span class="new"> 135 </span>
+ 136 typedef OM_uint32 (*RELEASE_CRED_FN_PTR)
+ 137                                 (OM_uint32 *minor_status,
+ 138                                 gss_cred_id_t *cred_handle);
+ 139 
+ 140 typedef OM_uint32 (*INQUIRE_CRED_FN_PTR)
+ 141                                 (OM_uint32 *minor_status,
+ 142                                 gss_const_cred_id_t cred_handle,
+ 143                                 gss_name_t *name,
+ 144                                 OM_uint32 *lifetime,
+ 145                                 gss_cred_usage_t *cred_usage,
+ 146                                 gss_OID_set *mechanisms);
+ 147 
+ 148 typedef OM_uint32 (*IMPORT_SEC_CONTEXT_FN_PTR)
+ 149                                 (OM_uint32 *minor_status,
+ 150                                 gss_const_buffer_t interprocess_token,
+ 151                                 gss_ctx_id_t *context_handle);
+ 152 
+ 153 typedef OM_uint32 (*INIT_SEC_CONTEXT_FN_PTR)
+ 154                                 (OM_uint32 *minor_status,
+ 155                                 gss_const_cred_id_t initiator_cred_handle,
+
+</pre><hr></hr><pre>
+ 271 
+ 272 typedef OM_uint32 (*RELEASE_OID_SET_FN_PTR)
+ 273                                 (OM_uint32 *minor_status,
+ 274                                 gss_OID_set *set);
+ 275 
+ 276 typedef OM_uint32 (*RELEASE_BUFFER_FN_PTR)
+ 277                                 (OM_uint32 *minor_status,
+ 278                                 gss_buffer_t buffer);
+ 279 
+ 280 
+ 281 /* dynamically resolved functions from gss library */
+ 282 
+ 283 typedef struct GSS_FUNCTION_TABLE {
+ 284     gss_OID_set                         mechs;
+ 285     RELEASE_NAME_FN_PTR                 releaseName;
+ 286     IMPORT_NAME_FN_PTR                  importName;
+ 287     COMPARE_NAME_FN_PTR                 compareName;
+ 288     CANONICALIZE_NAME_FN_PTR            canonicalizeName;
+ 289     EXPORT_NAME_FN_PTR                  exportName;
+ 290     DISPLAY_NAME_FN_PTR                 displayName;
+<span class="new"> 291     LOCAL_NAME_FN_PTR                   localName;</span>
+ 292     ACQUIRE_CRED_FN_PTR                 acquireCred;
+<span class="new"> 293     ACQUIRE_CRED_WITH_PASSWORD_FN_PTR   acquireCredWithPassword;</span>
+<span class="new"> 294     ACQUIRE_CRED_FROM_FN_PTR            acquireCredFrom;</span>
+<span class="new"> 295     STORE_CRED_INTO_FN_PTR              storeCredInto;</span>
+ 296     RELEASE_CRED_FN_PTR                 releaseCred;
+ 297     INQUIRE_CRED_FN_PTR                 inquireCred;
+ 298     IMPORT_SEC_CONTEXT_FN_PTR           importSecContext;
+ 299     INIT_SEC_CONTEXT_FN_PTR             initSecContext;
+ 300     ACCEPT_SEC_CONTEXT_FN_PTR           acceptSecContext;
+ 301     INQUIRE_CONTEXT_FN_PTR              inquireContext;
+ 302     DELETE_SEC_CONTEXT_FN_PTR           deleteSecContext;
+ 303     CONTEXT_TIME_FN_PTR                 contextTime;
+ 304     WRAP_SIZE_LIMIT_FN_PTR              wrapSizeLimit;
+ 305     EXPORT_SEC_CONTEXT_FN_PTR           exportSecContext;
+ 306     GET_MIC_FN_PTR                      getMic;
+ 307     VERIFY_MIC_FN_PTR                   verifyMic;
+ 308     WRAP_FN_PTR                         wrap;
+ 309     UNWRAP_FN_PTR                       unwrap;
+ 310     INDICATE_MECHS_FN_PTR               indicateMechs;
+ 311     INQUIRE_NAMES_FOR_MECH_FN_PTR       inquireNamesForMech;
+ 312     ADD_OID_SET_MEMBER_FN_PTR           addOidSetMember;
+ 313     DISPLAY_STATUS_FN_PTR               displayStatus;
+ 314     CREATE_EMPTY_OID_SET_FN_PTR         createEmptyOidSet;
+ 315     RELEASE_OID_SET_FN_PTR              releaseOidSet;
+</pre></td>
+</tr></table>
+</body></html>

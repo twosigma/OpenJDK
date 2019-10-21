@@ -1,0 +1,53 @@
+From 97fcf702006d18ca502a976730567fe42ad7375f Mon Sep 17 00:00:00 2001
+From: Nico Williams <nico@twosigma.com>
+Date: Tue, 14 Aug 2018 15:50:26 -0500
+Subject: [PATCH 16/24] fixup SEAM bug uncomments
+
+---
+ .../share/native/libj2gss/GSSLibStub.c        | 21 +++++++++----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+index 45e6ef8644..50d5d962c2 100644
+--- a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
++++ b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+@@ -1000,9 +1000,11 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
+                               FID_NativeGSSContext_isEstablished,
+                               JNI_TRUE);
+ 
+-      jMech = getJavaOID(env, aMech);
+-      (*env)->SetObjectField(env, jcontextSpi,
+-                             FID_NativeGSSContext_actualMech, jMech);
++      jMech = (aMech == GSS_C_NO_OID) ? NULL : getJavaOID(env, aMech);
++      if (!(*env)->ExceptionCheck(env)) {
++        (*env)->SetObjectField(env, jcontextSpi,
++                               FID_NativeGSSContext_actualMech, jMech);
++      }
+     } else if (major & GSS_S_CONTINUE_NEEDED) {
+       TRACE0("[GSSLibStub_initContext] context not established");
+       major &= ~GSS_S_CONTINUE_NEEDED;
+@@ -1103,16 +1105,13 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
+   if (GSS_ERROR(major) == GSS_S_COMPLETE) {
+     /* update member values if needed */
+ 
+-    if (aMech != GSS_C_NO_OID) {
+-      jMech = getJavaOID(env, aMech);
+-      if ((*env)->ExceptionCheck(env)) {
+-        goto error;
+-      }
++    jMech = (aMech == GSS_C_NO_OID) ? NULL : getJavaOID(env, aMech);
++    if (!(*env)->ExceptionCheck(env)) {
+       (*env)->SetObjectField(env, jcontextSpi,
+                              FID_NativeGSSContext_actualMech, jMech);
+-      if ((*env)->ExceptionCheck(env)) {
+-        goto error;
+-      }
++    }
++    if ((*env)->ExceptionCheck(env)) {
++      goto error;
+     }
+ 
+     /* WORKAROUND for an old Heimdal bug */
+-- 
+2.17.1
+

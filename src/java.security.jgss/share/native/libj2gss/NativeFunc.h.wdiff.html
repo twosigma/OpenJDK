@@ -1,0 +1,550 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ws Wdiff src/java.security.jgss/share/native/libj2gss/NativeFunc.h</title>
+
+    <meta http-equiv="cache-control" content="no-cache" />
+
+    <style type='text/css' media='screen'>
+      pre	{ margin: 2px; }
+
+      body	{ background-color: #eeeeee; }
+
+      hr	{ border: none 0; border-top: 1px solid #aaa; height: 1px; }
+
+      .subtracted { color: brown }
+      .added	{ color: blue }
+
+      .elided	{ border: 1px solid #444; cursor: pointer; margin: 1px }
+
+      table.hidebar { border: 1px solid #ff9900; background-color: #eee;
+      		  text-align: center; border-collapse: collapse; }
+
+      .hidebar td.active-down { border: 1px solid #ff9900;
+		border-right: 1px solid #ccc; cursor: s-resize }
+
+      .hidebar td.active-down:hover { background-color: #ffcc99; }
+
+      .hidebar td.active-up { border: 1px solid #ff9900; cursor: n-resize;
+		border-left: 1px solid #ccc; }
+
+      .hidebar td.active-up:hover { background-color: #ffcc99; }
+
+      .hidebar td.elided-label { font-style: italic; width: 12em; }
+
+      .cmdbox	{ position: fixed; top: 0; right: 0;
+	          border-left: solid 1px #444;
+	          border-bottom: solid 1px #444;
+      		  background-color: #ccc; text-align: center }
+
+      .cmdbox td { background-color: #eee; border: 1px #444 outset;
+		   cursor: pointer; padding: 3px 4px; }
+      .cmdbox td:hover { background-color: #ffcc99;
+ 		outline: thin solid #ff9900; }
+
+      a:hover { background-color: #ffcc99; }
+
+      a.print { font-size: x-small; }
+    </style>
+
+    <style type='text/css' media='print'>
+	pre { font-family: courier, monospace; font-size: 0.8em; }
+	.cmdbox { display: none; }
+        a.print { display: none; }
+	.hidebar td.active-down { display: none; }
+	.hidebar td.active-up { display: none; }
+        .hidebar td.elided-label { font-style: italic; font-size: small; }
+	table.hidebar { border: none; border-bottom: 1px dotted #000000; }
+	span.added { font-weight: bold;
+	         background-color: #eee; width: 100%; display: block; }
+	span.subtracted { font-style: italic;
+		 background-color: #eee; width: 100%; display: block; }
+	.elided { display: none; }
+        hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+    </style>
+
+    <script type="text/javascript">
+      function show_n_hide_dir(id_to_show, id_to_hide, dir) {
+	      var elt_to_show = document.getElementById(id_to_show);
+	      var elt_to_hide = document.getElementById(id_to_hide);
+	      // When we're opening up, we need to make the bottoms of the
+	      // elements appear to be the same.  So our invariant should be
+	      // elt.offsetBottom - window.scrollY.
+	      var preinvar = elt_to_hide.offsetHeight - window.scrollY;
+	      elt_to_show.style.setProperty('display', '', '');
+	      elt_to_hide.style.setProperty('display', 'none', '');
+	      if (dir == 'up') {
+		      var postinvar = elt_to_show.offsetHeight - window.scrollY;
+		      window.scrollBy(0, postinvar - preinvar);
+	      }
+      }
+
+      function handle_click(e) {
+	      var eh = e.target;
+	      var es = document.getElementById("hb-" + e.target.id);
+	      eh.style.setProperty('display', 'none', '');
+	      es.style.setProperty('display', '', '');
+	      /* Scroll so new element is at cursor. */
+	      window.scroll(0, es.offsetTop + (es.offsetHeight / 2)
+	          - e.clientY);
+      }
+
+      function stripsearch(str) {
+	q = str.indexOf("?");
+	if (q != -1)
+	  str = str.substr(0, q);
+	return (str);
+      }
+
+      function split() {
+        page = stripsearch(location.href);
+	halfway = window.scrollY + window.innerHeight / 2 - 5;
+	document.write('<frameset rows="50%,*">' +
+	  '<frame src="' + page + "?" + window.scrollY + '" />' +
+	  '<frame src="' + page + "?" + halfway + '" />' +
+	  '</frameset>');
+	document.close();
+      }
+
+      function closeframe() {
+	page = stripsearch(location.href);
+
+	otherf = window.parent.frames[0];
+	if (otherf == window)
+	  otherf = window.parent.frames[1];
+
+	parent.location.replace(page + "?" + otherf.scrollY);
+      }
+    </script>
+  </head>
+  <body id='SUNWwebrev'>
+    <a class="print" href="javascript:print()">Print this page</a>
+    <pre>
+Add JGSS JNI bindings for gss cred store functions
+Add createCredential() with password
+Also avoid memory allocation in newGSSOIDSet() renamed to makeGSSOIDset()
+which now takes a singleton set argument and either assigns the requested
+OID or with SPNEGO returns a static list of all the supported mechs. With
+this we no longer need deleteGSSOIDSet().
+Add getLocalName() GSSName method
+</pre>
+<hr />
+    <table class='cmdbox'>
+      <tr>
+        <td onclick='split()'>Split</td>
+	<td id='close' onclick='closeframe()'>Close</td>
+      </tr>
+      <tr><td colspan="2" onclick='open_or_close_all(1)'>Expand all</td></tr>
+      <tr><td colspan="2" onclick='open_or_close_all(0)'>Collapse all</td></tr>
+    </table>
+
+    <script type='text/javascript'>
+      if (window == top)
+        document.getElementById('close').style.setProperty('display', 'none', '');
+    </script>
+<pre><span class='subtracted'>          --- old/src/java.security.jgss/share/native/libj2gss/NativeFunc.h
+</span><span class='added'>          +++ new/src/java.security.jgss/share/native/libj2gss/NativeFunc.h
+</span></pre>
+<pre id='elided1' class='elided' style='display: none'>   1    1  /*
+   2    2   * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
+   3    3   * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4    4   *
+   5    5   * This code is free software; you can redistribute it and/or modify it
+   6    6   * under the terms of the GNU General Public License version 2 only, as
+   7    7   * published by the Free Software Foundation.  Oracle designates this
+   8    8   * particular file as subject to the "Classpath" exception as provided
+   9    9   * by Oracle in the LICENSE file that accompanied this code.
+  10   10   *
+  11   11   * This code is distributed in the hope that it will be useful, but WITHOUT
+  12   12   * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13   13   * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14   14   * version 2 for more details (a copy is included in the LICENSE file that
+  15   15   * accompanied this code).
+  16   16   *
+  17   17   * You should have received a copy of the GNU General Public License version
+  18   18   * 2 along with this work; if not, write to the Free Software Foundation,
+  19   19   * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20   20   *
+  21   21   * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22   22   * or visit www.oracle.com if you need additional information or have any
+  23   23   * questions.
+  24   24   */
+  25   25  
+  26   26  #ifndef NATIVE_FUNC_H
+  27   27  #define NATIVE_FUNC_H
+  28   28  
+  29   29  #include "gssapi.h"
+  30   30  
+  31   31  #ifdef WIN32
+  32   32  #include &lt;windows.h&gt;
+  33   33  #define GETLIB(libName) LoadLibrary(libName)
+  34   34  #define GETFUNC(lib,name) GetProcAddress(lib,name)
+  35   35  #define CLOSELIB(lib) CloseHandle(lib)
+  36   36  #else
+  37   37  #include &lt;dlfcn.h&gt;
+  38   38  #define GETLIB(libName) dlopen(libName, RTLD_NOW)
+  39   39  #define GETFUNC(lib,name) dlsym(lib,name)
+  40   40  #define CLOSELIB(lib) dlclose(lib)
+  41   41  #endif
+  42   42  
+  43   43  #ifndef TRUE
+  44   44  #define TRUE    1
+  45   45  #endif
+  46   46  
+  47   47  #ifndef FALSE
+  48   48  #define FALSE   0
+  49   49  #endif
+  50   50  
+  51   51  int loadNative(const char *libName);
+  52   52  
+  53   53  /* function pointer definitions */
+  54   54  typedef OM_uint32 (*RELEASE_NAME_FN_PTR)
+  55   55                                  (OM_uint32 *minor_status,
+  56   56                                  gss_name_t *name);
+  57   57  
+  58   58  typedef OM_uint32 (*IMPORT_NAME_FN_PTR)
+  59   59                                  (OM_uint32 *minor_status,
+  60   60                                  gss_const_buffer_t input_name_buffer,
+  61   61                                  gss_const_OID input_name_type,
+  62   62                                  gss_name_t *output_name);
+  63   63  
+  64   64  typedef OM_uint32 (*COMPARE_NAME_FN_PTR)
+  65   65                                  (OM_uint32 *minor_status,
+  66   66                                  gss_const_name_t name1,
+  67   67                                  gss_const_name_t name2,
+  68   68                                  int *name_equal);
+  69   69  
+  70   70  typedef OM_uint32 (*CANONICALIZE_NAME_FN_PTR)
+  71   71                                  (OM_uint32 *minor_status,
+  72   72                                  gss_const_name_t input_name,
+  73   73                                  gss_const_OID mech_type,
+  74   74                                  gss_name_t *output_name);
+  75   75  
+  76   76  typedef OM_uint32 (*EXPORT_NAME_FN_PTR)
+</pre>
+<table id='hb-elided1' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">76 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided1", "hb-elided1", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre>  77   77                                  (OM_uint32 *minor_status,
+  78   78                                  gss_const_name_t input_name,
+  79   79                                  gss_buffer_t exported_name);
+  80   80  
+  81   81  typedef OM_uint32 (*DISPLAY_NAME_FN_PTR)
+  82   82                                  (OM_uint32 *minor_status,
+  83   83                                  gss_const_name_t input_name,
+  84   84                                  gss_buffer_t output_name_buffer,
+  85   85                                  gss_OID *output_name_type);
+  86   86  
+<span class='added'>       87 +typedef OM_uint32 (*LOCAL_NAME_FN_PTR)
+       88 +                                (OM_uint32 *minor_status,
+       89 +                                gss_name_t input_name,
+       90 +                                gss_OID mech,
+       91 +                                gss_buffer_t output_name_buffer);
+       92 +
+</span>  87   93  typedef OM_uint32 (*ACQUIRE_CRED_FN_PTR)
+  88   94                                  (OM_uint32 *minor_status,
+  89   95                                  gss_const_name_t desired_name,
+  90   96                                  OM_uint32 time_req,
+  91   97                                  gss_const_OID_set desired_mech,
+  92   98                                  gss_cred_usage_t cred_usage,
+  93   99                                  gss_cred_id_t *output_cred_handle,
+  94  100                                  gss_OID_set *actual_mechs,
+  95  101                                  OM_uint32 *time_rec);
+  96  102  
+<span class='added'>      103 +typedef OM_uint32 (*ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)
+      104 +                                (OM_uint32 *minor_status,
+      105 +                                gss_name_t desired_name,
+      106 +                                gss_buffer_t password,
+      107 +                                OM_uint32 time_req,
+      108 +                                gss_OID_set desired_mech,
+      109 +                                gss_cred_usage_t cred_usage,
+      110 +                                gss_cred_id_t *output_cred_handle,
+      111 +                                gss_OID_set *actual_mechs,
+      112 +                                OM_uint32 *time_rec);
+      113 +
+      114 +typedef OM_uint32 (*ACQUIRE_CRED_FROM_FN_PTR)
+      115 +                                (OM_uint32 *minor_status,
+      116 +                                 gss_const_name_t desired_name,
+      117 +                                 OM_uint32 time_req,
+      118 +                                 const gss_OID_set desired_mechs,
+      119 +                                 gss_cred_usage_t cred_usage,
+      120 +                                 gss_const_key_value_set_t cred_store,
+      121 +                                 gss_cred_id_t * output_cred_handle,
+      122 +                                 gss_OID_set * actual_mechs,
+      123 +                                 OM_uint32 * time_rec);
+      124 +
+      125 +typedef OM_uint32 (*STORE_CRED_INTO_FN_PTR)
+      126 +                                (OM_uint32 *minor_status,
+      127 +                                 gss_const_cred_id_t input_cred_handle,
+      128 +                                 gss_cred_usage_t input_usage,
+      129 +                                 const gss_OID desired_mech,
+      130 +                                 OM_uint32 overwrite_cred,
+      131 +                                 OM_uint32 default_cred,
+      132 +                                 gss_const_key_value_set_t cred_store,
+      133 +                                 gss_OID_set * elements_stored,
+      134 +                                 gss_cred_usage_t * cred_usage_stored);
+      135 +
+</span>  97  136  typedef OM_uint32 (*RELEASE_CRED_FN_PTR)
+  98  137                                  (OM_uint32 *minor_status,
+  99  138                                  gss_cred_id_t *cred_handle);
+ 100  139  
+ 101  140  typedef OM_uint32 (*INQUIRE_CRED_FN_PTR)
+ 102  141                                  (OM_uint32 *minor_status,
+ 103  142                                  gss_const_cred_id_t cred_handle,
+ 104  143                                  gss_name_t *name,
+ 105  144                                  OM_uint32 *lifetime,
+ 106  145                                  gss_cred_usage_t *cred_usage,
+</pre>
+<pre id='elided2' class='elided' style='display: none'> 107  146                                  gss_OID_set *mechanisms);
+ 108  147  
+ 109  148  typedef OM_uint32 (*IMPORT_SEC_CONTEXT_FN_PTR)
+ 110  149                                  (OM_uint32 *minor_status,
+ 111  150                                  gss_const_buffer_t interprocess_token,
+ 112  151                                  gss_ctx_id_t *context_handle);
+ 113  152  
+ 114  153  typedef OM_uint32 (*INIT_SEC_CONTEXT_FN_PTR)
+ 115  154                                  (OM_uint32 *minor_status,
+ 116  155                                  gss_const_cred_id_t initiator_cred_handle,
+ 117  156                                  gss_ctx_id_t *context_handle,
+ 118  157                                  gss_const_name_t target_name,
+ 119  158                                  gss_const_OID mech_type,
+ 120  159                                  OM_uint32 req_flags,
+ 121  160                                  OM_uint32 time_req,
+ 122  161                                  gss_const_channel_bindings_t input_chan_bindings,
+ 123  162                                  gss_const_buffer_t input_token,
+ 124  163                                  gss_OID *actual_mech_type,
+ 125  164                                  gss_buffer_t output_token,
+ 126  165                                  OM_uint32 *ret_flags,
+ 127  166                                  OM_uint32 *time_rec);
+ 128  167  
+ 129  168  typedef OM_uint32 (*ACCEPT_SEC_CONTEXT_FN_PTR)
+ 130  169                                  (OM_uint32 *minor_status,
+ 131  170                                  gss_ctx_id_t *context_handle,
+ 132  171                                  gss_const_cred_id_t acceptor_cred_handle,
+ 133  172                                  gss_const_buffer_t input_token,
+ 134  173                                  gss_const_channel_bindings_t input_chan_bindings,
+ 135  174                                  gss_name_t *src_name,
+ 136  175                                  gss_OID *mech_type,
+ 137  176                                  gss_buffer_t output_token,
+ 138  177                                  OM_uint32 *ret_flags,
+ 139  178                                  OM_uint32 *time_rec,
+ 140  179                                  gss_cred_id_t *delegated_cred_handle);
+ 141  180  
+ 142  181  typedef OM_uint32 (*INQUIRE_CONTEXT_FN_PTR)
+ 143  182                                  (OM_uint32 *minor_status,
+ 144  183                                  gss_const_ctx_id_t context_handle,
+ 145  184                                  gss_name_t *src_name,
+ 146  185                                  gss_name_t *targ_name,
+ 147  186                                  OM_uint32 *lifetime_rec,
+ 148  187                                  gss_OID *mech_type,
+ 149  188                                  OM_uint32 *ctx_flags,
+ 150  189                                  int *locally_initiated,
+ 151  190                                  int *open);
+ 152  191  
+ 153  192  typedef OM_uint32 (*DELETE_SEC_CONTEXT_FN_PTR)
+ 154  193                                  (OM_uint32 *minor_status,
+ 155  194                                  gss_ctx_id_t *context_handle,
+ 156  195                                  gss_buffer_t output_token);
+ 157  196  
+ 158  197  typedef OM_uint32 (*CONTEXT_TIME_FN_PTR)
+ 159  198                                  (OM_uint32 *minor_status,
+ 160  199                                  gss_const_ctx_id_t context_handle,
+ 161  200                                  OM_uint32 *time_rec);
+ 162  201  
+ 163  202  typedef OM_uint32 (*WRAP_SIZE_LIMIT_FN_PTR)
+ 164  203                                  (OM_uint32 *minor_status,
+ 165  204                                  gss_const_ctx_id_t context_handle,
+ 166  205                                  int conf_req_flag,
+ 167  206                                  gss_qop_t qop_req,
+ 168  207                                  OM_uint32 req_output_size,
+ 169  208                                  OM_uint32 *max_input_size);
+ 170  209  
+ 171  210  typedef OM_uint32 (*EXPORT_SEC_CONTEXT_FN_PTR)
+ 172  211                                  (OM_uint32 *minor_status,
+ 173  212                                  gss_ctx_id_t *context_handle,
+ 174  213                                  gss_buffer_t interprocess_token);
+ 175  214  
+ 176  215  typedef OM_uint32 (*GET_MIC_FN_PTR)
+ 177  216                                  (OM_uint32 *minor_status,
+ 178  217                                  gss_const_ctx_id_t context_handle,
+ 179  218                                  gss_qop_t qop_req,
+ 180  219                                  gss_const_buffer_t message_buffer,
+ 181  220                                  gss_buffer_t msg_token);
+ 182  221  
+ 183  222  typedef OM_uint32 (*VERIFY_MIC_FN_PTR)
+ 184  223                                  (OM_uint32 *minor_status,
+ 185  224                                  gss_const_ctx_id_t context_handle,
+ 186  225                                  gss_const_buffer_t message_buffer,
+ 187  226                                  gss_const_buffer_t token_buffer,
+ 188  227                                  gss_qop_t *qop_state);
+ 189  228  
+ 190  229  typedef OM_uint32 (*WRAP_FN_PTR)
+ 191  230                                  (OM_uint32 *minor_status,
+ 192  231                                  gss_const_ctx_id_t context_handle,
+ 193  232                                  int conf_req_flag,
+ 194  233                                  gss_qop_t qop_req,
+ 195  234                                  gss_const_buffer_t input_message_buffer,
+ 196  235                                  int *conf_state,
+ 197  236                                  gss_buffer_t output_message_buffer);
+ 198  237  
+ 199  238  typedef OM_uint32 (*UNWRAP_FN_PTR)
+ 200  239                                  (OM_uint32 *minor_status,
+ 201  240                                  gss_const_ctx_id_t context_handle,
+ 202  241                                  gss_const_buffer_t input_message_buffer,
+ 203  242                                  gss_buffer_t output_message_buffer,
+ 204  243                                  int *conf_state,
+ 205  244                                  gss_qop_t *qop_state);
+ 206  245  
+ 207  246  typedef OM_uint32 (*INDICATE_MECHS_FN_PTR)
+ 208  247                                  (OM_uint32 *minor_status,
+ 209  248                                  gss_OID_set *mech_set);
+ 210  249  
+ 211  250  typedef OM_uint32 (*INQUIRE_NAMES_FOR_MECH_FN_PTR)
+ 212  251                                  (OM_uint32 *minor_status,
+ 213  252                                  gss_const_OID mechanism,
+ 214  253                                  gss_OID_set *name_types);
+ 215  254  
+ 216  255  typedef OM_uint32 (*ADD_OID_SET_MEMBER_FN_PTR)
+ 217  256                                  (OM_uint32 *minor_status,
+ 218  257                                  gss_const_OID member_oid,
+ 219  258                                  gss_OID_set *oid_set);
+ 220  259  
+ 221  260  typedef OM_uint32 (*DISPLAY_STATUS_FN_PTR)
+ 222  261                                  (OM_uint32 *minor_status,
+ 223  262                                  OM_uint32 status_value,
+ 224  263                                  int status_type,
+ 225  264                                  gss_const_OID mech_type,
+ 226  265                                  OM_uint32 *message_context,
+ 227  266                                  gss_buffer_t status_string);
+ 228  267  
+ 229  268  typedef OM_uint32 (*CREATE_EMPTY_OID_SET_FN_PTR)
+ 230  269                                  (OM_uint32 *minor_status,
+ 231  270                                  gss_OID_set *oid_set);
+ 232  271  
+ 233  272  typedef OM_uint32 (*RELEASE_OID_SET_FN_PTR)
+ 234  273                                  (OM_uint32 *minor_status,
+ 235  274                                  gss_OID_set *set);
+ 236  275  
+ 237  276  typedef OM_uint32 (*RELEASE_BUFFER_FN_PTR)
+ 238  277                                  (OM_uint32 *minor_status,
+ 239  278                                  gss_buffer_t buffer);
+ 240  279  
+ 241  280  
+</pre>
+<table id='hb-elided2' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">135 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided2", "hb-elided2", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre> 242  281  /* dynamically resolved functions from gss library */
+ 243  282  
+ 244  283  typedef struct GSS_FUNCTION_TABLE {
+ 245  284      gss_OID_set                         mechs;
+ 246  285      RELEASE_NAME_FN_PTR                 releaseName;
+ 247  286      IMPORT_NAME_FN_PTR                  importName;
+ 248  287      COMPARE_NAME_FN_PTR                 compareName;
+ 249  288      CANONICALIZE_NAME_FN_PTR            canonicalizeName;
+ 250  289      EXPORT_NAME_FN_PTR                  exportName;
+ 251  290      DISPLAY_NAME_FN_PTR                 displayName;
+<span class='added'>      291 +    LOCAL_NAME_FN_PTR                   localName;
+</span> 252  292      ACQUIRE_CRED_FN_PTR                 acquireCred;
+<span class='added'>      293 +    ACQUIRE_CRED_WITH_PASSWORD_FN_PTR   acquireCredWithPassword;
+      294 +    ACQUIRE_CRED_FROM_FN_PTR            acquireCredFrom;
+      295 +    STORE_CRED_INTO_FN_PTR              storeCredInto;
+</span> 253  296      RELEASE_CRED_FN_PTR                 releaseCred;
+ 254  297      INQUIRE_CRED_FN_PTR                 inquireCred;
+ 255  298      IMPORT_SEC_CONTEXT_FN_PTR           importSecContext;
+ 256  299      INIT_SEC_CONTEXT_FN_PTR             initSecContext;
+ 257  300      ACCEPT_SEC_CONTEXT_FN_PTR           acceptSecContext;
+ 258  301      INQUIRE_CONTEXT_FN_PTR              inquireContext;
+ 259  302      DELETE_SEC_CONTEXT_FN_PTR           deleteSecContext;
+ 260  303      CONTEXT_TIME_FN_PTR                 contextTime;
+ 261  304      WRAP_SIZE_LIMIT_FN_PTR              wrapSizeLimit;
+ 262  305      EXPORT_SEC_CONTEXT_FN_PTR           exportSecContext;
+</pre>
+<pre id='elided3' class='elided' style='display: none'> 263  306      GET_MIC_FN_PTR                      getMic;
+ 264  307      VERIFY_MIC_FN_PTR                   verifyMic;
+ 265  308      WRAP_FN_PTR                         wrap;
+ 266  309      UNWRAP_FN_PTR                       unwrap;
+ 267  310      INDICATE_MECHS_FN_PTR               indicateMechs;
+ 268  311      INQUIRE_NAMES_FOR_MECH_FN_PTR       inquireNamesForMech;
+ 269  312      ADD_OID_SET_MEMBER_FN_PTR           addOidSetMember;
+ 270  313      DISPLAY_STATUS_FN_PTR               displayStatus;
+ 271  314      CREATE_EMPTY_OID_SET_FN_PTR         createEmptyOidSet;
+ 272  315      RELEASE_OID_SET_FN_PTR              releaseOidSet;
+ 273  316      RELEASE_BUFFER_FN_PTR               releaseBuffer;
+ 274  317  
+ 275  318  } GSS_FUNCTION_TABLE;
+ 276  319  
+ 277  320  typedef GSS_FUNCTION_TABLE *GSS_FUNCTION_TABLE_PTR;
+ 278  321  
+ 279  322  /* global GSS function table */
+ 280  323  GSS_FUNCTION_TABLE_PTR ftab;
+ 281  324  
+ 282  325  #endif
+</pre>
+<table id='hb-elided3' class='hidebar'>
+  <tr>
+    <td class='active-down'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "down")'>
+      &darr;&nbsp;open down&nbsp;&darr;</td>
+    <td class="elided-label">20 lines elided</td>
+    <td class='active-up'
+      onclick='show_n_hide_dir("elided3", "hb-elided3", "up")'>
+      &uarr;&nbsp;open up&nbsp;&uarr;</td>
+  </tr>
+</table>
+<pre id='linerefpre'><span id='lineref'>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</span></pre>
+    <br clear="all" />
+    <br />
+
+    <script type="text/javascript">
+      /* Assign event handlers and widths. */
+      var w = document.getElementById('lineref').offsetWidth;
+      for (var i = 1; i <= 3; ++i) {
+	      var e = document.getElementById("elided" + i);
+	      e.onclick = handle_click;
+              e.style.setProperty('width', w + "px", '');
+
+	      e = document.getElementById("hb-elided" + i);
+              e.style.setProperty('width', w + "px", '');
+      }
+
+      /* Hide our line size reference. */
+      document.getElementById('linerefpre').style.setProperty('display',
+          'none', '');
+
+      /* Scroll as indicated. */
+      str = location.search;
+      s = str.substring(1, str.length);
+      if (s > 0)
+        window.scroll(0, s);
+
+      function open_or_close_all(open) {
+	      for (var i = 1; i <= 3; ++i) {
+		      var e = document.getElementById("hb-elided" + i);
+		      e.style.setProperty("display", open ? "none" : "", "");
+
+		      e = document.getElementById("elided" + i);
+		      e.style.setProperty("display", open ? "" : "none", "");
+	      }
+      }
+    </script>
+  </body>
+</html>

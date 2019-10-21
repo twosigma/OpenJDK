@@ -1,0 +1,133 @@
+From 563401d8dec019521bb20dd5352414f5e7cd0f08 Mon Sep 17 00:00:00 2001
+From: Nico Williams <nico@twosigma.com>
+Date: Fri, 4 Dec 2015 23:27:22 +0000
+Subject: [PATCH 14/24] Make GSSName implement Principal (add getName())
+
+---
+ .../share/classes/org/ietf/jgss/GSSName.java  | 23 ++++++++++++++++-
+ .../sun/security/jgss/GSSNameImpl.java        | 14 +++++++++++
+ .../classes/sun/security/jgss/GSSUtil.java    | 25 +++----------------
+ 3 files changed, 40 insertions(+), 22 deletions(-)
+
+diff --git a/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java b/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java
+index f0bd258b55..d0013762ca 100644
+--- a/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java
++++ b/src/java.security.jgss/share/classes/org/ietf/jgss/GSSName.java
+@@ -24,6 +24,7 @@
+  */
+ 
+ package org.ietf.jgss;
++import java.security.Principal;
+ 
+ /**
+  * This interface encapsulates a single GSS-API principal entity. The
+@@ -102,7 +103,7 @@ package org.ietf.jgss;
+  * @author Mayank Upadhyay
+  * @since 1.4
+  */
+-public interface GSSName {
++public interface GSSName extends Principal {
+ 
+     /**
+      * Oid indicating a host-based service name form.  It is used to
+@@ -281,6 +282,26 @@ public interface GSSName {
+      */
+     public String toString();
+ 
++    /**
++     * Returns a textual representation of the <code>GSSName</code> object.
++     *
++     * If <code>this</code> is not an MN then the returned name should be the
++     * same as the generic name used to construct it.  Otherwise the returned
++     * name may be a mechanism-specific name string.
++     *
++     * @return a String representing this name in printable form.
++     */
++    public String getName();
++
++    /**
++     * Returns a textual representation of the <code>GSSName</code> object
++     * element corresponding to the given <code>mech</code>.  This will be a
++     * mechanism-specific representation of <code>this</code.
++     *
++     * @return a String representing this name in printable form.
++     */
++    public String getName(Oid mech) throws GSSException;
++
+     /**
+      * Returns the name type of the printable
+      * representation of this name that can be obtained from the <code>
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java b/src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java
+index 97badb1e71..01f3981626 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/GSSNameImpl.java
+@@ -450,6 +450,20 @@ public class GSSNameImpl implements GSSName {
+         return printableName;
+     }
+ 
++    public String getName() {
++        return printableName;
++    }
++
++    public String getName(Oid mech) throws GSSException {
++        GSSNameSpi element = elements.get(mech);
++        if (element == null) {
++            throw new GSSExceptionImpl(GSSException.UNAVAILABLE,
++                    "GSSName object does not have an element for the " +
++                    "given mechanism");
++        }
++        return element.toString();
++    }
++
+     public String getLocalName() throws GSSException {
+         String lname = null;
+         Oid mech = null;
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java b/src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java
+index 4b5e57ed1c..4c1df31e9d 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/GSSUtil.java
+@@ -124,24 +124,8 @@ public class GSSUtil {
+ 
+         Set<GSSCredentialSpi> gssCredentials = null;
+ 
+-        Set<KerberosPrincipal> krb5Principals =
+-                                new HashSet<KerberosPrincipal>();
+-
+-        if (name instanceof GSSNameImpl) {
+-            try {
+-                GSSNameSpi ne = ((GSSNameImpl) name).getElement
+-                    (GSS_KRB5_MECH_OID);
+-                String krbName = ne.toString();
+-                if (ne instanceof Krb5NameElement) {
+-                    krbName =
+-                        ((Krb5NameElement) ne).getKrb5PrincipalName().getName();
+-                }
+-                KerberosPrincipal krbPrinc = new KerberosPrincipal(krbName);
+-                krb5Principals.add(krbPrinc);
+-            } catch (GSSException ge) {
+-                debug("Skipped name " + name + " due to " + ge);
+-            }
+-        }
++        Set<GSSName> names = new HashSet<GSSName>();
++        names.add(name);
+ 
+         if (creds instanceof GSSCredentialImpl) {
+             gssCredentials = ((GSSCredentialImpl) creds).getElements();
+@@ -151,12 +135,11 @@ public class GSSUtil {
+             privCredentials = new HashSet<Object>(); // empty Set
+         }
+         debug("Created Subject with the following");
+-        debug("principals=" + krb5Principals);
++        debug("principals=" + names);
+         debug("public creds=" + pubCredentials);
+         debug("private creds=" + privCredentials);
+ 
+-        return new Subject(false, krb5Principals, pubCredentials,
+-                           privCredentials);
++        return new Subject(false, names, pubCredentials, privCredentials);
+ 
+     }
+ 
+-- 
+2.17.1
+
