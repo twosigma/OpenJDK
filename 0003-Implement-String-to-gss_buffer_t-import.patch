@@ -1,0 +1,169 @@
+From 1e479bf45926a5d07f68fc44bf096a61198a424a Mon Sep 17 00:00:00 2001
+From: Viktor Dukhovni <viktor@twosigma.com>
+Date: Fri, 21 Sep 2018 17:02:11 -0500
+Subject: [PATCH 03/24] Implement String to gss_buffer_t import
+
+---
+ .../share/native/libj2gss/NativeUtil.c        | 94 +++++++++++++------
+ .../share/native/libj2gss/NativeUtil.h        |  2 +
+ 2 files changed, 68 insertions(+), 28 deletions(-)
+
+diff --git a/src/java.security.jgss/share/native/libj2gss/NativeUtil.c b/src/java.security.jgss/share/native/libj2gss/NativeUtil.c
+index 76183c9445..68caa76b68 100644
+--- a/src/java.security.jgss/share/native/libj2gss/NativeUtil.c
++++ b/src/java.security.jgss/share/native/libj2gss/NativeUtil.c
+@@ -455,6 +455,14 @@ void throwOutOfMemoryError(JNIEnv *env, const char *message) {
+     throwByName(env, "java/lang/OutOfMemoryError", message);
+ }
+ 
++static jsize
++safe_jsize(size_t n)
++{
++    jsize res = (jsize)n;
++
++    return (res >= 0 && (size_t)res == n) ? res : -1;
++}
++
+ /*
+  * Utility routine for creating a java.lang.String object
+  * using the specified gss_buffer_t structure. The specified
+@@ -471,8 +479,7 @@ jstring getJavaString(JNIEnv *env, gss_buffer_t bytes) {
+   }
+ 
+   /* constructs the String object with new String(byte[]) */
+-  len = (jsize)bytes->length;
+-  if (len < 0 || bytes->length != (size_t)len) {
++  if ((len = safe_jsize(bytes->length)) < 0) {
+     (*ftab->releaseBuffer)(&minor, bytes);
+     return NULL;
+   }
+@@ -591,26 +598,25 @@ void initGSSBuffer(JNIEnv *env, jbyteArray jbytes,
+   int len;
+   void* value;
+ 
+-  if (jbytes != NULL) {
+-    len = (*env)->GetArrayLength(env, jbytes);
+-    value = malloc(len);
+-    if (value == NULL) {
+-      throwOutOfMemoryError(env, NULL);
+-      return;
+-    } else {
+-      (*env)->GetByteArrayRegion(env, jbytes, 0, len, value);
+-      if ((*env)->ExceptionCheck(env)) {
+-        free(value);
+-        return;
+-      } else {
+-        cbytes->length = len;
+-        cbytes->value = value;
+-      }
+-    }
+-  } else {
+-    cbytes->length = 0;
+-    cbytes->value = NULL;
++  cbytes->length = 0;
++  cbytes->value = NULL;
++
++  if (jbytes == NULL)
++    return;
++
++  len = (*env)->GetArrayLength(env, jbytes);
++  value = malloc(len);
++  if (value == NULL) {
++    throwOutOfMemoryError(env, NULL);
++    return;
+   }
++  (*env)->GetByteArrayRegion(env, jbytes, 0, len, value);
++  if ((*env)->ExceptionCheck(env)) {
++    free(value);
++    return;
++  }
++  cbytes->length = len;
++  cbytes->value = value;
+ }
+ 
+ /*
+@@ -626,6 +632,40 @@ void resetGSSBuffer(gss_buffer_t cbytes) {
+   }
+ }
+ 
++/*
++ * Utility routine for initializing gss_buffer_t structure
++ * with a String.
++ * NOTE: need to call resetGSSBufferString(...) to free up
++ * the resources.
++ */
++void initGSSBufferString(JNIEnv* env, jstring jstr, gss_buffer_t buf)
++{
++  const char *s;
++
++  buf->length = 0;
++  buf->value = NULL;
++  if (jstr != NULL) {
++    s = (*env)->GetStringUTFChars(env, jstr, NULL);
++    if (s == NULL) {
++      throwOutOfMemoryError(env, NULL);
++    } else {
++      buf->length = strlen(s);
++      buf->value = (char *)s; /* Drop const */
++    }
++  }
++}
++
++/*
++ * Utility routine for unpinning/releasing the String
++ * associated with the specified jstring object.
++ * NOTE: used in conjunction with initGSSBufferString(...).
++ */
++void resetGSSBufferString(JNIEnv *env, jstring jstr, gss_buffer_t buf)
++{
++  if (jstr != NULL && buf->value != NULL)
++    (*env)->ReleaseStringUTFChars(env, jstr, buf->value);
++}
++
+ /*
+  * Utility routine for creating a jbyteArray object using
+  * the byte[] value in specified gss_buffer_t structure.
+@@ -642,13 +682,11 @@ jbyteArray getJavaBuffer(JNIEnv *env, gss_buffer_t cbytes, jboolean isToken) {
+    */
+   if (cbytes != GSS_C_NO_BUFFER &&
+       (isToken == JNI_FALSE || cbytes->length > 0)) {
+-    jsize len = (jsize)cbytes->length;
++    jsize len = safe_jsize(cbytes->length);
+ 
+-    if (len < 0 || cbytes->length != (size_t)len) {
+-      /* XXX: Throw exception */
+-      return NULL;
++    if (len >= 0) {
++      result = (*env)->NewByteArray(env, len);
+     }
+-    result = (*env)->NewByteArray(env, len);
+     if (result != NULL) {
+       (*env)->SetByteArrayRegion(env, result, 0, len,
+                                  cbytes->value);
+@@ -790,8 +828,8 @@ jobjectArray getJavaOIDArray(JNIEnv *env, gss_OID_set cOidSet) {
+   jsize i;
+ 
+   if (cOidSet != NULL && cOidSet != GSS_C_NO_OID_SET) {
+-    numOfOids = (jsize) cOidSet->count;
+-    if (numOfOids < 0 || cOidSet->count != (size_t)numOfOids) {
++    numOfOids = safe_jsize(cOidSet->count);
++    if (numOfOids < 0) {
+       return NULL;
+     }
+     jOidSet = (*env)->NewObjectArray(env, numOfOids, CLS_Oid, NULL);
+diff --git a/src/java.security.jgss/share/native/libj2gss/NativeUtil.h b/src/java.security.jgss/share/native/libj2gss/NativeUtil.h
+index 9470c8d73a..dd7a6019e3 100644
+--- a/src/java.security.jgss/share/native/libj2gss/NativeUtil.h
++++ b/src/java.security.jgss/share/native/libj2gss/NativeUtil.h
+@@ -41,6 +41,8 @@ extern "C" {
+   extern void throwOutOfMemoryError(JNIEnv *, const char*);
+   extern void initGSSBuffer(JNIEnv *, jbyteArray, gss_buffer_t);
+   extern void resetGSSBuffer(gss_buffer_t);
++  void initGSSBufferString(JNIEnv *, jstring, gss_buffer_t);
++  void resetGSSBufferString(JNIEnv *, jstring, gss_buffer_t);
+ 
+   extern gss_OID newGSSOID(JNIEnv *, jobject);
+   extern void deleteGSSOID(gss_OID);
+-- 
+2.17.1
+

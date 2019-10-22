@@ -1,0 +1,1294 @@
+From 9d79b6a3ea2beebb4d6793f880dcdb78ecb52c41 Mon Sep 17 00:00:00 2001
+From: Nicolas Williams <nico@cryptonector.com>
+Date: Tue, 23 Apr 2019 15:54:19 -0500
+Subject: [PATCH 20/24] Add JGSS JNI bindings for gss cred store functions
+
+---
+ .../classes/org/ietf/jgss/GSSCredential.java  |  22 ++++
+ .../classes/org/ietf/jgss/GSSManager.java     | 123 ++++++++++++++++++
+ .../sun/security/jgss/GSSCredentialImpl.java  | 114 ++++++++++++++--
+ .../sun/security/jgss/GSSManagerImpl.java     |  28 ++++
+ .../security/jgss/krb5/Krb5MechFactory.java   |  53 +++++++-
+ .../security/jgss/spi/GSSCredentialSpi.java   |  21 +++
+ .../security/jgss/spi/MechanismFactory.java   |  82 ++++++++++++
+ .../jgss/spnego/SpNegoMechFactory.java        |  26 ++++
+ .../security/jgss/wrapper/GSSCredElement.java |  31 ++++-
+ .../sun/security/jgss/wrapper/GSSLibStub.java |  28 +++-
+ .../jgss/wrapper/NativeGSSFactory.java        |  55 +++++++-
+ .../share/native/libj2gss/GSSLibStub.c        |  93 ++++++++++++-
+ .../share/native/libj2gss/NativeFunc.c        |  10 +-
+ .../share/native/libj2gss/NativeFunc.h        |  24 ++++
+ .../share/native/libj2gss/NativeUtil.c        |  71 ++++++++++
+ .../share/native/libj2gss/NativeUtil.h        |   8 +-
+ .../share/native/libj2gss/gssapi.h            |  23 +++-
+ 17 files changed, 781 insertions(+), 31 deletions(-)
+
+diff --git a/src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java b/src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java
+index 6c304bed59..29b5df2377 100644
+--- a/src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java
++++ b/src/java.security.jgss/share/classes/org/ietf/jgss/GSSCredential.java
+@@ -25,6 +25,8 @@
+ 
+ package org.ietf.jgss;
+ 
++import java.util.Map;
++
+ /**
+  * This interface encapsulates the GSS-API credentials for an entity.  A
+  * credential contains all the necessary cryptographic information to
+@@ -349,6 +351,26 @@ public interface GSSCredential extends Cloneable{
+     public void add(GSSName name, int initLifetime, int acceptLifetime,
+                     Oid mech, int usage) throws GSSException;
+ 
++    /**
++     * Stores a credential element into an external credential store.
++     *
++     * @param usage The credential usage to store.
++     * @param mech The mechanism element of the credential to store.
++     * @param overwrite Whether to overwrite any existing credentials in
++     * the external store.
++     * @param defaultCred Whether to make the credential to be stored
++     * also be the default credential in the external store.
++     * @param store A description of the external store.  Common keys
++     * supported by platform-native GSS-API providers include:
++     * {@code ccache} and {@code keytab}, with the values being
++     * typically file paths.  Consult the documentation for your
++     * platform's native GSS-API providers.  The Java-native Krb5
++     * provider does not support this method at this time.
++     */
++    public void storeInto(int usage, Oid mech,
++                          boolean overwrite, boolean defaultCred,
++                          Map<String,String> store) throws GSSException;
++
+     /**
+      * Tests if this GSSCredential asserts the same entity as the supplied
+      * object.  The two credentials must be acquired over the same
+diff --git a/src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java b/src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java
+index ab3181302c..3ae80eed39 100644
+--- a/src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java
++++ b/src/java.security.jgss/share/classes/org/ietf/jgss/GSSManager.java
+@@ -25,6 +25,7 @@
+ 
+ package org.ietf.jgss;
+ 
++import java.util.Map;
+ import java.security.Provider;
+ 
+ /**
+@@ -442,6 +443,7 @@ public abstract class GSSManager {
+      *
+      * @param name the name of the principal for whom this credential is to be
+      * acquired.  Use <code>null</code> to specify the default principal.
++     * @param password The password for the principal.
+      * @param lifetime The number of seconds that credentials should remain
+      * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
+      * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
+@@ -475,6 +477,64 @@ public abstract class GSSManager {
+                                   int usage)
+         throws GSSException;
+ 
++    /**
++     * Factory method for acquiring a single mechanism credential from
++     * an external credential store.<p>
++     *
++     * GSS-API mechanism providers must impose a local access-control
++     * policy on callers to prevent unauthorized callers from acquiring
++     * credentials to which they are not entitled. The kinds of permissions
++     * needed by different mechanism providers will be documented on a
++     * per-mechanism basis. A failed permission check might cause a {@link
++     * java.lang.SecurityException SecurityException} to be thrown from
++     * this method. <p>
++     *
++     * Non-default values for lifetime cannot always be honored by the
++     * underlying mechanisms, thus applications should be prepared to call
++     * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
++     * on the returned credential.<p>
++     *
++     * @param name the name of the principal for whom this credential is to be
++     * acquired.  Use <code>null</code> to specify the default principal.
++     * @param store A description of an external credential store.
++     * Common keys supported by platform-native GSS-API providers
++     * include: {@code ccache} and {@code keytab}, with the values being
++     * typically file paths.  Consult the documentation for your
++     * platform's native GSS-API providers.  The Java-native Krb5
++     * provider does not support this method at this time.
++     * @param lifetime The number of seconds that credentials should remain
++     * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
++     * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
++     * have the maximum permitted lifetime.  Use {@link
++     * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to
++     * request default credential lifetime.
++     * @param mech the Oid of the desired mechanism.  Use <code>(Oid) null
++     * </code> to request the default mechanism.
++     * @param usage The intended usage for this credential object. The value
++     * of this parameter must be one of:
++     * {@link GSSCredential#INITIATE_AND_ACCEPT
++     * GSSCredential.INITIATE_AND_ACCEPT},
++     * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and
++     * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.
++     * @return a GSSCredential of the requested type.
++     *
++     * @see GSSCredential
++     *
++     * @throws GSSException containing the following
++     * major error codes:
++     *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
++     *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
++     *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
++     *    {@link GSSException#CREDENTIALS_EXPIRED
++     *                                   GSSException.CREDENTIALS_EXPIRED},
++     *    {@link GSSException#NO_CRED GSSException.NO_CRED},
++     *    {@link GSSException#FAILURE GSSException.FAILURE}
++     */
++    public abstract GSSCredential createCredential (GSSName name,
++                                  Map<String,String> store, int lifetime,
++                                  Oid mech, int usage)
++        throws GSSException;
++
+     /**
+      * Factory method for acquiring credentials over a set of
+      * mechanisms. This method attempts to acquire credentials for
+@@ -556,6 +616,7 @@ public abstract class GSSManager {
+      * @param name the name of the principal for whom this credential is to
+      * be acquired.  Use <code>null</code> to specify the default
+      * principal.
++     * @param password The password for the principal.
+      * @param lifetime The number of seconds that credentials should remain
+      * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
+      * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
+@@ -590,6 +651,68 @@ public abstract class GSSManager {
+                                       Oid mechs[], int usage)
+         throws GSSException;
+ 
++    /**
++     * Factory method for acquiring credentials with a "credential
++     * store" over a set of mechanisms. This method attempts to acquire
++     * credentials for each of the mechanisms specified in the array
++     * called mechs.  To determine the list of mechanisms for which the
++     * acquisition of credentials succeeded, the caller should use the
++     * {@link GSSCredential#getMechs() GSSCredential.getMechs}
++     * method.<p>
++     *
++     * GSS-API mechanism providers must impose a local access-control
++     * policy on callers to prevent unauthorized callers from acquiring
++     * credentials to which they are not entitled. The kinds of permissions
++     * needed by different mechanism providers will be documented on a
++     * per-mechanism basis. A failed permission check might cause a {@link
++     * java.lang.SecurityException SecurityException} to be thrown from
++     * this method.<p>
++     *
++     * Non-default values for lifetime cannot always be honored by the
++     * underlying mechanisms, thus applications should be prepared to call
++     * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
++     * on the returned credential.<p>
++     *
++     * @param name the name of the principal for whom this credential is to
++     * be acquired.  Use <code>null</code> to specify the default
++     * principal.
++     * @param store Map of string key and values describing how to
++     * acquire the credential. Consult the documentation for the various
++     * GSS mechanisms.
++     * @param lifetime The number of seconds that credentials should remain
++     * valid.  Use {@link GSSCredential#INDEFINITE_LIFETIME
++     * GSSCredential.INDEFINITE_LIFETIME} to request that the credentials
++     * have the maximum permitted lifetime.  Use {@link
++     * GSSCredential#DEFAULT_LIFETIME GSSCredential.DEFAULT_LIFETIME} to
++     * request default credential lifetime.
++     * @param mechs an array of Oid's indicating the mechanisms over which
++     * the credential is to be acquired.  Use <code>(Oid[]) null</code> for
++     * requesting a system specific default set of mechanisms.
++     * @param usage The intended usage for this credential object. The value
++     * of this parameter must be one of:
++     * {@link GSSCredential#INITIATE_AND_ACCEPT
++     * GSSCredential.INITIATE_AND_ACCEPT},
++     * {@link GSSCredential#ACCEPT_ONLY GSSCredential.ACCEPT_ONLY}, and
++     * {@link GSSCredential#INITIATE_ONLY GSSCredential.INITIATE_ONLY}.
++     * @return a GSSCredential of the requested type.
++     *
++     * @see GSSCredential
++     *
++     * @throws GSSException containing the following
++     * major error codes:
++     *    {@link GSSException#BAD_MECH GSSException.BAD_MECH},
++     *    {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
++     *    {@link GSSException#BAD_NAME GSSException.BAD_NAME},
++     *    {@link GSSException#CREDENTIALS_EXPIRED
++     *                                   GSSException.CREDENTIALS_EXPIRED},
++     *    {@link GSSException#NO_CRED GSSException.NO_CRED},
++     *    {@link GSSException#FAILURE GSSException.FAILURE}
++     */
++    public abstract GSSCredential createCredential(GSSName name,
++                                      Map<String,String> store, int lifetime,
++                                      Oid mechs[], int usage)
++        throws GSSException;
++
+     /**
+      * Factory method for creating a context on the initiator's
+      * side.
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java b/src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java
+index 18eccb14b1..c9b6c6c8d3 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/GSSCredentialImpl.java
+@@ -75,6 +75,16 @@ public class GSSCredentialImpl implements GSSCredential {
+         add(name, password, lifetime, lifetime, mech, usage);
+     }
+ 
++    GSSCredentialImpl(GSSManagerImpl gssManager, GSSName name,
++                      Map<String,String> store, int lifetime, Oid mech,
++                      int usage)
++        throws GSSException {
++        if (mech == null) mech = ProviderList.DEFAULT_MECH_OID;
++
++        init(gssManager);
++        add(name, store, lifetime, lifetime, mech, usage);
++    }
++
+     GSSCredentialImpl(GSSManagerImpl gssManager, GSSName name, String password,
+                       int lifetime, Oid mech, int usage)
+         throws GSSException {
+@@ -90,6 +100,33 @@ public class GSSCredentialImpl implements GSSCredential {
+         this(gssManager, name, (String)null, lifetime, mechs, usage);
+     }
+ 
++    GSSCredentialImpl(GSSManagerImpl gssManager, GSSName name,
++                      Map<String,String> store, int lifetime,
++                      Oid mechs[], int usage)
++        throws GSSException {
++        init(gssManager);
++        boolean defaultList = false;
++        if (mechs == null) {
++            mechs = gssManager.getMechs();
++            defaultList = true;
++        }
++
++        for (int i = 0; i < mechs.length; i++) {
++            try {
++                add(name, store, lifetime, lifetime, mechs[i], usage);
++            } catch (GSSException e) {
++                if (defaultList) {
++                    // Try the next mechanism
++                    GSSUtil.debug("Ignore " + e + " while acquring cred for "
++                        + mechs[i]);
++                    //e.printStackTrace();
++                } else throw e; // else try the next mechanism
++            }
++        }
++        if ((hashtable.size() == 0) || (usage != getUsage()))
++            throw new GSSException(GSSException.NO_CRED);
++    }
++
+     GSSCredentialImpl(GSSManagerImpl gssManager, GSSName name,
+                       String password, int lifetime, Oid mechs[], int usage)
+         throws GSSException {
+@@ -437,9 +474,23 @@ public class GSSCredentialImpl implements GSSCredential {
+         add(name, password, initLifetime, acceptLifetime, mech, usage);
+     }
+ 
++    public void add(GSSName name, Map<String,String> store, int initLifetime,
++                    int acceptLifetime, Oid mech, int usage)
++                    throws GSSException {
++        add(name, (String)null, store, initLifetime, acceptLifetime,
++            mech, usage);
++    }
++
+     public void add(GSSName name, String password, int initLifetime,
+                     int acceptLifetime, Oid mech, int usage)
+                     throws GSSException {
++        add(name, password, (Map<String,String>)null, initLifetime,
++            acceptLifetime, mech, usage);
++    }
++
++    private void add(GSSName name, String password, Map<String,String> store,
++                    int initLifetime, int acceptLifetime, Oid mech, int usage)
++                    throws GSSException {
+ 
+         if (destroyed) {
+             throw new IllegalStateException("This credential is " +
+@@ -459,12 +510,27 @@ public class GSSCredentialImpl implements GSSCredential {
+         GSSNameSpi nameElement = (name == null ? null :
+                                   ((GSSNameImpl)name).getElement(mech));
+ 
+-        tempCred = gssManager.getCredentialElement(nameElement,
+-                                                   password,
+-                                                   initLifetime,
+-                                                   acceptLifetime,
+-                                                   mech,
+-                                                   usage);
++        if (password == null && store == null) {
++            tempCred = gssManager.getCredentialElement(nameElement,
++                                                       initLifetime,
++                                                       acceptLifetime,
++                                                       mech,
++                                                       usage);
++        } else if (password != null) {
++            tempCred = gssManager.getCredentialElement(nameElement,
++                                                       password,
++                                                       initLifetime,
++                                                       acceptLifetime,
++                                                       mech,
++                                                       usage);
++        } else {
++            tempCred = gssManager.getCredentialElement(nameElement,
++                                                       store,
++                                                       initLifetime,
++                                                       acceptLifetime,
++                                                       mech,
++                                                       usage);
++        }
+         /*
+          * Not all mechanisms support the concept of one credential element
+          * that can be used for both initiating and accepting a context. In
+@@ -498,19 +564,26 @@ public class GSSCredentialImpl implements GSSCredential {
+                 key = new SearchKey(mech, currentUsage);
+                 hashtable.put(key, tempCred);
+ 
+-                if (password == null) {
++                if (store == null && password == null) {
+                     tempCred = gssManager.getCredentialElement(nameElement,
+                                                                initLifetime,
+                                                                acceptLifetime,
+                                                                mech,
+                                                                desiredUsage);
+-                } else {
++                } else if (password != null) {
+                     tempCred = gssManager.getCredentialElement(nameElement,
+                                                                password,
+                                                                initLifetime,
+                                                                acceptLifetime,
+                                                                mech,
+                                                                desiredUsage);
++                } else {
++                    tempCred = gssManager.getCredentialElement(nameElement,
++                                                               store,
++                                                               initLifetime,
++                                                               acceptLifetime,
++                                                               mech,
++                                                               desiredUsage);
+                 }
+ 
+                 key = new SearchKey(mech, desiredUsage);
+@@ -673,6 +746,31 @@ public class GSSCredentialImpl implements GSSCredential {
+         return displayString;
+     }
+ 
++    public void storeInto(int usage, Oid mech,
++                          boolean overwrite, boolean defaultCred,
++                          Map<String,String> store) throws GSSException {
++        if (destroyed) {
++            throw new IllegalStateException("This credential is " +
++                                            "no longer valid");
++        }
++
++        SearchKey key = null;
++        GSSCredentialSpi element = null;
++
++        if (mech == null) {
++            mech = ProviderList.DEFAULT_MECH_OID;
++        }
++
++        key = new SearchKey(mech, usage);
++        element = hashtable.get(key);
++        if (element == null) {
++            throw new GSSExceptionImpl(GSSException.BAD_MECH, mech);
++        }
++
++        element.storeInto(usage, overwrite, defaultCred, store);
++    }
++
++
+     public String toString() {
+ 
+         if (destroyed) {
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java b/src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java
+index 8298be9926..b75e65e8d7 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/GSSManagerImpl.java
+@@ -25,6 +25,7 @@
+ 
+ package sun.security.jgss;
+ 
++import java.util.Map;
+ import org.ietf.jgss.*;
+ import sun.security.action.GetBooleanAction;
+ import sun.security.jgss.spi.*;
+@@ -135,6 +136,14 @@ public class GSSManagerImpl extends GSSManager {
+         return wrap(new GSSCredentialImpl(this, aName, lifetime, mech, usage));
+     }
+ 
++    public GSSCredential createCredential(GSSName aName,
++                                          Map<String,String> store,
++                                          int lifetime, Oid mech, int usage)
++        throws GSSException {
++        return new GSSCredentialImpl(this, aName, store, lifetime, mech,
++            usage);
++    }
++
+     public GSSCredential createCredential(GSSName aName, String password,
+                                           int lifetime, Oid mech, int usage)
+         throws GSSException {
+@@ -155,6 +164,14 @@ public class GSSManagerImpl extends GSSManager {
+                 lifetime, mechs, usage);
+     }
+ 
++    public GSSCredential createCredential(GSSName aName,
++                                          Map<String,String> store,
++                                          int lifetime, Oid mechs[], int usage)
++        throws GSSException {
++        return new GSSCredentialImpl(this, aName, store,
++                lifetime, mechs, usage);
++    }
++
+     public GSSContext createContext(GSSName peer, Oid mech,
+                                     GSSCredential myCred, int lifetime)
+         throws GSSException {
+@@ -200,6 +217,17 @@ public class GSSManagerImpl extends GSSManager {
+                                             acceptLifetime, usage);
+     }
+ 
++    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
++                                                 Map<String,String> store,
++                                                 int initLifetime,
++                                                 int acceptLifetime,
++                                                 Oid mech, int usage)
++        throws GSSException {
++        MechanismFactory factory = list.getMechFactory(mech);
++        return factory.getCredentialElement(name, store, initLifetime,
++                                            acceptLifetime, usage);
++    }
++
+     // Used by java SPNEGO impl
+     public GSSNameSpi getNameElement(String name, Oid nameType, Oid mech)
+         throws GSSException {
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java b/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java
+index ab06ff6c81..a9c2d48de4 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/krb5/Krb5MechFactory.java
+@@ -32,6 +32,7 @@ import sun.security.jgss.spi.*;
+ import javax.security.auth.kerberos.ServicePermission;
+ import java.security.Provider;
+ import java.util.Vector;
++import java.util.Map;
+ 
+ /**
+  * Krb5 Mechanism plug in for JGSS
+@@ -149,10 +150,60 @@ public final class Krb5MechFactory implements MechanismFactory {
+         return credElement;
+     }
+ 
++    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
++           Map<String,String> store, int initLifetime, int acceptLifetime,
++           int usage) throws GSSException {
++
++        if (store != null) {
++            // XXX Implement!  Shouldn't be too hard...
++            throw new GSSException(GSSException.UNAVAILABLE, -1,
++                    "The Kerberos mechanism Java implementation does not " +
++                    "currently support acquiring GSS credentials handle " +
++                    "elements using a \"credential store\"");
++        }
++
++        if (name != null && !(name instanceof Krb5NameElement)) {
++            name = Krb5NameElement.getInstance(name.toString(),
++                                       name.getStringNameType());
++        }
++
++        Krb5CredElement credElement = getCredFromSubject
++            (name, (usage != GSSCredential.ACCEPT_ONLY));
++
++        if (credElement == null) {
++            if (usage == GSSCredential.INITIATE_ONLY ||
++                usage == GSSCredential.INITIATE_AND_ACCEPT) {
++                credElement = Krb5InitCredential.getInstance
++                    (caller, (Krb5NameElement) name, initLifetime);
++                checkInitCredPermission
++                    ((Krb5NameElement) credElement.getName());
++            } else if (usage == GSSCredential.ACCEPT_ONLY) {
++                credElement =
++                    Krb5AcceptCredential.getInstance(caller,
++                                                     (Krb5NameElement) name);
++                checkAcceptCredPermission
++                    ((Krb5NameElement) credElement.getName(), name);
++            } else
++                throw new GSSException(GSSException.FAILURE, -1,
++                                       "Unknown usage mode requested");
++        }
++        return credElement;
++    }
++
+     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+             int initLifetime, int acceptLifetime, int usage)
+         throws GSSException {
+-        return getCredentialElement(name, null, initLifetime, acceptLifetime, usage);
++        return getCredentialElement(name, initLifetime, acceptLifetime,
++            usage);
++    }
++
++    public void storeCredInto(GSSCredentialSpi cred, int usage,
++                              boolean overwrite, boolean defaultCred,
++                              Map<String,String> store) throws GSSException {
++        throw new GSSException(GSSException.UNAVAILABLE, -1,
++                "The Kerberos mechanism Java implementation does not " +
++                "currently support storing GSS credentials handle " +
++                "elements into a \"credential store\"");
+     }
+ 
+     public static void checkInitCredPermission(Krb5NameElement name) {
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java b/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java
+index c417c9999b..73b2c052c0 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/spi/GSSCredentialSpi.java
+@@ -27,6 +27,7 @@ package sun.security.jgss.spi;
+ 
+ import org.ietf.jgss.*;
+ import java.security.Provider;
++import java.util.Map;
+ 
+ /**
+  * This interface is implemented by a mechanism specific credential
+@@ -104,6 +105,26 @@ public interface GSSCredentialSpi {
+      */
+     public Oid getMechanism();
+ 
++    /**
++     * Stores a credential in the location specified by the store
++     * argument.
++     *
++     * @param usage The credential usage to store.
++     * @param overwrite Whether to overwrite any credential found at the
++     * given store location.
++     * @param defaultCred Whether to make the credential the default
++     * credential in the store at the given location.
++     * @param store A map of string keys and values specifying a store
++     * location.
++     */
++    default void storeInto(int usage, boolean overwrite, boolean defaultCred,
++                           Map<String,String> store) throws GSSException {
++        throw new GSSException(GSSException.UNAVAILABLE, -1,
++                "The " + getMechanism() + "mechanism does not " +
++                "currently support storing GSS credentials handle " +
++                "elements into a \"credential store\"");
++    }
++
+     /**
+      * Impersonates another client.
+      *
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java b/src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java
+index 51ce06614a..c1467a960d 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/spi/MechanismFactory.java
+@@ -27,6 +27,7 @@ package sun.security.jgss.spi;
+ 
+ import org.ietf.jgss.*;
+ import java.security.Provider;
++import java.util.Map;
+ 
+ /**
+  * This interface is implemented by the factory class for every
+@@ -146,6 +147,8 @@ public interface MechanismFactory {
+      * @param name the mechanism level name element for the entity whose
+      * credential is desired. A null value indicates that a mechanism
+      * dependent default choice is to be made.
++     * @param password is the password for the entity whose credential
++     * is desired.
+      * @param initLifetime indicates the lifetime (in seconds) that is
+      * requested for this credential to be used at the context initiator's
+      * end. This value should be ignored if the usage is
+@@ -166,6 +169,85 @@ public interface MechanismFactory {
+       String password, int initLifetime, int acceptLifetime, int usage)
+         throws GSSException;
+ 
++    /**
++     * Creates a credential element using a "credential store" for this
++     * mechanism to be included as part of a GSSCredential
++     * implementation. A GSSCredential is conceptually a container class
++     * of several credential elements from different mechanisms. A
++     * GSS-API credential can be used either for initiating GSS security
++     * contexts or for accepting them. This method also accepts
++     * parameters that indicate what usage is expected and how long the
++     * life of the credential should be. It is not necessary that the
++     * mechanism honor the request for lifetime. An application will
++     * always query an acquired GSSCredential to determine what lifetime
++     * it got back.<p>
++     *
++     * <b>Not all mechanisms support the concept of one credential element
++     * that can be used for both initiating and accepting a context. In the
++     * event that an application requests usage INITIATE_AND_ACCEPT for a
++     * credential from such a mechanism, the GSS framework will need to
++     * obtain two different credential elements from the mechanism, one
++     * that will have usage INITIATE_ONLY and another that will have usage
++     * ACCEPT_ONLY. The mechanism will help the GSS-API realize this by
++     * returning a credential element with usage INITIATE_ONLY or
++     * ACCEPT_ONLY prompting it to make another call to
++     * getCredentialElement, this time with the other usage mode. The
++     * mechanism indicates the missing mode by returning a 0 lifetime for
++     * it.</b>
++     *
++     * @param name the mechanism level name element for the entity whose
++     * credential is desired. A null value indicates that a mechanism
++     * dependent default choice is to be made.
++     * @param store is an array of even length whose elements at even
++     * indices are keys, and whose elements at any odd index are the
++     * values for the preceding keys. Keys supported by mechanisms
++     * vary. This is mostly intended for use with the platform's native
++     * GSS-API providers. Common keys include "keytab", "client_keytab",
++     * "ccache", and "rcache". Consult the documentation for the
++     * platform's native GSS-API providers.
++     * @param initLifetime indicates the lifetime (in seconds) that is
++     * requested for this credential to be used at the context initiator's
++     * end. This value should be ignored if the usage is
++     * ACCEPT_ONLY. Predefined contants are available in the
++     * org.ietf.jgss.GSSCredential interface.
++     * @param acceptLifetime indicates the lifetime (in seconds) that is
++     * requested for this credential to be used at the context acceptor's
++     * end. This value should be ignored if the usage is
++     * INITIATE_ONLY. Predefined contants are available in the
++     * org.ietf.jgss.GSSCredential interface.
++     * @param usage One of the values GSSCredential.INIATE_ONLY,
++     * GSSCredential.ACCEPT_ONLY, and GSSCredential.INITIATE_AND_ACCEPT.
++     * @see org.ietf.jgss.GSSCredential
++     * @throws GSSException if one of the error situations described in RFC
++     * 2743 with the GSS_Acquire_Cred or GSS_Add_Cred calls occurs.
++     */
++    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
++                                                 Map<String,String> store,
++                                                 int initLifetime,
++                                                 int acceptLifetime,
++                                                 int usage)
++        throws GSSException;
++
++    /**
++     * Stores a credential element into a specified location.
++     *
++     * @param cred The credential element to store.
++     * @param usage The credential usage to store.
++     * @param overwrite Whether to overwrite credentials found at the specified
++     * location.
++     * @param @defaultCred Whether to store the credentials as the default
++     * credentials in the specified location.
++     * @param store The location into which to store the credentials.
++     */
++    default void storeCredInto(GSSCredentialSpi cred, int usage,
++                              boolean overwrite, boolean defaultCred,
++                              Map<String,String> store) throws GSSException {
++        throw new GSSException(GSSException.UNAVAILABLE, -1,
++                "The " + getMechanismOid() + "mechanism does not " +
++                "currently support storing GSS credentials handle " +
++                "elements into a \"credential store\"");
++    }
++
+     /**
+      * Creates a name element for this mechanism to be included as part of
+      * a GSSName implementation. A GSSName is conceptually a container
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java b/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java
+index 336f88e823..c12c77b708 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java
+@@ -34,6 +34,7 @@ import sun.security.jgss.krb5.Krb5AcceptCredential;
+ import sun.security.jgss.krb5.Krb5NameElement;
+ import java.security.Provider;
+ import java.util.Vector;
++import java.util.Map;
+ 
+ /**
+  * SpNego Mechanism plug in for JGSS
+@@ -169,6 +170,31 @@ public final class SpNegoMechFactory implements MechanismFactory {
+         return credElement;
+     }
+ 
++    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
++           Map<String,String> store, int initLifetime, int acceptLifetime,
++           int usage) throws GSSException {
++
++        SpNegoCredElement credElement = getCredFromSubject
++            (name, (usage != GSSCredential.ACCEPT_ONLY));
++
++        if (credElement == null) {
++            // get CredElement for the default Mechanism
++            credElement = new SpNegoCredElement
++                (manager.getCredentialElement(name, store, initLifetime,
++                acceptLifetime, null, usage));
++        }
++        return credElement;
++    }
++
++    public void storeCredInto(GSSCredentialSpi cred, int usage,
++                              boolean overwrite, boolean defaultCred,
++                              Map<String,String> store) throws GSSException {
++        throw new GSSException(GSSException.UNAVAILABLE, -1,
++                "The SpNego mechanism does not " +
++                "currently support storing GSS credentials handle " +
++                "elements into a \"credential store\"");
++    }
++
+     public GSSContextSpi getMechanismContext(GSSNameSpi peer,
+                              GSSCredentialSpi myInitiatorCred, int lifetime)
+         throws GSSException {
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java
+index c2fc315268..5979a6ebe0 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java
+@@ -26,6 +26,9 @@ package sun.security.jgss.wrapper;
+ 
+ import org.ietf.jgss.*;
+ import java.security.Provider;
++import java.util.Map;
++import java.util.List;
++import java.util.ArrayList;
+ import sun.security.jgss.GSSUtil;
+ import sun.security.jgss.spi.GSSCredentialSpi;
+ import sun.security.jgss.spi.GSSNameSpi;
+@@ -74,31 +77,49 @@ public class GSSCredElement implements GSSCredentialSpi {
+         name = srcName;
+     }
+ 
+-    GSSCredElement(GSSNameElement name, String password, int lifetime,
+-                   int usage, GSSLibStub stub) throws GSSException {
++    private GSSCredElement(GSSNameElement name, String password,
++                           Map<String,String> store, int lifetime, int usage,
++                           GSSLibStub stub) throws GSSException {
+         cStub = stub;
+         this.usage = usage;
+ 
+         if (name != null) { // Could be GSSNameElement.DEF_ACCEPTOR
+             this.name = name;
+             doServicePermCheck();
+-            pCred = cStub.acquireCred(this.name.pName, password, lifetime,
+-                    usage);
++            pCred = cStub.acquireCred(this.name.pName, password, store,
++                lifetime, usage);
+             if (name == GSSNameElement.DEF_ACCEPTOR)
+                 isDefCred = true;
+         } else {
+-            pCred = cStub.acquireCred(0, password, lifetime, usage);
++            pCred = cStub.acquireCred(0, password, store, lifetime, usage);
+             this.name = new GSSNameElement(cStub.getCredName(pCred), cStub.getMech(), cStub);
+             doServicePermCheck();
+             isDefCred = true;
+         }
+     }
+ 
++    GSSCredElement(GSSNameElement name, Map<String,String> store, int lifetime,
++                   int usage, GSSLibStub stub) throws GSSException {
++        this(name, (String)null, store, lifetime, usage, stub);
++    }
++
++    GSSCredElement(GSSNameElement name, String password, int lifetime,
++                   int usage, GSSLibStub stub) throws GSSException {
++        this(name, password, (Map<String,String>)null, lifetime, usage, stub);
++    }
++
+     GSSCredElement(GSSNameElement name, int lifetime, int usage,
+                    GSSLibStub stub) throws GSSException {
+         this(name, (String)null, lifetime, usage, stub);
+     }
+ 
++    public void storeInto(int usage, boolean overwrite, boolean defaultCred,
++                          Map<String,String> store)
++            throws GSSException {
++        cStub.storeCred(pCred, usage, getMechanism(), overwrite,
++                        defaultCred, store);
++    }
++
+     public Provider getProvider() {
+         return SunNativeProvider.INSTANCE;
+     }
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java
+index d6089781b2..8971093165 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSLibStub.java
+@@ -25,6 +25,8 @@
+ 
+ package sun.security.jgss.wrapper;
+ 
++import java.util.Map;
++import java.util.ArrayList;
+ import java.util.Hashtable;
+ import org.ietf.jgss.Oid;
+ import org.ietf.jgss.GSSName;
+@@ -69,8 +71,11 @@ class GSSLibStub {
+     native Object[] displayName(long pName) throws GSSException;
+ 
+     // Credential related routines
+-    native long acquireCred(long pName, String password,
++    native long acquireCred(long pName, String password, String[] store,
+                             int lifetime, int usage) throws GSSException;
++    native long storeCred(long pCred, int usage, Oid mech,
++                          boolean overwrite, boolean defaultCred,
++                          String[] store) throws GSSException;
+     native long releaseCred(long pCred);
+     native long getCredName(long pCred);
+     native int getCredTime(long pCred);
+@@ -111,6 +116,27 @@ class GSSLibStub {
+         this.mech = mech;
+         this.pMech = getMechPtr(mech.getDER());
+     }
++    private static String[] map2array(Map<String,String> m) {
++        if (m == null)
++            return null;
++        ArrayList<String> l = new ArrayList<String>();
++        for (var e : m.entrySet()) {
++            l.add(e.getKey());
++            l.add(e.getValue());
++        }
++        return l.toArray(new String[0]);
++    }
++    public long acquireCred(long pName, String password,
++                            Map<String,String> store,
++                            int lifetime, int usage) throws GSSException {
++        return acquireCred(pName, password, map2array(store), lifetime, usage);
++    }
++    public long storeCred(long pCred, int usage, Oid mech,
++                          boolean overwrite, boolean defaultCred,
++                          Map<String,String> store) throws GSSException {
++        return storeCred(pCred, usage, mech, overwrite, defaultCred,
++            map2array(store));
++    }
+     public boolean equals(Object obj) {
+         if (obj == this) return true;
+         if (!(obj instanceof GSSLibStub)) {
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java
+index 66dd30660c..54d3ad5c6b 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSFactory.java
+@@ -27,6 +27,7 @@ package sun.security.jgss.wrapper;
+ 
+ import java.io.UnsupportedEncodingException;
+ import java.security.Provider;
++import java.util.Map;
+ import java.util.Vector;
+ import org.ietf.jgss.*;
+ import sun.security.jgss.GSSUtil;
+@@ -148,11 +149,63 @@ public final class NativeGSSFactory implements MechanismFactory {
+     }
+ 
+     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
++                                                 Map<String,String> store,
+                                                  int initLifetime,
+                                                  int acceptLifetime,
+                                                  int usage)
+         throws GSSException {
+-        return getCredentialElement(name, null, initLifetime,
++        GSSNameElement nname = null;
++        if (name != null && !(name instanceof GSSNameElement)) {
++            nname = (GSSNameElement)
++                getNameElement(name.toString(), name.getStringNameType());
++        } else nname = (GSSNameElement) name;
++
++        if (usage == GSSCredential.INITIATE_AND_ACCEPT) {
++            // Force separate acqusition of cred element since
++            // MIT's impl does not correctly report NO_CRED error.
++            usage = GSSCredential.INITIATE_ONLY;
++        }
++
++        GSSCredElement credElement =
++            getCredFromSubject(nname, (usage == GSSCredential.INITIATE_ONLY));
++
++        if (credElement == null) {
++            // No cred in the Subject
++            if (usage == GSSCredential.INITIATE_ONLY) {
++                if (store == null) {
++                    credElement = new GSSCredElement(nname, initLifetime,
++                                                     usage, cStub);
++                } else {
++                    credElement = new GSSCredElement(nname, store,
++                                                     initLifetime,
++                                                     usage, cStub);
++                }
++            } else if (usage == GSSCredential.ACCEPT_ONLY) {
++                if (nname == null) {
++                    nname = GSSNameElement.DEF_ACCEPTOR;
++                }
++                if (store == null) {
++                    credElement = new GSSCredElement(nname, acceptLifetime,
++                                                     usage, cStub);
++                } else {
++                    credElement = new GSSCredElement(nname, store,
++                                                     acceptLifetime,
++                                                     usage, cStub);
++                }
++            } else {
++                throw new GSSException(GSSException.FAILURE, -1,
++                                       "Unknown usage mode requested");
++            }
++        }
++        return credElement;
++    }
++
++    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
++                                                 int initLifetime,
++                                                 int acceptLifetime,
++                                                 int usage)
++        throws GSSException {
++        return getCredentialElement(name, (String)null, initLifetime,
+                                     acceptLifetime, usage);
+     }
+ 
+diff --git a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+index 50d5d962c2..dcc618da64 100644
+--- a/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
++++ b/src/java.security.jgss/share/native/libj2gss/GSSLibStub.c
+@@ -641,13 +641,14 @@ Java_sun_security_jgss_wrapper_GSSLibStub_displayName(JNIEnv *env,
+ /*
+  * Class:     sun_security_jgss_wrapper_GSSLibStub
+  * Method:    acquireCred
+- * Signature: (JLjava/lang/String;II)J
++ * Signature: (JLjava/lang/String;[II)J
+  */
+ JNIEXPORT jlong JNICALL
+ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
+                                                       jobject jobj,
+                                                       jlong pName,
+                                                       jstring jPassword,
++                                                      jarray jCredStore,
+                                                       jint reqTime,
+                                                       jint usage)
+ {
+@@ -663,6 +664,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
+   TRACE0("[GSSLibStub_acquireCred]");
+ 
+   mech = (gss_OID) jlong_to_ptr((*env)->GetLongField(env, jobj, FID_GSSLibStub_pMech));
++  mechs = makeGSSOIDSet(&singleton, mech);
+   credUsage = (gss_cred_usage_t) usage;
+   nameHdl = (gss_name_t) jlong_to_ptr(pName);
+ 
+@@ -670,11 +672,10 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
+ 
+   /* gss_acquire_cred(...) => GSS_S_BAD_MECH, GSS_S_BAD_NAMETYPE,
+      GSS_S_BAD_NAME, GSS_S_CREDENTIALS_EXPIRED, GSS_S_NO_CRED */
+-  if (jPassword == NULL) {
+-    mechs = makeGSSOIDSet(&singleton, mech);
++  if (jPassword == NULL && jCredStore == NULL) {
+     major = (*ftab->acquireCred)(&minor, nameHdl, reqTime, mechs, credUsage,
+                                  &credHdl, NULL, NULL);
+-  } else {
++  } else if (jPassword != NULL) {
+     gss_buffer_desc password;
+ 
+     if (ftab->acquireCredWithPassword == NULL) {
+@@ -687,11 +688,35 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
+     }
+ 
+     initGSSBufferString(env, jPassword, &password);
+-    mechs = makeGSSOIDSet(&singleton, mech);
++    if ((*env)->ExceptionCheck(env)) {
++      return jlong_zero;
++    }
+     major = (*ftab->acquireCredWithPassword)(&minor, nameHdl, &password,
+                                              reqTime, mechs, credUsage,
+                                              &credHdl, NULL, NULL);
+     resetGSSBufferString(env, jPassword, &password);
++  } else {
++    gss_key_value_set_desc credStore = {0, 0};
++
++    if (ftab->acquireCredFrom == NULL) {
++      const char *msg = "GSSLibStub_acquireCred from credential store not "
++          "supported by GSS provider";
++
++      TRACE0("[GSSLibStub_acquireCred] acquiring from a specific credential "
++             "store not supported by GSS provider");
++      checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0,
++                  "[GSSLibStub_acquireCred]");
++      return ptr_to_jlong(NULL);
++    }
++
++    initGSSCredStore(env, jCredStore, &credStore);
++    if ((*env)->ExceptionCheck(env)) {
++      return jlong_zero;
++    }
++    major = (*ftab->acquireCredFrom)(&minor, nameHdl, reqTime, mechs,
++                                     credUsage, &credStore, &credHdl,
++                                     NULL, NULL);
++    resetGSSCredStore(env, jCredStore, &credStore);
+   }
+ 
+   TRACE1("[GSSLibStub_acquireCred] pCred=%" PRIuPTR "", (uintptr_t) credHdl);
+@@ -703,6 +728,64 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acquireCred(JNIEnv *env,
+   return ptr_to_jlong(credHdl);
+ }
+ 
++/*
++ * Class:     sun_security_jgss_wrapper_GSSLibStub
++ * Method:    storeCred
++ * Signature: (JILorg/ietf/jgss/Oid;ZZ[)J
++ */
++JNIEXPORT jlong JNICALL
++Java_sun_security_jgss_wrapper_GSSLibStub_storeCred(JNIEnv *env,
++                                                    jobject jobj,
++                                                    jlong pCred,
++                                                    jint usage,
++                                                    jobject jmech,
++                                                    jboolean overwrite,
++                                                    jboolean defaultCred,
++                                                    jarray jCredStore)
++{
++  OM_uint32 minor, major;
++  gss_key_value_set_desc credStore;
++  gss_cred_usage_t credUsage;
++  gss_cred_id_t credHdl;
++  gss_OID mech;
++
++  TRACE0("[GSSLibStub_storeCred]");
++
++  credHdl = (gss_cred_id_t) jlong_to_ptr(pCred);
++  credUsage = (gss_cred_usage_t) usage;
++
++  mech = newGSSOID(env, jmech);
++  if ((*env)->ExceptionCheck(env)) {
++    return jlong_zero;
++  }
++
++  TRACE2("[GSSLibStub_storeCred] pCred=%ld, usage=%d", (long)pCred, usage);
++
++  if (ftab->storeCredInto == NULL) {
++    TRACE0("[GSSLibStub_storeCred] GSSLibStub_storeCred not supported by "
++           "GSS provider");
++    checkStatus(env, jobj, GSS_S_UNAVAILABLE, minor=0, "[GSSLibStub_storeCred]");
++    return ptr_to_jlong(NULL);
++  }
++
++  initGSSCredStore(env, jCredStore, &credStore);
++  if ((*env)->ExceptionCheck(env)) {
++    return jlong_zero;
++  }
++  major = (*ftab->storeCredInto)(&minor, credHdl, credUsage, mech,
++                                 overwrite, defaultCred, &credStore,
++                                 NULL, NULL);
++  resetGSSCredStore(env, jCredStore, &credStore);
++
++  TRACE1("[GSSLibStub_storeCred] pCred=%" PRIuPTR "", (uintptr_t) credHdl);
++
++  checkStatus(env, jobj, major, minor, "[GSSLibStub_storeCred]");
++  if ((*env)->ExceptionCheck(env)) {
++    return jlong_zero;
++  }
++  return ptr_to_jlong(credHdl);
++}
++
+ /*
+  * Class:     sun_security_jgss_wrapper_GSSLibStub
+  * Method:    releaseCred
+diff --git a/src/java.security.jgss/share/native/libj2gss/NativeFunc.c b/src/java.security.jgss/share/native/libj2gss/NativeFunc.c
+index 650520d173..23315bd1db 100644
+--- a/src/java.security.jgss/share/native/libj2gss/NativeFunc.c
++++ b/src/java.security.jgss/share/native/libj2gss/NativeFunc.c
+@@ -37,6 +37,8 @@ static const char DISPLAY_NAME[]                = "gss_display_name";
+ static const char LOCAL_NAME[]                  = "gss_localname";
+ static const char ACQUIRE_CRED[]                = "gss_acquire_cred";
+ static const char ACQUIRE_CRED_WITH_PASSWORD[]  = "gss_acquire_cred_with_password";
++static const char ACQUIRE_CRED_FROM[]           = "gss_acquire_cred_from";
++static const char STORE_CRED_INTO[]             = "gss_store_cred_into";
+ static const char RELEASE_CRED[]                = "gss_release_cred";
+ static const char INQUIRE_CRED[]                = "gss_inquire_cred";
+ static const char IMPORT_SEC_CONTEXT[]          = "gss_import_sec_context";
+@@ -137,11 +139,15 @@ int loadNative(const char *libName) {
+     }
+ 
+     /*
+-     * This one may not be available for a given GSS library, as it's an
+-     * extension, therefore we don't fail if it's missing.
++     * These may not be available for a given GSS library, as they are
++     * extensions, therefore we don't fail if it's missing.
+      */
+     ftab->acquireCredWithPassword = (ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)
+                         GETFUNC(gssLib, ACQUIRE_CRED_WITH_PASSWORD);
++    ftab->acquireCredFrom = (ACQUIRE_CRED_FROM_FN_PTR)
++                        GETFUNC(gssLib, ACQUIRE_CRED_FROM);
++    ftab->storeCredInto = (STORE_CRED_INTO_FN_PTR)
++                        GETFUNC(gssLib, STORE_CRED_INTO);
+ 
+     ftab->releaseCred = (RELEASE_CRED_FN_PTR)GETFUNC(gssLib, RELEASE_CRED);
+     if (ftab->releaseCred == NULL) {
+diff --git a/src/java.security.jgss/share/native/libj2gss/NativeFunc.h b/src/java.security.jgss/share/native/libj2gss/NativeFunc.h
+index 6326618f11..525fa02d75 100644
+--- a/src/java.security.jgss/share/native/libj2gss/NativeFunc.h
++++ b/src/java.security.jgss/share/native/libj2gss/NativeFunc.h
+@@ -111,6 +111,28 @@ typedef OM_uint32 (*ACQUIRE_CRED_WITH_PASSWORD_FN_PTR)
+                                 gss_OID_set *actual_mechs,
+                                 OM_uint32 *time_rec);
+ 
++typedef OM_uint32 (*ACQUIRE_CRED_FROM_FN_PTR)
++                                (OM_uint32 *minor_status,
++                                 gss_const_name_t desired_name,
++                                 OM_uint32 time_req,
++                                 const gss_OID_set desired_mechs,
++                                 gss_cred_usage_t cred_usage,
++                                 gss_const_key_value_set_t cred_store,
++                                 gss_cred_id_t * output_cred_handle,
++                                 gss_OID_set * actual_mechs,
++                                 OM_uint32 * time_rec);
++
++typedef OM_uint32 (*STORE_CRED_INTO_FN_PTR)
++                                (OM_uint32 *minor_status,
++                                 gss_const_cred_id_t input_cred_handle,
++                                 gss_cred_usage_t input_usage,
++                                 const gss_OID desired_mech,
++                                 OM_uint32 overwrite_cred,
++                                 OM_uint32 default_cred,
++                                 gss_const_key_value_set_t cred_store,
++                                 gss_OID_set * elements_stored,
++                                 gss_cred_usage_t * cred_usage_stored);
++
+ typedef OM_uint32 (*RELEASE_CRED_FN_PTR)
+                                 (OM_uint32 *minor_status,
+                                 gss_cred_id_t *cred_handle);
+@@ -269,6 +291,8 @@ typedef struct GSS_FUNCTION_TABLE {
+     LOCAL_NAME_FN_PTR                   localName;
+     ACQUIRE_CRED_FN_PTR                 acquireCred;
+     ACQUIRE_CRED_WITH_PASSWORD_FN_PTR   acquireCredWithPassword;
++    ACQUIRE_CRED_FROM_FN_PTR            acquireCredFrom;
++    STORE_CRED_INTO_FN_PTR              storeCredInto;
+     RELEASE_CRED_FN_PTR                 releaseCred;
+     INQUIRE_CRED_FN_PTR                 inquireCred;
+     IMPORT_SEC_CONTEXT_FN_PTR           importSecContext;
+diff --git a/src/java.security.jgss/share/native/libj2gss/NativeUtil.c b/src/java.security.jgss/share/native/libj2gss/NativeUtil.c
+index a9e2cf507b..54e9bef735 100644
+--- a/src/java.security.jgss/share/native/libj2gss/NativeUtil.c
++++ b/src/java.security.jgss/share/native/libj2gss/NativeUtil.c
+@@ -680,6 +680,77 @@ void resetGSSBufferString(JNIEnv *env, jstring jstr, gss_buffer_t buf)
+     (*env)->ReleaseStringUTFChars(env, jstr, buf->value);
+ }
+ 
++void initGSSCredStore(JNIEnv *env, jarray jstore,
++                      gss_key_value_set_desc *store) {
++  jsize nelements = 0;
++  jsize n, i, k;
++
++  store->count = 0;
++  store->elements = NULL;
++  if (jstore == NULL) {
++    return;
++  }
++  n = (*env)->GetArrayLength(env, jstore);
++  for (i = 0; i < n; i += 2) {
++    jobject jkey = (*env)->GetObjectArrayElement(env, jstore, i);
++    jobject jval = (*env)->GetObjectArrayElement(env, jstore, i + 1);
++    
++    if (!jkey || !jval) {
++      break;
++    }
++    if (!(*env)->IsInstanceOf(env, jkey, CLS_String) ||
++        !(*env)->IsInstanceOf(env, jval, CLS_String)) {
++      throwByName(env, "java/lang/IllegalArgumentException",
++                  "invalid GSS credential store element type; must be String");
++      store->count = 0;
++      return;
++    }
++    store->count += 1;
++    nelements += 2;
++  }
++  if (nelements < 0 || nelements > INT32_MAX) {
++    throwOutOfMemoryError(env,NULL);
++    store->count = 0;
++    return;
++  }
++  store->elements = calloc(store->count, sizeof(store->elements[0]));
++  if (store->elements == NULL) {
++    throwOutOfMemoryError(env,NULL);
++    store->count = 0;
++    return;
++  }
++  for (i = 0, k = 0; i < nelements; i += 2, k++) {
++    jobject jkey = (*env)->GetObjectArrayElement(env, jstore, i);
++    jobject jval = (*env)->GetObjectArrayElement(env, jstore, i + 1);
++    store->elements[k].key = (*env)->GetStringUTFChars(env, jkey, NULL);
++    store->elements[k].value = (*env)->GetStringUTFChars(env, jval, NULL);
++    TRACE2("[GSSLibStub initGSSCredStore] element %ld key %s",
++           (long)k, store->elements[k].key);
++    TRACE2("[GSSLibStub initGSSCredStore] element %ld value %s",
++           (long)k, store->elements[k].value);
++  }
++}
++
++void resetGSSCredStore(JNIEnv *env,
++                       jarray jstore,
++                       gss_key_value_set_desc *store) {
++  jobject jstr;
++  jsize i;
++
++  for (i = 0; i < (jsize)store->count; i++) {
++    jstr = (*env)->GetObjectArrayElement(env, jstore, i);
++    if (!(i & 0x01)) {
++      (*env)->ReleaseStringUTFChars(env, jstr, store->elements[i].key);
++    } else {
++      (*env)->ReleaseStringUTFChars(env, jstr, store->elements[i].value);
++    }
++  }
++  free(store->elements);
++  store->elements = NULL;
++  store->count = 0;
++}
++
++
+ /*
+  * Utility routine for creating a jbyteArray object using
+  * the byte[] value in specified gss_buffer_t structure.
+diff --git a/src/java.security.jgss/share/native/libj2gss/NativeUtil.h b/src/java.security.jgss/share/native/libj2gss/NativeUtil.h
+index 07f03046f5..70eb73ca81 100644
+--- a/src/java.security.jgss/share/native/libj2gss/NativeUtil.h
++++ b/src/java.security.jgss/share/native/libj2gss/NativeUtil.h
+@@ -40,9 +40,11 @@ extern "C" {
+   extern jint checkTime(OM_uint32);
+   extern void throwOutOfMemoryError(JNIEnv *, const char*);
+   extern void initGSSBuffer(JNIEnv *, jbyteArray, gss_buffer_t, jboolean);
+-  void resetGSSBuffer(JNIEnv *, jbyteArray, gss_buffer_t);
+-  void initGSSBufferString(JNIEnv *, jstring, gss_buffer_t);
+-  void resetGSSBufferString(JNIEnv *, jstring, gss_buffer_t);
++  extern void resetGSSBuffer(JNIEnv *, jbyteArray, gss_buffer_t);
++  extern void initGSSBufferString(JNIEnv *, jstring, gss_buffer_t);
++  extern void resetGSSBufferString(JNIEnv *, jstring, gss_buffer_t);
++  extern void initGSSCredStore(JNIEnv *, jarray, gss_key_value_set_desc *);
++  extern void resetGSSCredStore(JNIEnv *, jarray, gss_key_value_set_desc *);
+ 
+   extern gss_OID newGSSOID(JNIEnv *, jobject);
+   extern void deleteGSSOID(gss_OID);
+diff --git a/src/java.security.jgss/share/native/libj2gss/gssapi.h b/src/java.security.jgss/share/native/libj2gss/gssapi.h
+index 857077e49b..59ebeca554 100644
+--- a/src/java.security.jgss/share/native/libj2gss/gssapi.h
++++ b/src/java.security.jgss/share/native/libj2gss/gssapi.h
+@@ -119,6 +119,19 @@ typedef const struct gss_channel_bindings_struct *gss_const_channel_bindings_t;
+ typedef OM_uint32       gss_qop_t;
+ typedef int             gss_cred_usage_t;
+ 
++/* Credential store extensions */
++typedef struct gss_key_value_element_struct {
++    const char *key;
++    const char *value;
++} gss_key_value_element_desc;
++
++typedef struct gss_key_value_set_struct {
++    OM_uint32 count; /* should be size_t, but for MIT compat */
++    gss_key_value_element_desc *elements;
++} gss_key_value_set_desc, *gss_key_value_set_t;
++
++typedef const gss_key_value_set_desc *gss_const_key_value_set_t;
++
+ /*
+  * Flag bits for context-level services.
+  */
+@@ -703,10 +716,10 @@ GSS_DLLIMP OM_uint32 gss_canonicalize_name(
+ OM_uint32
+ gss_add_cred_with_password(
+         OM_uint32 *,            /* minor_status */
+-        const gss_cred_id_t,    /* input_cred_handle */
+-        const gss_name_t,       /* desired_name */
+-        const gss_OID,          /* desired_mech */
+-        const gss_buffer_t,     /* password */
++        gss_const_cred_id_t,    /* input_cred_handle */
++        gss_const_name_t,       /* desired_name */
++        gss_const_OID,          /* desired_mech */
++        gss_const_buffer_t,     /* password */
+         gss_cred_usage_t,       /* cred_usage */
+         OM_uint32,              /* initiator_time_req */
+         OM_uint32,              /* acceptor_time_req */
+@@ -720,7 +733,7 @@ gss_add_cred_with_password(
+ OM_uint32
+ gss_localname(
+         OM_uint32 *,            /* minor_status */
+-        const gss_name_t,       /* name */
++        gss_const_name_t,       /* name */
+         gss_OID,                /* mech_type */
+         gss_buffer_t            /* localname */
+ );
+-- 
+2.17.1
+

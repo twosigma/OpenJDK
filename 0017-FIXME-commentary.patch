@@ -1,0 +1,65 @@
+From 86ed2d817f37dde21b5d6ff87629e674f53ee813 Mon Sep 17 00:00:00 2001
+From: Nico Williams <nico@twosigma.com>
+Date: Fri, 4 Dec 2015 22:14:59 -0500
+Subject: [PATCH 17/24] FIXME commentary
+
+---
+ .../sun/security/jgss/spnego/SpNegoMechFactory.java      | 4 ++++
+ .../sun/security/jgss/wrapper/GSSCredElement.java        | 4 ++++
+ .../sun/security/jgss/wrapper/SunNativeProvider.java     | 9 ++++++++-
+ 3 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java b/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java
+index 5ae19bed34..336f88e823 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/spnego/SpNegoMechFactory.java
+@@ -79,6 +79,10 @@ public final class SpNegoMechFactory implements MechanismFactory {
+                                     null : creds.firstElement());
+ 
+         // Force permission check before returning the cred to caller
++        //
++        // FIXME This code assumes that the Kerberos mechanism is Java-coded,
++        // whereas it should be possible to mix Java-coded SPNEGO with a native
++        // (C-coded) mechanism.  For now this assumption stands.
+         if (result != null) {
+             GSSCredentialSpi cred = result.getInternalCred();
+             if (GSSUtil.isKerberosMech(cred.getMechanism())) {
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java
+index 5d2b7e6486..c2fc315268 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/GSSCredElement.java
+@@ -45,7 +45,11 @@ public class GSSCredElement implements GSSCredentialSpi {
+     public boolean isDefCred;
+ 
+     // Perform the necessary ServicePermission check on this cred
++    // FIXME Don't use any Krb5-specific code here.
+     void doServicePermCheck() throws GSSException {
++        // FIXME We need only do this check in initSecContext() and
++        // acceptSecContext(), so gut this here, and never ever do the
++        // Krb5Util.getTGSName(name) check.
+         if (GSSUtil.isKerberosMech(cStub.getMech())) {
+             if (System.getSecurityManager() != null) {
+                 if (isInitiatorCredential()) {
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java
+index 8f78a3fe13..a80d0c3a1c 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/SunNativeProvider.java
+@@ -109,7 +109,14 @@ public final class SunNativeProvider extends Provider {
+                             if (GSSLibStub.init(libName, DEBUG)) {
+                                 debug("Loaded GSS library: " + libName);
+                                 Oid[] mechs = GSSLibStub.indicateMechs();
+-                                HashMap<String,String> map = new HashMap<>();
++                                HashMap<String, String> map =
++                                            new HashMap<String, String>();
++                                // If the GSSLibStub does not support SPNEGO,
++                                // we could use ours, but ours has too much
++                                // knowledge of the Java Krb5 GSS mechanism, so
++                                // we can't, but if we could we'd do it thusly:
++                                //   map.put("GssApiMechanism.1.3.6.1.5.5.2",
++                                //           "sun.security.jgss.spnego.SpNegoMechFactory");
+                                 for (int i = 0; i < mechs.length; i++) {
+                                     debug("Native MF for " + mechs[i]);
+                                     map.put("GssApiMechanism." + mechs[i],
+-- 
+2.17.1
+

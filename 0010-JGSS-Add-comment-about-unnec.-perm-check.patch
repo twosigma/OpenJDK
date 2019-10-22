@@ -1,0 +1,27 @@
+From a6fe1503ccf7c2cc5927507f81752e81f7a21ba9 Mon Sep 17 00:00:00 2001
+From: Nico Williams <nico@twosigma.com>
+Date: Wed, 15 Aug 2018 15:21:26 -0500
+Subject: [PATCH 10/24] JGSS: Add comment about unnec. perm check
+
+---
+ .../classes/sun/security/jgss/wrapper/NativeGSSContext.java   | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java
+index f241f7cc6c..32205c96d3 100644
+--- a/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java
++++ b/src/java.security.jgss/share/classes/sun/security/jgss/wrapper/NativeGSSContext.java
+@@ -258,7 +258,9 @@ class NativeGSSContext implements GSSContextSpi {
+         }
+ 
+         // Do Service Permission check when importing SPNEGO context
+-        // just to be safe
++        // just to be safe.  WAT, no.  If the caller has an exported sec
++        // context token, it's because someone gave it to it, therefore there's
++        // no need to do any further permission checking.  REMOVE!
+         Oid mech = cStub.getMech();
+         if (GSSUtil.isSpNegoMech(mech) || GSSUtil.isKerberosMech(mech)) {
+             doServicePermCheck();
+-- 
+2.17.1
+
