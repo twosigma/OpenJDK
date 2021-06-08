@@ -67,10 +67,13 @@ import static sun.security.util.ResourcesMgr.getAuthResourceString;
  *
  * <p> If the configuration entry for {@code GssLoginModule}
  * has the option {@code accept} set to true, then acceptor credential
- * will be added to the subject's private credentials.</p>
+ * will be added to the subject's private credentials, but initiator
+ * credentials then will not be acquired and added unless the option
+ * {@code initiate} is also set to true.</p>
  *
  * <p> This {@code LoginModule} recognizes the {@code doNotPrompt}
- * option. If set to true the user will not be prompted for their password.</p>
+ * option. If set to true the user will be prompted neither for their name nor
+ * for their password.</p>
  *
  * <p> When using the GSS-API Kerberos mechanism, the user can specify
  * the location of the ticket cache by using the option
@@ -84,6 +87,12 @@ import static sun.security.util.ResourcesMgr.getAuthResourceString;
  * When using platform native GSS-API providers, consult their
  * documentation (for example, look for the {@code gss_acquire_cred_from()}
  * and {@code gss_store_cred_into()} functions).</p>
+ *
+ * <p> All options can be forced via properties named
+ * "sun.security.gss.login.force.&lt;option-name&gt;".</p>
+ *
+ * <p> All options can have defaults set via properties named
+ * "sun.security.gss.login.&lt;option-name&gt;".</p>
  *
  * <p> The principal name can be specified in the configuration entry
  * by using the option {@code name} and {@code nameType}. The principal name
@@ -107,6 +116,14 @@ import static sun.security.util.ResourcesMgr.getAuthResourceString;
  * or through shared state.(Default is false)
  * If set to true, credential must be obtained through cache, keytab,
  * or shared state. Otherwise, authentication will fail.</dd>
+ * <dt>{@code useDefaultCreds}:</dt>
+ * <dd>If set to true and {@code name} is not set, then only the default
+ * credential will be used.</dd>
+ * <dt>{@code tryDefaultCreds}:</dt>
+ * <dd>Obsolete.</dd>
+ * <dt>{@code onlyUseDefaultCreds}:</dt>
+ * <dd>If set to true then the {@code name} will be ignored and only default
+ * credentials will be used.</dd>
  * <dt>{@code ticketCache}:</dt>
  * <dd>Set this to the name of the ticket cache file that contains
  * user's TGT.</dd>
@@ -121,10 +138,12 @@ import static sun.security.util.ResourcesMgr.getAuthResourceString;
  * credentials for multiple principals in the {@code keyTab} or when you
  * want a specific ticket cache only. The principal can also be set
  * using the system property {@code sun.security.gss.name}. The value
- * from the configuration takes precedence.</dd>
+ * from the configuration takes precedence.  The specific form of the name can
+ * be specified with the {@code nametype} option.</dd>
  * <dt>{@code nametype}:</dt>
  * <dd>This is the type of the name. This can be "{@code username}",
- * "{@code hostbased}", or an OID, and defaults to "{@code username}".</dd>
+ * "{@code hostbased}", "{@code krb5-principal}" (i.e.,
+ * 1.2.840.113554.1.2.2.1), or an OID, and defaults to "{@code username}".</dd>
  * <dt>{@code initiate}:</dt>
  * <dd>Set this to true, if you need to acquire initiator
  * credentials.</dd>
@@ -220,6 +239,7 @@ public class GssLoginModule implements LoginModule {
     private boolean accept;
     private boolean tryDefaultCreds;
     private boolean useDefaultCreds;
+    private boolean onlyUseDefaultCreds;
 
     // Module state
     private boolean succeeded;
@@ -237,14 +257,26 @@ public class GssLoginModule implements LoginModule {
     public GssLoginModule() { }
 
     private String getString(String key) {
-        return (String)options.get(key);
+        String value =
+            System.getProperty("sun.security.gss.login.force." + key);
+        return value != null ? value : (String)options.get(key);
     }
     private boolean getBool(String key) {
-        String value = (String)options.get(key);
+        String value =
+            System.getProperty("sun.security.gss.login.force." + key);
+        if (value == null)
+            value = (String)options.get(key);
+        if (value == null)
+            value = System.getProperty("sun.security.gss.login." + key);
         return value != null ? Boolean.parseBoolean(value) : false;
     }
     private boolean getBoolWithDefault(String key, boolean defval) {
-        String value = (String)options.get(key);
+        String value =
+            System.getProperty("sun.security.gss.login.force." + key);
+        if (value == null)
+            value = (String)options.get(key);
+        if (value == null)
+            value = System.getProperty("sun.security.gss.login." + key);
         return value != null ? Boolean.parseBoolean(value) : defval;
     }
 
@@ -264,6 +296,11 @@ public class GssLoginModule implements LoginModule {
                 continue;
             storeAddOption(key, key.substring("credStoreKeyValue_".length()));
         }
+    }
+
+    private void trace(String s) {
+        if (debug)
+            System.err.println("\t[GssLoginModule] " + s);
     }
 
     /**
@@ -344,12 +381,18 @@ public class GssLoginModule implements LoginModule {
             nametypeOid = GSSName.NT_USER_NAME;
         } else if (nametype.equals("hostbased")) {
             nametypeOid = GSSName.NT_HOSTBASED_SERVICE;
+        } else if (nametype.equals("krb5-principal")) {
+            try {
+                nametypeOid = new Oid("1.2.840.113554.1.2.2.1");
+            } catch (GSSException e) {
+                trace("Unknown name type OID 1.2.840.113554.1.2.2.1");
+                nametypeOid = null;
+            }
         } else if (!nametype.equals("")) {
             try {
                 nametypeOid = new Oid(nametype);
             } catch (GSSException e) {
-                if (debug)
-                    System.out.print("Unknown name type OID " + nametype);
+                trace("Unknown name type OID " + nametype);
                 nametypeOid = null;
             }
         } else {
@@ -371,30 +414,32 @@ public class GssLoginModule implements LoginModule {
         accept = getBool("accept");
         tryDefaultCreds = getBool("tryDefaultCreds");
         useDefaultCreds = getBoolWithDefault("useDefaultCreds", doNotPrompt);
+        onlyUseDefaultCreds = getBoolWithDefault("onlyUseDefaultCreds", doNotPrompt);
         if (!initiate && !accept)
             initiate = true;
+        trace("Debug is  " + debug
+                + " doNotPrompt " + doNotPrompt
+                + " defName is " + defName
+                + " nametype is " + nametype
+                + " tryFirstPass is " + tryFirstPass
+                + " useFirstPass is " + useFirstPass
+                + " storePass is " + storePass
+                + " clearPass is " + clearPass
+                + " initiate is " + initiate
+                + " accept is " + accept
+                + " tryDefaultCreds is " + tryDefaultCreds
+                + " useDefaultCreds is " + useDefaultCreds
+                + " onlyUseDefaultCreds is " + onlyUseDefaultCreds + "\n");
         if (debug) {
-            System.out.print("Debug is  " + debug
-                             + " doNotPrompt " + doNotPrompt
-                             + " defName is " + defName
-                             + " nametype is " + nametype
-                             + " tryFirstPass is " + tryFirstPass
-                             + " useFirstPass is " + useFirstPass
-                             + " storePass is " + storePass
-                             + " clearPass is " + clearPass
-                             + " initiate is " + initiate
-                             + " accept is " + accept
-                             + " tryDefaultCreds is " + tryDefaultCreds
-                             + " useDefaultCreds is " + useDefaultCreds + "\n");
-            System.out.print("Credential store options are:");
+            System.err.print("Credential store options are:");
             if (store.size() == 0) {
-                System.out.print(" <none>");
+                System.err.print(" <none>");
             } else {
                 for (var e : store.entrySet()) {
-                    System.out.print(" " + e.getKey() + "=" + e.getValue() + ";");
+                    System.err.print(" " + e.getKey() + "=" + e.getValue() + ";");
                 }
             }
-            System.out.println("");
+            System.err.println("");
         }
     }
 
@@ -426,9 +471,7 @@ public class GssLoginModule implements LoginModule {
         try {
             if (tryFirstPass || useFirstPass) {
                 attemptAuthentication(true);
-                if (debug)
-                    System.out.println("\t\t[GssLoginModule] " +
-                                       "authentication succeeded");
+                trace("authentication succeeded");
                 succeeded = true;
                 cleanState();
                 return true;
@@ -436,12 +479,9 @@ public class GssLoginModule implements LoginModule {
         } catch (LoginException le) {
             // authentication failed -- try again below by prompting
             cleanState();
-            if (debug) {
-                System.out.println("\t\t[GssLoginModule] " +
-                                   (tryFirstPass ? "tryFirstPass " : "") +
-                                   "authentication failed with:" +
-                                   le.getMessage());
-            }
+            trace((tryFirstPass ? "tryFirstPass " : "")
+                    + "authentication failed with:"
+                    + le.getMessage());
             if (useFirstPass)
                 throw le;
         }
@@ -449,20 +489,15 @@ public class GssLoginModule implements LoginModule {
         // The first password didn't work or we didn't try it, try prompting
         try {
             attemptAuthentication(false);
-            if (debug)
-                System.out.println("\t\t[GssLoginModule] " +
-                                   "authentication succeeded");
+            trace("authentication succeeded");
             succeeded = true;
             cleanState();
             return true;
         } catch (LoginException le2) {
             cleanState();
-            if (debug) {
-                System.out.println("\t\t[GssLoginModule] " +
-                                   (tryFirstPass ? "tryFirstPass " : "") +
-                                   "authentication failed with:" +
-                                   le2.getMessage());
-            }
+            trace((tryFirstPass ? "tryFirstPass " : "")
+                    + "authentication failed with:"
+                    + le2.getMessage());
             throw le2;
         }
     }
@@ -470,88 +505,97 @@ public class GssLoginModule implements LoginModule {
     private void getcreds() throws GSSException {
         if (initiate) {
             if (password == null && store.size() == 0) {
-                if (debug)
-                    System.out.println("\t\t[GssLoginModule] acquiring" +
-                        ((gssName == null) ? " default" : "") +
-                        " initiator credentials...");
+                trace("acquiring"
+                        + ((gssName == null) ? " default" : "")
+                        + " initiator credentials...");
                 gssICred = manager.createCredential(gssName,
                         GSSCredential.DEFAULT_LIFETIME, (Oid[])null,
                         GSSCredential.INITIATE_ONLY);
             } else if (password != null) {
-                if (debug)
-                    System.out.println("\t\t[GssLoginModule] acquiring" +
-                        " initiator credentials using a password...");
+                trace("acquiring"
+                        + ((gssName == null) ? " default" : "")
+                        + " initiator credentials using a password...");
                 gssICred = manager.createCredential(gssName, password,
                         GSSCredential.DEFAULT_LIFETIME, (Oid[])null,
                         GSSCredential.INITIATE_ONLY);
             } else {
-                if (debug)
-                    System.out.println("\t\t[GssLoginModule] acquiring" +
-                        ((gssName == null) ? " default" : "") +
-                        " initiator credentials using a specified" +
-                        " credential store...");
+                trace("acquiring"
+                        + ((gssName == null) ? " default" : "")
+                        + " initiator credentials using a specified"
+                        + " credential store...");
                 gssICred = manager.createCredential(gssName, store,
                         GSSCredential.DEFAULT_LIFETIME, (Oid[])null,
                         GSSCredential.INITIATE_ONLY);
             }
-            if (debug)
-                System.out.println("\t\t[GssLoginModule] acquired" +
-                    " initiator credentials: " + gssName);
+            trace("acquired initiator credentials");
         }
         if (accept) {
-            if (debug)
-                System.out.println("\t\t[GssLoginModule] acquiring" +
-                    ((gssName == null) ? " default" : "") +
-                    " acceptor credentials...");
+            trace("acquiring"
+                    + ((gssName == null) ? " default" : "")
+                    + " acceptor credentials...");
             gssACred = manager.createCredential(gssName, password,
                     GSSCredential.DEFAULT_LIFETIME, (Oid[])null,
                     GSSCredential.ACCEPT_ONLY);
             // Default acceptor credentials retain a null name
-            if (debug)
-                System.out.println("\t\t[GssLoginModule] acquired" +
-                    " acceptor credentials");
+            trace("acquired acceptor credentials");
         }
-        if (gssName == null && gssICred != null)
+        if (gssName == null && gssICred != null) {
             gssName = gssICred.getName();
-        if (gssName == null && gssACred != null)
+            trace("acquired initiator credentials for " + gssName);
+        }
+        if (gssName == null && gssACred != null) {
             gssName = gssACred.getName();
+            trace("acquired acceptor credentials for " + gssName);
+        }
     }
 
     private void attemptAuthentication(boolean getPasswdFromSharedState)
         throws LoginException {
 
-        // Get a name, maybe
+        if (onlyUseDefaultCreds) {
+            trace("onlyUseDefaultCreds");
+            try {
+                getcreds();
+                return;
+            } catch (GSSException e) {
+                throw new LoginException(e.getMessage());
+            }
+        }
+
         if (name == null) {
-            if (useDefaultCreds) {
-                try {
-                    getcreds();
-                    return;
-                } catch (GSSException e) {
+            try {
+                trace("trying default credentials because name is null");
+                getcreds();
+                return;
+            } catch (GSSException e) {
+                if (useDefaultCreds) {
+                    trace("not prompting for username because useDefaultCreds"
+                            + "is set");
                     throw new LoginException(e.getMessage());
                 }
             }
-            if (tryDefaultCreds) {
-                try {
-                    getcreds();
-                    return;
-                } catch (GSSException e) { }
-            }
 
+            // Get a name, maybe
             promptForName(getPasswdFromSharedState);
             if (name == null)
                 throw new LoginException ("Unable to determine a GSS name");
         }
 
         try {
+            trace("import name " +
+                    (name != null ? name : "<null>")
+                    + " ("
+                    + nametypeOid + ")");
             gssName = manager.createName(name, nametypeOid);
         } catch (GSSException e) {
             throw new LoginException ("Unable to import GSS name");
         }
 
-        promptForPass(getPasswdFromSharedState);
-
+        /* See if we already have creds for the name */
         try {
+            trace("try acquiring creds for " + gssName);
             getcreds();
+            return;
         } catch (GSSException e) {
             throw new LoginException(e.getMessage());
         }
@@ -559,15 +603,15 @@ public class GssLoginModule implements LoginModule {
 
     private void promptForName(boolean getPasswdFromSharedState)
         throws LoginException {
+        trace("promptForName("
+                + (getPasswdFromSharedState ? "true" : "false")
+                + ")");
         if (getPasswdFromSharedState) {
             // use the name saved by a module earlier in the stack
             name = (String)sharedState.get(NAME);
             if (name == null || name.length() == 0)
                 name = defName;
-            if (debug) {
-                System.out.println("\t\t[GssLoginModule] username from" +
-		    " shared state is " + name);
-            }
+            trace("username from shared state is " + name);
             if (name != null && name.length() > 0)
                 return;
         }
@@ -583,6 +627,9 @@ public class GssLoginModule implements LoginModule {
 
         try {
             String defUsername = System.getProperty("user.name");
+
+            trace("defUsername = "
+                    + (defUsername != null ? defUsername : "<null>"));
 
             MessageFormat form = new MessageFormat(
                                    getAuthResourceString(
@@ -619,9 +666,7 @@ public class GssLoginModule implements LoginModule {
             // use the password saved by the first module in the stack
             pw = (char[])sharedState.get(PWD);
             if (pw == null) {
-                if (debug)
-                    System.out.println("\t\t[GssLoginModule] password from" +
-			" shared state is null");
+                trace("password from shared state is null");
                 throw new LoginException
                     ("Password can not be obtained from sharedstate ");
             }
@@ -737,8 +782,7 @@ public class GssLoginModule implements LoginModule {
 
         succeeded = true;
         commitSucceeded = true;
-        if (debug)
-            System.out.println("\t\t[GssLoginModule] commit Succeeded");
+        trace("commit Succeeded");
         return true;
     }
 
@@ -812,8 +856,7 @@ public class GssLoginModule implements LoginModule {
 
         succeeded = false;
         commitSucceeded = false;
-        if (debug)
-            System.out.println("\t\t[GSSLoginModule]: logged out Subject");
+        trace("logged out Subject");
         return true;
     }
 
