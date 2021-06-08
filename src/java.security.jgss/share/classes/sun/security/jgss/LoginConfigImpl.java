@@ -190,15 +190,13 @@ public class LoginConfigImpl extends Configuration {
                 krb5Options.put("isInitiator", "false");
             } else {
                 if (caller instanceof HttpCaller && !HTTP_USE_GLOBAL_CREDS) {
-                    gssOptions.put("tryDefaultCreds", "false");
                     krb5Options.put("useTicketCache", "false");
                 } else {
-                    gssOptions.put("tryDefaultCreds", "true");
                     krb5Options.put("useTicketCache", "true");
                 }
                 gssOptions.put("initiate", "true");
-                gssOptions.put("doNotPrompt", "false");
-                krb5Options.put("doNotPrompt", "false");
+                gssOptions.put("doNotPrompt", "true");
+                krb5Options.put("doNotPrompt", "true");
             }
             return new AppConfigurationEntry[] {
                 new AppConfigurationEntry(
