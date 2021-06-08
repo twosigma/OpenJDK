@@ -548,13 +548,18 @@ void checkStatus(JNIEnv *env, jobject jstub, OM_uint32 major,
 
   jmajor = getJavaErrorCode(routineErr | supplementaryInfo);
   jminor = minor;
-  if (jmajor != GSS_S_COMPLETE) {
+  if (major != GSS_S_COMPLETE) {
     jmsg = NULL;
     if (minor != 0) {
+      const char *s = NULL;
       jmsg = getMinorMessage(env, jstub, minor);
       if ((*env)->ExceptionCheck(env)) {
+        TRACE1("%s Exception displaying minor status code", methodName);
         return;
       }
+      s = (*env)->GetStringUTFChars(env, jmsg, NULL);
+      TRACE2("%s minor status message: %s", methodName, s);
+      (*env)->ReleaseStringUTFChars(env, jmsg, s);
     }
 
     gssEx = (*env)->NewObject(env, CLS_GSSException,
