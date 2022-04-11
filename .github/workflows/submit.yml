@@ -1,5 +1,7 @@
 name: Pre-submit tests
 
+permissions: write-all
+
 on:
   push:
     branches-ignore:
@@ -15,7 +17,7 @@ on:
 jobs:
   prerequisites:
     name: Prerequisites
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     outputs:
       should_run: ${{ steps.check_submit.outputs.should_run }}
       bundle_id: ${{ steps.check_bundle_id.outputs.bundle_id }}
@@ -195,6 +197,30 @@ jobs:
       - name: Build
         run: make CONF_NAME=linux-x64
         working-directory: jdk
+
+      - name: Zip Images
+        run: |
+          zip -r build-linux-x64.zip build/linux-x64/images/
+        working-directory: jdk
+
+      - name: Persist Built Images
+        uses: actions/upload-artifact@v2
+        with:
+          name: jdk-linux-x64-build${{ matrix.artifact }}_${{ needs.prerequisites.outputs.bundle_id }}
+          path: jdk/build-linux.zip
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        id: tsrelease-linux-x64
+        with:
+          body: Build of OpenJDK 17.0.3 with Two Sigma's JGSS enhancements
+          draft: false
+          prerelease: false
+          tag_name: ts-jgss-jdk17.0.3-linux-x64
+          files: jdk/build-linux-x64.zip
+          target_commitish: ts-jgss-jdk17.0.3
+          generate_release_notes: false
+          name: ts-jgss-jdk17.0.3-linux-x64
 
       - name: Persist test bundles
         uses: actions/upload-artifact@v2
@@ -1054,6 +1080,32 @@ jobs:
           & make CONF_NAME=windows-x64
         working-directory: jdk
 
+      - name: Zip Images
+        run: |
+          $env:Path = "$HOME\cygwin\cygwin64\bin;$HOME\cygwin\cygwin64\bin;$env:Path" ;
+          $env:Path = $env:Path -split ";" -match "C:\\Windows|PowerShell|cygwin" -join ";" ;
+          & zip -r build-windows-x64.zip build/windows-x64/images/
+        working-directory: jdk
+
+      - name: Persist Built Images
+        uses: actions/upload-artifact@v2
+        with:
+          name: jdk-windows-x64-build${{ matrix.artifact }}_${{ needs.prerequisites.outputs.bundle_id }}
+          path: jdk/build-windows-x64.zip
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        id: tsrelease-windows-x64
+        with:
+          body: Build of OpenJDK 17.0.3 with Two Sigma's JGSS enhancements
+          draft: false
+          prerelease: false
+          tag_name: ts-jgss-jdk17.0.3-windows-x64
+          files: jdk/build-windows-x64.zip
+          target_commitish: ts-jgss-jdk17.0.3
+          generate_release_notes: false
+          name: ts-jgss-jdk17.0.3-windows-x64
+
       - name: Persist test bundles
         uses: actions/upload-artifact@v2
         with:
@@ -1702,17 +1754,17 @@ jobs:
         with:
           path: test-results
 
-      - name: Delete remaining artifacts
-        run: >
-          for url in `
-          curl -s -H 'Accept: application/json;api-version=6.0-preview'
-          -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
-          '${{ fromJson(steps.actions_runtime.outputs.result).url }}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview' |
-          jq -r -c '.value | .[].url'`; do
-          curl -s -H 'Accept: application/json;api-version=6.0-preview'
-          -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
-          -X DELETE "${url}";
-          done
+#     - name: Delete remaining artifacts
+#       run: >
+#         for url in `
+#         curl -s -H 'Accept: application/json;api-version=6.0-preview'
+#         -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
+#         '${{ fromJson(steps.actions_runtime.outputs.result).url }}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview' |
+#         jq -r -c '.value | .[].url'`; do
+#         curl -s -H 'Accept: application/json;api-version=6.0-preview'
+#         -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
+#         -X DELETE "${url}";
+#         done
 
       - name: Upload a combined test results artifact
         uses: actions/upload-artifact@v2
