@@ -1,5 +1,7 @@
 name: Pre-submit tests
 
+permissions: write-all
+
 on:
   push:
     branches-ignore:
@@ -1052,6 +1054,32 @@ jobs:
           & make CONF_NAME=windows-x64
         working-directory: jdk
 
+      - name: Zip Images
+        run: |
+          $env:Path = "$HOME\cygwin\cygwin64\bin;$HOME\cygwin\cygwin64\bin;$env:Path" ;
+          $env:Path = $env:Path -split ";" -match "C:\\Windows|PowerShell|cygwin" -join ";" ;
+          & zip -r build.zip build/windows-x64/images/
+        working-directory: jdk
+
+      - name: Persist Built Images
+        uses: actions/upload-artifact@v2
+        with:
+          name: jdk-windows-x64-build${{ matrix.artifact }}_${{ needs.prerequisites.outputs.bundle_id }}
+          path: jdk/build.zip
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        id: tsrelease
+        with:
+          body: Build of OpenJDK 17.0.2 with Two Sigma's JGSS enhancements
+          draft: false
+          prerelease: false
+          tag_name: ts-jgss-jdk17
+          files: jdk/build.zip
+          target_commitish: ts-jgss-jdk17.0.2-squashed
+          generate_release_notes: false
+          name: ts-jgss-jdk17
+
       - name: Persist test bundles
         uses: actions/upload-artifact@v2
         with:
@@ -1698,17 +1726,17 @@ jobs:
         with:
           path: test-results
 
-      - name: Delete remaining artifacts
-        run: >
-          for url in `
-          curl -s -H 'Accept: application/json;api-version=6.0-preview'
-          -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
-          '${{ fromJson(steps.actions_runtime.outputs.result).url }}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview' |
-          jq -r -c '.value | .[].url'`; do
-          curl -s -H 'Accept: application/json;api-version=6.0-preview'
-          -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
-          -X DELETE "${url}";
-          done
+#     - name: Delete remaining artifacts
+#       run: >
+#         for url in `
+#         curl -s -H 'Accept: application/json;api-version=6.0-preview'
+#         -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
+#         '${{ fromJson(steps.actions_runtime.outputs.result).url }}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview' |
+#         jq -r -c '.value | .[].url'`; do
+#         curl -s -H 'Accept: application/json;api-version=6.0-preview'
+#         -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
+#         -X DELETE "${url}";
+#         done
 
       - name: Upload a combined test results artifact
         uses: actions/upload-artifact@v2
