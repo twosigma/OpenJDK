@@ -1,5 +1,7 @@
 name: Pre-submit tests
 
+permissions: write-all
+
 on:
   push:
     branches-ignore:
@@ -19,7 +21,7 @@ concurrency:
 jobs:
   prerequisites:
     name: Prerequisites
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     outputs:
       should_run: ${{ steps.check_submit.outputs.should_run }}
       bundle_id: ${{ steps.check_bundle_id.outputs.bundle_id }}
@@ -130,7 +132,7 @@ jobs:
 
   linux_x64_build:
     name: Linux x64
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs: prerequisites
     if: needs.prerequisites.outputs.should_run != 'false' && (needs.prerequisites.outputs.platform_linux_x64 != 'false' || needs.prerequisites.outputs.platform_linux_additional == 'true')
 
@@ -199,7 +201,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc-10=10.3.0-1ubuntu1~20.04 g++-10=10.3.0-1ubuntu1~20.04 libxrandr-dev libxtst-dev libcups2-dev libasound2-dev
+          sudo apt-get install gcc-10=10.3.0-1ubuntu1~18.04 g++-10=10.3.0-1ubuntu1~18.04 libxrandr-dev libxtst-dev libcups2-dev libasound2-dev
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10
 
       - name: Configure
@@ -221,6 +223,30 @@ jobs:
         run: make CONF_NAME=linux-x64
         working-directory: jdk
 
+      - name: Zip Images
+        run: |
+          zip -r build-linux-x64.zip build/linux-x64/images/
+        working-directory: jdk
+
+      - name: Persist Built Images
+        uses: actions/upload-artifact@v2
+        with:
+          name: jdk-linux-x64-build${{ matrix.artifact }}_${{ needs.prerequisites.outputs.bundle_id }}
+          path: jdk/build-linux.zip
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        id: tsrelease-linux-x64
+        with:
+          body: Build of OpenJDK 17.0.4 with Two Sigma's JGSS enhancements
+          draft: false
+          prerelease: false
+          tag_name: ts-jgss-jdk17.0.4-linux-x64
+          files: jdk/build-linux-x64.zip
+          target_commitish: ts-jgss-jdk17.0.4
+          generate_release_notes: false
+          name: ts-jgss-jdk17.0.4-linux-x64
+
       - name: Persist test bundles
         uses: actions/upload-artifact@v3
         with:
@@ -231,7 +257,7 @@ jobs:
 
   linux_x64_test:
     name: Linux x64
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs:
       - prerequisites
       - linux_x64_build
@@ -412,7 +438,7 @@ jobs:
 
   linux_additional_build:
     name: Linux additional
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs:
       - prerequisites
       - linux_x64_build
@@ -516,12 +542,12 @@ jobs:
 
       - name: Install native host dependencies
         run: |
-          sudo apt-get install gcc-10=10.3.0-1ubuntu1~20.04 g++-10=10.3.0-1ubuntu1~20.04 libxrandr-dev libxtst-dev libcups2-dev libasound2-dev
+          sudo apt-get install gcc-10=10.3.0-1ubuntu1~18.04 g++-10=10.3.0-1ubuntu1~18.04 libxrandr-dev libxtst-dev libcups2-dev libasound2-dev
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10
         if: matrix.debian-arch == ''
 
       - name: Install cross-compilation host dependencies
-        run: sudo apt-get install gcc-10-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-flavor}}=10.3.0-1ubuntu1~20.04cross1 g++-10-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-flavor}}=10.3.0-1ubuntu1~20.04cross1
+        run: sudo apt-get install gcc-10-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-flavor}}=10.3.0-1ubuntu1~18.04cross1 g++-10-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-flavor}}=10.3.0-1ubuntu1~18.04cross1
         if: matrix.debian-arch != ''
 
       - name: Cache sysroot
@@ -589,7 +615,7 @@ jobs:
 
   linux_x86_build:
     name: Linux x86
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs: prerequisites
     if: needs.prerequisites.outputs.should_run != 'false' && needs.prerequisites.outputs.platform_linux_x86 != 'false'
 
@@ -698,7 +724,7 @@ jobs:
 
   linux_x86_test:
     name: Linux x86
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs:
       - prerequisites
       - linux_x86_build
@@ -1102,6 +1128,32 @@ jobs:
           $env:Path = $env:Path -split ";" -match "C:\\Windows|PowerShell|cygwin" -join ";" ;
           & make CONF_NAME=windows-x64
         working-directory: jdk
+
+      - name: Zip Images
+        run: |
+          $env:Path = "$HOME\cygwin\cygwin64\bin;$HOME\cygwin\cygwin64\bin;$env:Path" ;
+          $env:Path = $env:Path -split ";" -match "C:\\Windows|PowerShell|cygwin" -join ";" ;
+          & zip -r build-windows-x64.zip build/windows-x64/images/
+        working-directory: jdk
+
+      - name: Persist Built Images
+        uses: actions/upload-artifact@v2
+        with:
+          name: jdk-windows-x64-build${{ matrix.artifact }}_${{ needs.prerequisites.outputs.bundle_id }}
+          path: jdk/build-windows-x64.zip
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        id: tsrelease-windows-x64
+        with:
+          body: Build of OpenJDK 17.0.4 with Two Sigma's JGSS enhancements
+          draft: false
+          prerelease: false
+          tag_name: ts-jgss-jdk17.0.4-windows-x64
+          files: jdk/build-windows-x64.zip
+          target_commitish: ts-jgss-jdk17.0.4
+          generate_release_notes: false
+          name: ts-jgss-jdk17.0.4-windows-x64
 
       - name: Persist test bundles
         uses: actions/upload-artifact@v3
@@ -1721,7 +1773,7 @@ jobs:
 
   artifacts:
     name: Post-process artifacts
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     if: always()
     continue-on-error: true
     needs:
@@ -1764,17 +1816,17 @@ jobs:
         with:
           path: test-results
 
-      - name: Delete remaining artifacts
-        run: >
-          for url in `
-          curl -s -H 'Accept: application/json;api-version=6.0-preview'
-          -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
-          '${{ fromJson(steps.actions_runtime.outputs.result).url }}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview' |
-          jq -r -c '.value | .[].url'`; do
-          curl -s -H 'Accept: application/json;api-version=6.0-preview'
-          -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
-          -X DELETE "${url}";
-          done
+#     - name: Delete remaining artifacts
+#       run: >
+#         for url in `
+#         curl -s -H 'Accept: application/json;api-version=6.0-preview'
+#         -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
+#         '${{ fromJson(steps.actions_runtime.outputs.result).url }}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview' |
+#         jq -r -c '.value | .[].url'`; do
+#         curl -s -H 'Accept: application/json;api-version=6.0-preview'
+#         -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
+#         -X DELETE "${url}";
+#         done
 
       - name: Upload a combined test results artifact
         uses: actions/upload-artifact@v3
