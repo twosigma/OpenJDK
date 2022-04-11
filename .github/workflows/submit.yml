@@ -1,5 +1,7 @@
 name: Pre-submit tests
 
+permissions: write-all
+
 on:
   push:
     branches-ignore:
@@ -19,7 +21,7 @@ concurrency:
 jobs:
   prerequisites:
     name: Prerequisites
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     outputs:
       should_run: ${{ steps.check_submit.outputs.should_run }}
       bundle_id: ${{ steps.check_bundle_id.outputs.bundle_id }}
@@ -130,7 +132,7 @@ jobs:
 
   linux_x64_build:
     name: Linux x64
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs: prerequisites
     if: needs.prerequisites.outputs.should_run != 'false' && (needs.prerequisites.outputs.platform_linux_x64 != 'false' || needs.prerequisites.outputs.platform_linux_additional == 'true')
 
@@ -139,11 +141,6 @@ jobs:
       matrix:
         flavor:
           - build release
-          - build debug
-        include:
-          - flavor: build debug
-            flags: --enable-debug
-            artifact: -debug
 
     env:
       JDK_VERSION: "${{ needs.prerequisites.outputs.jdk_version }}"
@@ -198,8 +195,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           sudo apt-get update
-          sudo apt-get install gcc-10=10.3.0-1ubuntu1~20.04 g++-10=10.3.0-1ubuntu1~20.04 libxrandr-dev libxtst-dev libcups2-dev libasound2-dev
+          sudo apt-get install gcc-10 g++-10 libxrandr-dev libxtst-dev libcups2-dev libasound2-dev
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10
 
       - name: Configure
@@ -207,8 +205,8 @@ jobs:
           bash configure
           --with-conf-name=linux-x64
           ${{ matrix.flags }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
-          --with-version-build=0
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${HOME}/bootjdk/${BOOT_JDK_VERSION}
           --with-jtreg=${HOME}/jtreg
           --with-gtest=${GITHUB_WORKSPACE}/gtest
@@ -221,6 +219,18 @@ jobs:
         run: make CONF_NAME=linux-x64
         working-directory: jdk
 
+      - name: Zip Images
+        run: |
+          tar -czf OpenJDK18U-jdk_x64_linux_hotspot_18.0.2_1_ts-gss.tar.gz -C build/linux-x64/images --exclude '*.debuginfo' jdk
+          tar -czf OpenJDK18U-jdk_x64_linux_hotspot_18.0.2_1_ts-gss_debuginfo.tar.gz -C build/linux-x64/images jdk
+        working-directory: jdk
+
+      - name: Persist Built Images
+        uses: actions/upload-artifact@v2
+        with:
+          name: jdk-linux-x64-build_${{ needs.prerequisites.outputs.bundle_id }}
+          path: jdk/OpenJDK18U-jdk_x64_linux_hotspot_18.0.2_1_ts-gss.tar.gz
+
       - name: Persist test bundles
         uses: actions/upload-artifact@v3
         with:
@@ -229,9 +239,24 @@ jobs:
             jdk/build/linux-x64/bundles/jdk-${{ env.JDK_VERSION }}-internal+0_linux-x64_bin${{ matrix.artifact }}.tar.gz
             jdk/build/linux-x64/bundles/jdk-${{ env.JDK_VERSION }}-internal+0_linux-x64_bin-tests${{ matrix.artifact }}.tar.gz
 
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        id: tsrelease-linux-x64
+        with:
+          body: Build of OpenJDK 18.0.2 with Two Sigma's JGSS enhancements
+          draft: false
+          prerelease: false
+          tag_name: ts-jgss-jdk18.0.2-linux-x64
+          files: |
+            jdk/OpenJDK18U-jdk_x64_linux_hotspot_18.0.2_1_ts-gss.tar.gz
+            jdk/OpenJDK18U-jdk_x64_linux_hotspot_18.0.2_1_ts-gss_debuginfo.tar.gz
+          target_commitish: ts-jgss-jdk18.0.2
+          generate_release_notes: false
+          name: ts-jgss-jdk18.0.2-linux-x64
+
   linux_x64_test:
     name: Linux x64
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs:
       - prerequisites
       - linux_x64_build
@@ -412,7 +437,7 @@ jobs:
 
   linux_additional_build:
     name: Linux additional
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs:
       - prerequisites
       - linux_x64_build
@@ -516,12 +541,12 @@ jobs:
 
       - name: Install native host dependencies
         run: |
-          sudo apt-get install gcc-10=10.3.0-1ubuntu1~20.04 g++-10=10.3.0-1ubuntu1~20.04 libxrandr-dev libxtst-dev libcups2-dev libasound2-dev
+          sudo apt-get install gcc-10=10.3.0-1ubuntu1~18.04 g++-10=10.3.0-1ubuntu1~18.04 libxrandr-dev libxtst-dev libcups2-dev libasound2-dev
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10
         if: matrix.debian-arch == ''
 
       - name: Install cross-compilation host dependencies
-        run: sudo apt-get install gcc-10-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-flavor}}=10.3.0-1ubuntu1~20.04cross1 g++-10-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-flavor}}=10.3.0-1ubuntu1~20.04cross1
+        run: sudo apt-get install gcc-10-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-flavor}}=10.3.0-1ubuntu1~18.04cross1 g++-10-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-flavor}}=10.3.0-1ubuntu1~18.04cross1
         if: matrix.debian-arch != ''
 
       - name: Cache sysroot
@@ -575,8 +600,8 @@ jobs:
           --with-conf-name=linux-${{ matrix.gnu-arch }}-hotspot
           ${{ matrix.flags }}
           ${{ env.cross_flags }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
-          --with-version-build=0
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${HOME}/bootjdk/${BOOT_JDK_VERSION}
           --with-build-jdk=${{ env.build_jdk_root }}
           --with-default-make-target="hotspot"
@@ -589,7 +614,7 @@ jobs:
 
   linux_x86_build:
     name: Linux x86
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs: prerequisites
     if: needs.prerequisites.outputs.should_run != 'false' && needs.prerequisites.outputs.platform_linux_x86 != 'false'
 
@@ -598,11 +623,6 @@ jobs:
       matrix:
         flavor:
           - build release
-          - build debug
-        include:
-          - flavor: build debug
-            flags: --enable-debug
-            artifact: -debug
 
     # Reduced 32-bit build uses the same boot JDK as 64-bit build
     env:
@@ -674,8 +694,8 @@ jobs:
           --with-conf-name=linux-x86
           --with-target-bits=32
           ${{ matrix.flags }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
-          --with-version-build=0
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${HOME}/bootjdk/${BOOT_JDK_VERSION}
           --with-jtreg=${HOME}/jtreg
           --with-gtest=${GITHUB_WORKSPACE}/gtest
@@ -698,7 +718,7 @@ jobs:
 
   linux_x86_test:
     name: Linux x86
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     needs:
       - prerequisites
       - linux_x86_build
@@ -964,8 +984,8 @@ jobs:
           --with-msvc-toolset-version=14.29
           --openjdk-target=aarch64-unknown-cygwin
           ${{ matrix.flags }}
-          --with-version-opt="$env:GITHUB_ACTOR-$env:GITHUB_SHA"
-          --with-version-build=0
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk="$env:BOOT_JDK"
           --with-default-make-target="hotspot"
         working-directory: jdk
@@ -988,11 +1008,6 @@ jobs:
       matrix:
         flavor:
           - build release
-          - build debug
-        include:
-          - flavor: build debug
-            flags: --enable-debug
-            artifact: -debug
 
     env:
       JDK_VERSION: "${{ needs.prerequisites.outputs.jdk_version }}"
@@ -1087,8 +1102,8 @@ jobs:
           --with-conf-name=windows-x64
           --with-msvc-toolset-version=14.28
           ${{ matrix.flags }}
-          --with-version-opt="$env:GITHUB_ACTOR-$env:GITHUB_SHA"
-          --with-version-build=0
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk="$env:BOOT_JDK"
           --with-jtreg="$env:JT_HOME"
           --with-gtest="$env:GTEST"
@@ -1103,6 +1118,19 @@ jobs:
           & make CONF_NAME=windows-x64
         working-directory: jdk
 
+      - name: Zip Images
+        run: |
+          $env:Path = "$HOME\cygwin\cygwin64\bin;$HOME\cygwin\cygwin64\bin;$env:Path" ;
+          $env:Path = $env:Path -split ";" -match "C:\\Windows|PowerShell|cygwin" -join ";" ;
+          & zip -r build-windows-x64.zip build/windows-x64/images/
+        working-directory: jdk
+
+      - name: Persist Built Images
+        uses: actions/upload-artifact@v2
+        with:
+          name: jdk-windows-x64-build${{ matrix.artifact }}_${{ needs.prerequisites.outputs.bundle_id }}
+          path: jdk/build-windows-x64.zip
+
       - name: Persist test bundles
         uses: actions/upload-artifact@v3
         with:
@@ -1111,6 +1139,19 @@ jobs:
             jdk/build/windows-x64/bundles/jdk-${{ env.JDK_VERSION }}-internal+0_windows-x64_bin${{ matrix.artifact }}.zip
             jdk/build/windows-x64/bundles/jdk-${{ env.JDK_VERSION }}-internal+0_windows-x64_bin-tests${{ matrix.artifact }}.tar.gz
             jdk/build/windows-x64/bundles/jdk-${{ env.JDK_VERSION }}-internal+0_windows-x64_bin${{ matrix.artifact }}-symbols.tar.gz
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        id: tsrelease-windows-x64
+        with:
+          body: Build of OpenJDK 18.0.2 with Two Sigma's JGSS enhancements
+          draft: false
+          prerelease: false
+          tag_name: ts-jgss-jdk18.0.2-windows-x64
+          files: jdk/build-windows-x64.zip
+          target_commitish: ts-jgss-jdk18.0.2
+          generate_release_notes: false
+          name: ts-jgss-jdk18.0.2-windows-x64
 
   windows_x64_test:
     name: Windows x64
@@ -1337,12 +1378,6 @@ jobs:
       matrix:
         flavor:
           - build release
-          - build debug
-        include:
-          - flavor: build release
-          - flavor: build debug
-            flags: --enable-debug
-            artifact: -debug
 
     env:
       JDK_VERSION: "${{ needs.prerequisites.outputs.jdk_version }}"
@@ -1406,8 +1441,8 @@ jobs:
           bash configure
           --with-conf-name=macos-x64
           ${{ matrix.flags }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
-          --with-version-build=0
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${HOME}/bootjdk/${BOOT_JDK_VERSION}/Contents/Home
           --with-jtreg=${HOME}/jtreg
           --with-gtest=${GITHUB_WORKSPACE}/gtest
@@ -1439,12 +1474,6 @@ jobs:
       matrix:
         flavor:
           - build release
-          - build debug
-        include:
-          - flavor: build release
-          - flavor: build debug
-            flags: --enable-debug
-            artifact: -debug
 
     env:
       JDK_VERSION: "${{ needs.prerequisites.outputs.jdk_version }}"
@@ -1509,8 +1538,8 @@ jobs:
           --with-conf-name=macos-aarch64
           --openjdk-target=aarch64-apple-darwin
           ${{ matrix.flags }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
-          --with-version-build=0
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${HOME}/bootjdk/${BOOT_JDK_VERSION}/Contents/Home
           --with-jtreg=${HOME}/jtreg
           --with-gtest=${GITHUB_WORKSPACE}/gtest
@@ -1721,7 +1750,7 @@ jobs:
 
   artifacts:
     name: Post-process artifacts
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-18.04"
     if: always()
     continue-on-error: true
     needs:
@@ -1764,17 +1793,17 @@ jobs:
         with:
           path: test-results
 
-      - name: Delete remaining artifacts
-        run: >
-          for url in `
-          curl -s -H 'Accept: application/json;api-version=6.0-preview'
-          -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
-          '${{ fromJson(steps.actions_runtime.outputs.result).url }}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview' |
-          jq -r -c '.value | .[].url'`; do
-          curl -s -H 'Accept: application/json;api-version=6.0-preview'
-          -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
-          -X DELETE "${url}";
-          done
+#     - name: Delete remaining artifacts
+#       run: >
+#         for url in `
+#         curl -s -H 'Accept: application/json;api-version=6.0-preview'
+#         -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
+#         '${{ fromJson(steps.actions_runtime.outputs.result).url }}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview' |
+#         jq -r -c '.value | .[].url'`; do
+#         curl -s -H 'Accept: application/json;api-version=6.0-preview'
+#         -H 'Authorization: Bearer ${{ fromJson(steps.actions_runtime.outputs.result).token }}'
+#         -X DELETE "${url}";
+#         done
 
       - name: Upload a combined test results artifact
         uses: actions/upload-artifact@v3
