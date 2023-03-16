@@ -57,7 +57,7 @@ runs:
     - name: 'Build JTReg'
       run: |
         # Build JTReg and move files to the proper locations
-        bash make/build.sh --jdk "$JAVA_HOME_17_X64"
+        JDK_ARCHIVE_URL=https://download.java.net/java/GA/jdk20/bdc68b4b9cbc4ebcb30745c85038d91d/36/GPL/openjdk-20_linux-x64_bin.tar.gz JAVA_HOME="$JAVA_HOME_17_X64" bash -vx make/build.sh
         mkdir ../installed
         mv build/images/jtreg/* ../installed
       working-directory: jtreg/src
