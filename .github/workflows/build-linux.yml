@@ -41,7 +41,7 @@ on:
       debug-levels:
         required: false
         type: string
-        default: '[ "debug", "release" ]'
+        default: '[ "release" ]'
       gcc-major-version:
         required: true
         type: string
@@ -68,16 +68,16 @@ on:
 jobs:
   build-linux:
     name: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-18.04 # ubuntu-22.04
 
     strategy:
       fail-fast: false
-      matrix:
-        debug-level: ${{ fromJSON(inputs.debug-levels) }}
-        include:
-          - debug-level: debug
-            flags: --with-debug-level=fastdebug
-            suffix: -debug
+      #matrix:
+      #  debug-level: ${{ fromJSON(inputs.debug-levels) }}
+      #  include:
+      #    - debug-level: debug
+      #      flags: --with-debug-level=fastdebug
+      #      suffix: -debug
 
     steps:
       - name: 'Checkout the JDK source'
@@ -113,8 +113,10 @@ jobs:
             sudo dpkg --add-architecture ${{ inputs.apt-architecture }}
           fi
           sudo apt-get update
+          sudo apt-get install -f aptitude
           sudo apt-get install --only-upgrade apt
-          sudo apt-get install gcc-${{ inputs.gcc-major-version }}${{ inputs.gcc-package-suffix }}=${{ inputs.apt-gcc-version }} g++-${{ inputs.gcc-major-version }}${{ inputs.gcc-package-suffix }}=${{ inputs.apt-gcc-version }} libxrandr-dev${{ steps.arch.outputs.suffix }} libxtst-dev${{ steps.arch.outputs.suffix }} libcups2-dev${{ steps.arch.outputs.suffix }} libasound2-dev${{ steps.arch.outputs.suffix }} ${{ inputs.apt-extra-packages }}
+          #sudo apt-get install gcc-${{ inputs.gcc-major-version }}${{ inputs.gcc-package-suffix }}=${{ inputs.apt-gcc-version }} g++-${{ inputs.gcc-major-version }}${{ inputs.gcc-package-suffix }}=${{ inputs.apt-gcc-version }} libxrandr-dev${{ steps.arch.outputs.suffix }} libxtst-dev${{ steps.arch.outputs.suffix }} libcups2-dev${{ steps.arch.outputs.suffix }} libasound2-dev${{ steps.arch.outputs.suffix }} ${{ inputs.apt-extra-packages }}
+          sudo aptitude -y install gcc-10 g++-10 libxrandr-dev libxtst-dev libcups2-dev libcupsimage2-dev libasound2-dev ${{ inputs.apt-extra-packages }}
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ inputs.gcc-major-version }} 100 --slave /usr/bin/g++ g++ /usr/bin/g++-${{ inputs.gcc-major-version }}
 
       - name: 'Configure'
@@ -122,7 +124,8 @@ jobs:
           bash configure
           --with-conf-name=${{ inputs.platform }}
           ${{ matrix.flags }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${{ steps.bootjdk.outputs.path }}
           --with-jtreg=${{ steps.jtreg.outputs.path }}
           --with-gtest=${{ steps.gtest.outputs.path }}
@@ -140,6 +143,56 @@ jobs:
           make-target: '${{ inputs.make-target }} ${{ inputs.make-arguments }}'
           platform: ${{ inputs.platform }}
           debug-suffix: '${{ matrix.suffix }}'
+
+      - name: 'Prep release bundles'
+        id: bundles
+        run: |
+          # Rename bundles to consistent names
+          set -vx
+          jdk_bundle_zip="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}.zip 2> /dev/null || true)"
+          jdk_bundle_tar_gz="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}.tar.gz 2> /dev/null || true)"
+          symbols_bundle="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}-symbols.tar.gz 2> /dev/null || true)"
+          tests_bundle="$(ls build/*/bundles/jdk-*_bin-tests${{ inputs.debug-suffix }}.tar.gz 2> /dev/null || true)"
+
+          mkdir release-bundles
+
+          if [[ "$jdk_bundle_zip" != "" ]]; then
+            cp "$jdk_bundle_zip" "release-bundles/jdk-${{ inputs.platform }}${{ inputs.debug-suffix }}.zip"
+          fi
+          if [[ "$jdk_bundle_tar_gz" != "" ]]; then
+            cp "$jdk_bundle_tar_gz" "release-bundles/jdk-${{ inputs.platform }}${{ inputs.debug-suffix }}.tar.gz"
+          fi
+          if [[ "$symbols_bundle" != "" ]]; then
+            cp "$symbols_bundle" "release-bundles/symbols-${{ inputs.platform }}${{ inputs.debug-suffix }}.tar.gz"
+          fi
+          if [[ "$tests_bundle" != "" ]]; then
+            cp "$tests_bundle" "release-bundles/tests-${{ inputs.platform }}${{ inputs.debug-suffix }}.tar.gz"
+          fi
+
+          if [[ "$jdk_bundle_zip$jdk_bundle_tar_gz$symbols_bundle$tests_bundle" != "" ]]; then
+            echo 'release-bundles-found=true' >> $GITHUB_OUTPUT
+          else
+            echo 'release-bundles-found=false' >> $GITHUB_OUTPUT
+          fi
+          tar cvf releases-bundles.tar ./release-bundles
+          set +vx
+        shell: bash
+
+      - name: 'Release'
+        uses: softprops/action-gh-release@v1
+        id: tsrelease-linux-x64
+        with:
+          body: Build of OpenJDK 21+13 with Two Sigma's JGSS enhancements
+          platform: ${{ inputs.platform }}
+          debug-suffix: '${{ matrix.suffix }}'
+          draft: false
+          prerelease: false
+          tag_name: ts-jgss-jdk21+13-linux-x64
+          files: |
+            releases-bundles.tar
+          target_commitish: ts-jgss-jdk19+36
+          generate_release_notes: false
+          name: ts-jgss-jdk21+13-linux-x64
 
       - name: 'Upload bundles'
         uses: ./.github/actions/upload-bundles

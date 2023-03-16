@@ -50,7 +50,7 @@ on:
 jobs:
   build-cross-compile:
     name: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-18.04 # ubuntu-22.04
 
     strategy:
       fail-fast: false
@@ -112,15 +112,16 @@ jobs:
         run: |
           # Install dependencies using apt-get
           sudo apt-get update
+          sudo apt-get install -f aptitude
           sudo apt-get install --only-upgrade apt
-          sudo apt-get install \
-              gcc-${{ inputs.gcc-major-version }}=${{ inputs.apt-gcc-version }} \
-              g++-${{ inputs.gcc-major-version }}=${{ inputs.apt-gcc-version }} \
-              gcc-${{ inputs.gcc-major-version }}-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-abi}}=${{ inputs.apt-gcc-cross-version }} \
-              g++-${{ inputs.gcc-major-version }}-${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-abi}}=${{ inputs.apt-gcc-cross-version }} \
-              libxrandr-dev libxtst-dev libcups2-dev libasound2-dev \
+          sudo aptitude -y install \
+              gcc-10 \
+              g++-10 \
+              gcc-10 \
+              g++-10 \
+              libxrandr-dev libxtst-dev libcups2-dev libcupsimage2-dev libasound2-dev \
               debian-ports-archive-keyring
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ inputs.gcc-major-version }} 100 --slave /usr/bin/g++ g++ /usr/bin/g++-${{ inputs.gcc-major-version }}
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10
 
       - name: 'Check cache for sysroot'
         id: get-cached-sysroot
@@ -138,7 +139,7 @@ jobs:
           sudo debootstrap
           --arch=${{ matrix.debian-arch }}
           --verbose
-          --include=fakeroot,symlinks,build-essential,libx11-dev,libxext-dev,libxrender-dev,libxrandr-dev,libxtst-dev,libxt-dev,libcups2-dev,libfontconfig1-dev,libasound2-dev,libfreetype6-dev,libpng-dev
+          --include=fakeroot,symlinks,build-essential,libx11-dev,libxext-dev,libxrender-dev,libxrandr-dev,libxtst-dev,libxt-dev,libcups2-dev,libcupsimage2-dev,libfontconfig1-dev,libasound2-dev,libfreetype6-dev,libpng-dev
           --resolve-deps
           $(test -n "${{ matrix.debian-keyring }}" && echo "--keyring=${{ matrix.debian-keyring }}")
           ${{ matrix.debian-version }}
@@ -160,17 +161,17 @@ jobs:
         run: >
           bash configure
           --with-conf-name=linux-${{ matrix.target-cpu }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${{ steps.bootjdk.outputs.path }}
           --with-zlib=system
-          --enable-debug
           --disable-precompiled-headers
           --openjdk-target=${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-abi}}
           --with-sysroot=sysroot
           --with-build-jdk=${{ steps.buildjdk.outputs.jdk-path }}
           --with-jmod-compress=zip-1
-          CC=${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-abi}}-gcc-${{ inputs.gcc-major-version }}
-          CXX=${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-abi}}-g++-${{ inputs.gcc-major-version }}
+          CC=${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-abi}}-gcc-10
+          CXX=${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-abi}}-g++-10
           ${{ inputs.extra-conf-options }} ${{ inputs.configure-arguments }} || (
           echo "Dumping config.log:" &&
           cat config.log &&
