@@ -58,7 +58,7 @@ jobs:
 
   select:
     name: 'Select platforms'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     outputs:
       linux-x64: ${{ steps.include.outputs.linux-x64 }}
       linux-x86: ${{ steps.include.outputs.linux-x86 }}
@@ -301,7 +301,7 @@ jobs:
     with:
       platform: linux-x64
       bootjdk-platform: linux-x64
-      runs-on: ubuntu-22.04
+      runs-on: ubuntu-20.04
 
   test-linux-x86:
     name: linux-x86
@@ -311,7 +311,7 @@ jobs:
     with:
       platform: linux-x86
       bootjdk-platform: linux-x64
-      runs-on: ubuntu-22.04
+      runs-on: ubuntu-20.04
 
   test-macos-x64:
     name: macos-x64
@@ -336,7 +336,7 @@ jobs:
   # Remove bundles so they are not misconstrued as binary distributions from the JDK project
   remove-bundles:
     name: 'Remove bundle artifacts'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     if: always()
     needs:
       - build-linux-x64
