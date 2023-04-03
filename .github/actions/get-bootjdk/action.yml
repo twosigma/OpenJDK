@@ -106,4 +106,5 @@ runs:
       run: |
         # Export the absolute path
         echo "path=`pwd`/bootjdk/jdk" >> $GITHUB_OUTPUT
+        #echo 'path=bootjdk/jdk' >> $GITHUB_OUTPUT
       shell: bash
