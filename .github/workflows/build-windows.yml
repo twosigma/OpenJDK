@@ -41,7 +41,7 @@ on:
       debug-levels:
         required: false
         type: string
-        default: '[ "debug", "release" ]'
+        default: '[ "release" ]'
       msvc-toolset-version:
         required: true
         type: string
@@ -110,7 +110,8 @@ jobs:
           bash configure
           --with-conf-name=${{ inputs.platform }}
           ${{ matrix.flags }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${{ steps.bootjdk.outputs.path }}
           --with-jtreg=${{ steps.jtreg.outputs.path }}
           --with-gtest=${{ steps.gtest.outputs.path }}
@@ -132,6 +133,54 @@ jobs:
           make-target: '${{ inputs.make-target }} ${{ inputs.make-arguments }}'
           platform: ${{ inputs.platform }}
           debug-suffix: '${{ matrix.suffix }}'
+
+      - name: 'Prep release bundles'
+        id: bundles
+        run: |
+          # Rename bundles to consistent names
+          set -vx
+          jdk_bundle_zip="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}.zip 2> /dev/null || true)"
+          jdk_bundle_tar_gz="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}.tar.gz 2> /dev/null || true)"
+          symbols_bundle="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}-symbols.tar.gz 2> /dev/null || true)"
+          tests_bundle="$(ls build/*/bundles/jdk-*_bin-tests${{ inputs.debug-suffix }}.tar.gz 2> /dev/null || true)"
+
+          mkdir release-bundles
+
+          if [[ "$jdk_bundle_zip" != "" ]]; then
+            cp "$jdk_bundle_zip" "release-bundles/jdk-${{ inputs.platform }}${{ inputs.debug-suffix }}.zip"
+          fi
+          if [[ "$jdk_bundle_tar_gz" != "" ]]; then
+            cp "$jdk_bundle_tar_gz" "release-bundles/jdk-${{ inputs.platform }}${{ inputs.debug-suffix }}.tar.gz"
+          fi
+          if [[ "$symbols_bundle" != "" ]]; then
+            cp "$symbols_bundle" "release-bundles/symbols-${{ inputs.platform }}${{ inputs.debug-suffix }}.tar.gz"
+          fi
+          if [[ "$tests_bundle" != "" ]]; then
+            cp "$tests_bundle" "release-bundles/tests-${{ inputs.platform }}${{ inputs.debug-suffix }}.tar.gz"
+          fi
+
+          if [[ "$jdk_bundle_zip$jdk_bundle_tar_gz$symbols_bundle$tests_bundle" != "" ]]; then
+            echo 'release-bundles-found=true' >> $GITHUB_OUTPUT
+          else
+            echo 'release-bundles-found=false' >> $GITHUB_OUTPUT
+          fi
+          tar cvf releases-bundles.tar ./release-bundles
+          set +vx
+        shell: bash
+
+      - name: 'Release'
+        uses: softprops/action-gh-release@v1
+        id: tsrelease-windows-x64
+        with:
+          body: Build of OpenJDK 20+36 with Two Sigma's JGSS enhancements
+          draft: false
+          prerelease: false
+          tag_name: ts-jgss-jdk20+36-windows-x64
+          files: |
+            releases-bundles.tar
+          target_commitish: ts-jgss-jdk-20+36
+          generate_release_notes: false
+          name: ts-jgss-jdk20+36-windows-x64
 
       - name: 'Upload bundles'
         uses: ./.github/actions/upload-bundles
