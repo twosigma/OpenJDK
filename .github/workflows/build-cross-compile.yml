@@ -160,10 +160,10 @@ jobs:
         run: >
           bash configure
           --with-conf-name=linux-${{ matrix.target-cpu }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${{ steps.bootjdk.outputs.path }}
           --with-zlib=system
-          --enable-debug
           --disable-precompiled-headers
           --openjdk-target=${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-abi}}
           --with-sysroot=sysroot
