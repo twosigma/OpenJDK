@@ -119,7 +119,7 @@ jobs:
           echo "macos-aarch64=false" >> $GITHUB_OUTPUT
           echo "windows-x64=true" >> $GITHUB_OUTPUT
           echo "windows-aarch64=false" >> $GITHUB_OUTPUT
-          echo "docs=true" >> $GITHUB_OUTPUT
+          echo "docs=flase" >> $GITHUB_OUTPUT
 
   ###
   ### Build jobs
