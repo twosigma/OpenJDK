@@ -75,8 +75,8 @@ jobs:
 
     strategy:
       fail-fast: false
-      matrix:
-        debug-level: ${{ fromJSON(inputs.debug-levels) }}
+     #matrix:
+     #  debug-level: ${{ fromJSON(inputs.debug-levels) }}
 
     steps:
       - name: 'Checkout the JDK source'
