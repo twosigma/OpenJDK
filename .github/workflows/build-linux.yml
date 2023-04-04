@@ -146,6 +146,7 @@ jobs:
         run: |
           # Rename bundles to consistent names
           set -vx
+          find . -type d -print
           jdk_bundle_zip="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}.zip 2> /dev/null || true)"
           jdk_bundle_tar_gz="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}.tar.gz 2> /dev/null || true)"
           symbols_bundle="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}-symbols.tar.gz 2> /dev/null || true)"
