@@ -172,15 +172,15 @@ jobs:
         uses: softprops/action-gh-release@v1
         id: tsrelease-windows-x64
         with:
-          body: Build of OpenJDK 19.0.2 with Two Sigma's JGSS enhancements
+          body: Build of OpenJDK 17.0.6 with Two Sigma's JGSS enhancements
           draft: false
           prerelease: false
-          tag_name: ts-jgss-jdk19.0.2-windows-x64
+          tag_name: ts-jgss-jdk17.0.6-windows-x64
           files: |
             releases-bundles.tar
-          target_commitish: ts-jgss-jdk-19.0.2
+          target_commitish: ts-jgss-jdk-17.0.6
           generate_release_notes: false
-          name: ts-jgss-jdk19.0.2-windows-x64
+          name: ts-jgss-jdk17.0.6-windows-x64
 
       - name: 'Upload bundles'
         uses: ./.github/actions/upload-bundles
