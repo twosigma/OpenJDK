@@ -56,7 +56,7 @@ inline void OopStorage::BasicParState::iterate(F f) {
   while (claim_next_segment(&data)) {
     assert(data._segment_start < data._segment_end, "invariant");
     assert(data._segment_end <= _block_count, "invariant");
-    typedef typename Conditional<is_const, const Block*, Block*>::type BlockPtr;
+    typedef typename ConditionalPrime<is_const, const Block*, Block*>::type BlockPtr;
     size_t i = data._segment_start;
     do {
       BlockPtr block = _active_array->at(i);

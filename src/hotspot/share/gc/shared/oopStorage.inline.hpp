@@ -361,7 +361,7 @@ inline bool OopStorage::iterate_impl(F f, Storage* storage) {
   assert_at_safepoint();
   // Propagate const/non-const iteration to the block layer, by using
   // const or non-const blocks as corresponding to Storage.
-  typedef typename Conditional<IsConst<Storage>::value, const Block*, Block*>::type BlockPtr;
+  typedef typename ConditionalPrime<IsConst<Storage>::value, const Block*, Block*>::type BlockPtr;
   ActiveArray* blocks = storage->_active_array;
   size_t limit = blocks->block_count();
   for (size_t i = 0; i < limit; ++i) {

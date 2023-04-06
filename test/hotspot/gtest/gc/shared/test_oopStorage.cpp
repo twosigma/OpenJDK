@@ -567,9 +567,9 @@ public:
 template<bool is_const>
 class OopStorageTest::VM_CountAtSafepoint : public VM_GTestExecuteAtSafepoint {
 public:
-  typedef typename Conditional<is_const,
-                               const OopStorage,
-                               OopStorage>::type Storage;
+  typedef typename ConditionalPrime<is_const,
+                                    const OopStorage,
+                                    OopStorage>::type Storage;
 
   VM_CountAtSafepoint(Storage* storage, CountingIterateClosure* cl) :
     _storage(storage), _cl(cl)
@@ -792,9 +792,9 @@ const size_t OopStorageTestIteration::_max_workers;
 template<bool is_const>
 class OopStorageTestIteration::VM_Verify : public VM_GTestExecuteAtSafepoint {
 public:
-  typedef typename Conditional<is_const,
-                               const OopStorage,
-                               OopStorage>::type Storage;
+  typedef typename ConditionalPrime<is_const,
+                                    const OopStorage,
+                                    OopStorage>::type Storage;
 
   VM_Verify(Storage* storage, VerifyState* vstate) :
     _storage(storage), _vstate(vstate), _result(false)
@@ -892,9 +892,9 @@ template<bool concurrent, bool is_const>
 class OopStorageTestParIteration::Task : public AbstractGangTask {
   typedef OopStorage::ParState<concurrent, is_const> StateType;
 
-  typedef typename Conditional<is_const,
-                               const OopStorage,
-                               OopStorage>::type Storage;
+  typedef typename ConditionalPrime<is_const,
+                                    const OopStorage,
+                                    OopStorage>::type Storage;
 
 public:
   Task(const char* name, Storage* storage, VerifyState* vstate) :

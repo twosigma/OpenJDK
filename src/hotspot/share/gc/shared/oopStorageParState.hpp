@@ -167,9 +167,9 @@ template<bool concurrent, bool is_const>
 class OopStorage::ParState {
   BasicParState _basic_state;
 
-  typedef typename Conditional<is_const,
-                               const OopStorage*,
-                               OopStorage*>::type StoragePtr;
+  typedef typename ConditionalPrime<is_const,
+                                    const OopStorage*,
+                                    OopStorage*>::type StoragePtr;
 
 public:
   ParState(StoragePtr storage,
