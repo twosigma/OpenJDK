@@ -52,7 +52,7 @@ inline unsigned population_count(T x) {
   // We need to take care with implicit integer promotion when dealing with
   // integers < 32-bit. We chose to do this by explicitly widening constants
   // to unsigned
-  typedef typename Conditional<(sizeof(T) < sizeof(unsigned)), unsigned, T>::type P;
+  typedef typename ConditionalPrime<(sizeof(T) < sizeof(unsigned)), unsigned, T>::type P;
   const T all = ~T(0);           // 0xFF..FF
   const P fives = all/3;         // 0x55..55
   const P threes = (all/15) * 3; // 0x33..33

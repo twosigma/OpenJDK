@@ -32,13 +32,13 @@ class ConditionalTest {
   class A: AllStatic {};
   class B: AllStatic {};
 
-  typedef Conditional<true, A, B>::type A_B_if_true;
+  typedef ConditionalPrime<true, A, B>::type A_B_if_true;
   static const bool A_B_if_true_is_A = IsSame<A_B_if_true, A>::value;
   static const bool A_B_if_true_is_B = IsSame<A_B_if_true, B>::value;
   STATIC_ASSERT(A_B_if_true_is_A);
   STATIC_ASSERT(!A_B_if_true_is_B);
 
-  typedef Conditional<false, A, B>::type A_B_if_false;
+  typedef ConditionalPrime<false, A, B>::type A_B_if_false;
   static const bool A_B_if_false_is_A = IsSame<A_B_if_false, A>::value;
   static const bool A_B_if_false_is_B = IsSame<A_B_if_false, B>::value;
   STATIC_ASSERT(!A_B_if_false_is_A);

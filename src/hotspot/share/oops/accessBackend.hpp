@@ -49,7 +49,7 @@ template <DecoratorSet decorators>
 struct HeapOopType: AllStatic {
   static const bool needs_oop_compress = HasDecorator<decorators, INTERNAL_CONVERT_COMPRESSED_OOP>::value &&
                                          HasDecorator<decorators, INTERNAL_RT_USE_COMPRESSED_OOPS>::value;
-  typedef typename Conditional<needs_oop_compress, narrowOop, oop>::type type;
+  typedef typename ConditionalPrime<needs_oop_compress, narrowOop, oop>::type type;
 };
 
 namespace AccessInternal {
@@ -76,7 +76,7 @@ namespace AccessInternal {
   // and otherwise returns the same type T.
   template <DecoratorSet decorators, typename T>
   struct EncodedType: AllStatic {
-    typedef typename Conditional<
+    typedef typename ConditionalPrime<
       HasDecorator<decorators, INTERNAL_VALUE_IS_OOP>::value,
       typename HeapOopType<decorators>::type, T>::type type;
   };
@@ -1114,7 +1114,7 @@ namespace AccessInternal {
   inline T load(P* addr) {
     verify_types<decorators, T>();
     typedef typename Decay<P>::type DecayedP;
-    typedef typename Conditional<HasDecorator<decorators, INTERNAL_VALUE_IS_OOP>::value,
+    typedef typename ConditionalPrime<HasDecorator<decorators, INTERNAL_VALUE_IS_OOP>::value,
                                  typename OopOrNarrowOop<T>::type,
                                  typename Decay<T>::type>::type DecayedT;
     // If a volatile address is passed in but no memory ordering decorator,
@@ -1128,7 +1128,7 @@ namespace AccessInternal {
   template <DecoratorSet decorators, typename T>
   inline T load_at(oop base, ptrdiff_t offset) {
     verify_types<decorators, T>();
-    typedef typename Conditional<HasDecorator<decorators, INTERNAL_VALUE_IS_OOP>::value,
+    typedef typename ConditionalPrime<HasDecorator<decorators, INTERNAL_VALUE_IS_OOP>::value,
                                  typename OopOrNarrowOop<T>::type,
                                  typename Decay<T>::type>::type DecayedT;
     // Expand the decorators (figure out sensible defaults)

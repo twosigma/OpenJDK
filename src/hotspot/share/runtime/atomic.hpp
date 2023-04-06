@@ -503,14 +503,14 @@ struct Atomic::PlatformStore {
 template<typename D>
 inline void Atomic::inc(D volatile* dest, atomic_memory_order order) {
   STATIC_ASSERT(IsPointer<D>::value || IsIntegral<D>::value);
-  typedef typename Conditional<IsPointer<D>::value, ptrdiff_t, D>::type I;
+  typedef typename ConditionalPrime<IsPointer<D>::value, ptrdiff_t, D>::type I;
   Atomic::add(dest, I(1), order);
 }
 
 template<typename D>
 inline void Atomic::dec(D volatile* dest, atomic_memory_order order) {
   STATIC_ASSERT(IsPointer<D>::value || IsIntegral<D>::value);
-  typedef typename Conditional<IsPointer<D>::value, ptrdiff_t, D>::type I;
+  typedef typename ConditionalPrime<IsPointer<D>::value, ptrdiff_t, D>::type I;
   // Assumes two's complement integer representation.
   #pragma warning(suppress: 4146)
   Atomic::add(dest, I(-1), order);
@@ -522,8 +522,8 @@ inline D Atomic::sub(D volatile* dest, I sub_value, atomic_memory_order order) {
   STATIC_ASSERT(IsIntegral<I>::value);
   // If D is a pointer type, use [u]intptr_t as the addend type,
   // matching signedness of I.  Otherwise, use D as the addend type.
-  typedef typename Conditional<IsSigned<I>::value, intptr_t, uintptr_t>::type PI;
-  typedef typename Conditional<IsPointer<D>::value, PI, D>::type AddendType;
+  typedef typename ConditionalPrime<IsSigned<I>::value, intptr_t, uintptr_t>::type PI;
+  typedef typename ConditionalPrime<IsPointer<D>::value, PI, D>::type AddendType;
   // Only allow conversions that can't change the value.
   STATIC_ASSERT(IsSigned<I>::value == IsSigned<AddendType>::value);
   STATIC_ASSERT(sizeof(I) <= sizeof(AddendType));
@@ -690,9 +690,9 @@ struct Atomic::AddImpl<
 {
   STATIC_ASSERT(sizeof(intptr_t) == sizeof(P*));
   STATIC_ASSERT(sizeof(uintptr_t) == sizeof(P*));
-  typedef typename Conditional<IsSigned<I>::value,
-                               intptr_t,
-                               uintptr_t>::type CI;
+  typedef typename ConditionalPrime<IsSigned<I>::value,
+                                    intptr_t,
+                                    uintptr_t>::type CI;
 
   static CI scale_addend(CI add_value) {
     return add_value * sizeof(P);
