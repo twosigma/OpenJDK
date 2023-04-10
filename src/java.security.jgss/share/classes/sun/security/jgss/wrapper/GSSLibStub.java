@@ -25,6 +25,8 @@
 
 package sun.security.jgss.wrapper;
 
+import sun.security.action.GetBooleanAction;
+
 import org.ietf.jgss.ChannelBinding;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.MessageProp;
