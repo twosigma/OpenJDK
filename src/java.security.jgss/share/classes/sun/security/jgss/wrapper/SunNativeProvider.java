@@ -61,7 +61,9 @@ public final class SunNativeProvider extends Provider {
         if (message == null) {
             throw new NullPointerException();
         }
-        System.out.println(NAME + ": " + message);
+        if (DEBUG) {
+            System.err.println(NAME + ": " + message);
+        }
     }
 
     @SuppressWarnings("removal")
