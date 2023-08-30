@@ -330,7 +330,7 @@ public class GSSContextImpl implements GSSContext {
                  */
                 objId = gssHeader.getOid();
                 mechOid = new Oid(objId.toString());
-                // System.out.println("Entered GSSContextImpl.acceptSecContext"
+                // System.err.println("Entered GSSContextImpl.acceptSecContext"
                 //                      + " with mechanism = " + mechOid);
                 if (myCred != null) {
                     credElement = myCred.getElement(mechOid, false);

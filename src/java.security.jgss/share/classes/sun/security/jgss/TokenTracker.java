@@ -154,9 +154,9 @@ public class TokenTracker {
         boolean unsequenced = false;
         boolean duplicate = false;
 
-        // System.out.println("\n\n==========");
-        // System.out.println("TokenTracker.getProps(): number=" + number);
-        // System.out.println(toString());
+        // System.err.println("\n\n==========");
+        // System.err.println("TokenTracker.getProps(): number=" + number);
+        // System.err.println(toString());
 
         int pos = getIntervalIndex(number);
         Entry entry = null;
@@ -221,9 +221,9 @@ public class TokenTracker {
         prop.setSupplementaryStates(duplicate, old, unsequenced, gap,
                                     0, null);
 
-        // System.out.println("Leaving with state:");
-        // System.out.println(toString());
-        // System.out.println("==========\n");
+        // System.err.println("Leaving with state:");
+        // System.err.println(toString());
+        // System.err.println("==========\n");
     }
 
     /**

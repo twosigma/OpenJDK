@@ -117,7 +117,7 @@ public class NegTokenInit extends SpNegoToken {
             // mechListMIC with CONTEXT 03
             if (mechListMIC != null) {
                 if (DEBUG) {
-                    System.out.println("SpNegoToken NegTokenInit: " +
+                    System.err.println("SpNegoToken NegTokenInit: " +
                                         "sending MechListMIC");
                 }
                 DerOutputStream mic = new DerOutputStream();
@@ -169,7 +169,7 @@ public class NegTokenInit extends SpNegoToken {
                     for (int i = 0; i < mList.length; i++) {
                         mech = mList[i].getOID();
                         if (DEBUG) {
-                            System.out.println("SpNegoToken NegTokenInit: " +
+                            System.err.println("SpNegoToken NegTokenInit: " +
                                     "reading Mechanism Oid = " + mech);
                         }
                         mechTypeList[i] = new Oid(mech.toString());
@@ -180,7 +180,7 @@ public class NegTokenInit extends SpNegoToken {
                 } else if (tmp2.isContextSpecific((byte)0x02)) {
                     lastField = checkNextField(lastField, 2);
                     if (DEBUG) {
-                        System.out.println("SpNegoToken NegTokenInit: " +
+                        System.err.println("SpNegoToken NegTokenInit: " +
                                             "reading Mech Token");
                     }
                     mechToken = tmp2.data.getOctetString();
@@ -189,7 +189,7 @@ public class NegTokenInit extends SpNegoToken {
                     if (!GSSUtil.useMSInterop()) {
                         mechListMIC = tmp2.data.getOctetString();
                         if (DEBUG) {
-                            System.out.println("SpNegoToken NegTokenInit: " +
+                            System.err.println("SpNegoToken NegTokenInit: " +
                                     "MechListMIC Token = " +
                                     getHexBytes(mechListMIC));
                         }

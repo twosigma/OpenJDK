@@ -74,7 +74,7 @@ public class GSSUtil {
     static void debug(String message) {
         if (DEBUG) {
             assert(message != null);
-            System.out.println(message);
+            System.err.println(message);
         }
     }
 
