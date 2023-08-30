@@ -105,7 +105,7 @@ public class NegotiatorImpl extends Negotiator {
         }
         if (hci.serverCert != null) {
             if (DEBUG) {
-                System.out.println("Negotiate: Setting CBT");
+                System.err.println("Negotiate: Setting CBT");
             }
             // set the channel binding token
             TlsChannelBinding b = TlsChannelBinding.create(hci.serverCert);
@@ -123,7 +123,7 @@ public class NegotiatorImpl extends Negotiator {
             init(hci);
         } catch (GSSException | ChannelBindingException e) {
             if (DEBUG) {
-                System.out.println("Negotiate support not initiated, will " +
+                System.err.println("Negotiate support not initiated, will " +
                         "fallback to other scheme if allowed. Reason:");
                 e.printStackTrace();
             }
@@ -162,7 +162,7 @@ public class NegotiatorImpl extends Negotiator {
             return context.initSecContext(token, 0, token.length);
         } catch (GSSException e) {
             if (DEBUG) {
-                System.out.println("Negotiate support cannot continue. Reason:");
+                System.err.println("Negotiate support cannot continue. Reason:");
                 e.printStackTrace();
             }
             IOException ioe = new IOException("Negotiate support cannot continue");

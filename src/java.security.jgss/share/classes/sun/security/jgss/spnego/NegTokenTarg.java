@@ -105,7 +105,7 @@ public class NegTokenTarg extends SpNegoToken {
             // mechListMIC with CONTEXT 03
             if (mechListMIC != null) {
                 if (DEBUG) {
-                    System.out.println("SpNegoToken NegTokenTarg: " +
+                    System.err.println("SpNegoToken NegTokenTarg: " +
                                                 "sending MechListMIC");
                 }
                 DerOutputStream mic = new DerOutputStream();
@@ -148,7 +148,7 @@ public class NegTokenTarg extends SpNegoToken {
                     lastField = checkNextField(lastField, 0);
                     negResult = tmp2.data.getEnumerated();
                     if (DEBUG) {
-                        System.out.println("SpNegoToken NegTokenTarg: negotiated" +
+                        System.err.println("SpNegoToken NegTokenTarg: negotiated" +
                                     " result = " + getNegoResultString(negResult));
                     }
                 } else if (tmp2.isContextSpecific((byte)0x01)) {
@@ -156,7 +156,7 @@ public class NegTokenTarg extends SpNegoToken {
                     ObjectIdentifier mech = tmp2.data.getOID();
                     supportedMech = new Oid(mech.toString());
                     if (DEBUG) {
-                        System.out.println("SpNegoToken NegTokenTarg: " +
+                        System.err.println("SpNegoToken NegTokenTarg: " +
                                     "supported mechanism = " + supportedMech);
                     }
                 } else if (tmp2.isContextSpecific((byte)0x02)) {
@@ -167,7 +167,7 @@ public class NegTokenTarg extends SpNegoToken {
                     if (!GSSUtil.useMSInterop()) {
                         mechListMIC = tmp2.data.getOctetString();
                         if (DEBUG) {
-                            System.out.println("SpNegoToken NegTokenTarg: " +
+                            System.err.println("SpNegoToken NegTokenTarg: " +
                                                 "MechListMIC Token = " +
                                                 getHexBytes(mechListMIC));
                         }

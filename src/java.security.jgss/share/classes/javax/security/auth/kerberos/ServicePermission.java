@@ -591,7 +591,7 @@ final class KrbServicePermissionCollection extends PermissionCollection
         // otherwise, check for match on principal
         x = (ServicePermission)perms.get(np.getName());
         if (x != null) {
-            //System.out.println("  trying "+x);
+            //System.err.println("  trying "+x);
             if ((x.getMask() & desired) == desired) {
                 return true;
             }

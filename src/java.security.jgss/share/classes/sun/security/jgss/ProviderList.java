@@ -381,7 +381,7 @@ public final class ProviderList {
                 return;
         }
 
-        // System.out.println("addProviderAtEnd: No it is not redundant");
+        // System.err.println("addProviderAtEnd: No it is not redundant");
 
         if (mechOid == null)
             foundSomeMech = addAllMechsFromProvider(p);
