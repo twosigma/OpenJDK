@@ -112,7 +112,7 @@ jobs:
         run: |
           # Install dependencies using apt-get
           sudo apt-get update
-          sudo apt-get install -f aptitude
+          sudo apt-get install -f -y aptitude
           sudo apt-get install --only-upgrade apt
           sudo aptitude -y install \
               gcc-10 \

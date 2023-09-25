@@ -88,7 +88,8 @@ jobs:
           apt-get update
           apt-get install -y build-essential git wget curl sudo unzip zip openjdk-11-jdk autoconf libfreetype6-dev libcups2-dev libx11-dev libxext-dev libxrender-dev libxrandr-dev libxtst-dev libxt-dev libasound2-dev libffi-dev file binutils libfontconfig-dev
           # If we really need gcc-10, we can get it from this PPA:
-          #sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 
       - name: 'Checkout the JDK source'
         uses: actions/checkout@v3
@@ -117,18 +118,21 @@ jobs:
 
       # Upgrading apt to solve libc6 installation bugs, see JDK-8260460.
       - name: 'Install toolchain and dependencies'
+        shell: bash
         run: |
           # Install dependencies using apt-get
+          set -vx
           if [[ '${{ inputs.apt-architecture }}' != '' ]]; then
             sudo dpkg --add-architecture ${{ inputs.apt-architecture }}
           fi
           sudo apt-get update
-          sudo apt-get install -f aptitude
+          sudo apt-get install -f -y aptitude
           sudo apt-get install --only-upgrade apt
           sudo apt-get install -y gcc-${{ inputs.gcc-major-version }}${{ inputs.gcc-package-suffix }} g++-${{ inputs.gcc-major-version }}${{ inputs.gcc-package-suffix }} libxrandr-dev${{ steps.arch.outputs.suffix }} libxtst-dev${{ steps.arch.outputs.suffix }} libcups2-dev${{ steps.arch.outputs.suffix }} libasound2-dev${{ steps.arch.outputs.suffix }} ${{ inputs.apt-extra-packages }}
           #sudo apt-get install -y gcc-${{ inputs.gcc-major-version }}${{ inputs.gcc-package-suffix }}=${{ inputs.apt-gcc-version }} g++-${{ inputs.gcc-major-version }}${{ inputs.gcc-package-suffix }}=${{ inputs.apt-gcc-version }} libxrandr-dev${{ steps.arch.outputs.suffix }} libxtst-dev${{ steps.arch.outputs.suffix }} libcups2-dev${{ steps.arch.outputs.suffix }} libasound2-dev${{ steps.arch.outputs.suffix }} ${{ inputs.apt-extra-packages }}
           #sudo aptitude -y install gcc-10 g++-10 libxrandr-dev libxtst-dev libcups2-dev libcupsimage2-dev libasound2-dev ${{ inputs.apt-extra-packages }}
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ inputs.gcc-major-version }} 100 --slave /usr/bin/g++ g++ /usr/bin/g++-${{ inputs.gcc-major-version }}
+          set +vx
 
       - name: 'Configure'
         run: >
