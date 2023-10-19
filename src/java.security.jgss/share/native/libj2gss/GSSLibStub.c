@@ -998,6 +998,8 @@ Java_sun_security_jgss_wrapper_GSSLibStub_importContext(JNIEnv *env,
   checkStatus(env, jobj, major, minor, "[GSSLibStub_importContext] getMech");
   /* return immediately if an exception has occurred */
   if ((*env)->ExceptionCheck(env)) {
+    OM_uint32 junk;
+    (*ftab->deleteSecContext)(&junk, &contextHdl, GSS_C_NO_BUFFER);
     return NULL;
   }
 
