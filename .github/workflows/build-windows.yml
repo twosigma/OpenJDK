@@ -189,12 +189,12 @@ jobs:
           body: Build of OpenJDK 17.0.8 with Two Sigma's JGSS enhancements
           draft: false
           prerelease: false
-          tag_name: ts-jgss-jdk17.0.8-windows-x64
+          tag_name: ts-jgss-jdk17.0.8-ts2-windows-x64
           files: |
             releases-bundles.tar
-          target_commitish: ts-jgss-jdk-17.0.8
+          target_commitish: ts-jgss-jdk-17.0.8-ts2
           generate_release_notes: false
-          name: ts-jgss-jdk17.0.8-windows-x64
+          name: ts-jgss-jdk17.0.8-ts2-windows-x64
 
       - name: 'Upload bundles'
         uses: ./.github/actions/upload-bundles
