@@ -26,6 +26,7 @@
 package sun.security.jgss.wrapper;
 
 import org.ietf.jgss.*;
+import java.lang.ref.Reference;
 import java.security.Provider;
 import java.security.Security;
 import java.io.IOException;
@@ -50,6 +51,7 @@ import javax.security.auth.kerberos.ServicePermission;
 public class GSSNameElement implements GSSNameSpi {
 
     long pName = 0; // Pointer to the gss_name_t structure
+    private final Object lock;
     private String printableName;
     private Oid printableType;
     private Oid mech;
@@ -94,10 +96,12 @@ public class GSSNameElement implements GSSNameSpi {
     }
 
     private GSSNameElement() {
+        lock = new Object();
         printableName = "<DEFAULT ACCEPTOR>";
     }
 
     GSSNameElement(long pNativeName, Oid mech, GSSLibStub stub) throws GSSException {
+        lock = new Object();
         assert(stub != null);
         if (pNativeName == 0) {
             throw new GSSException(GSSException.BAD_NAME);
@@ -111,6 +115,7 @@ public class GSSNameElement implements GSSNameSpi {
 
     GSSNameElement(byte[] nameBytes, Oid nameType, GSSLibStub stub)
         throws GSSException {
+        lock = new Object();
         assert(stub != null);
         if (nameBytes == null) {
             throw new GSSException(GSSException.BAD_NAME);
@@ -320,10 +325,14 @@ public class GSSNameElement implements GSSNameSpi {
     }
 
     public void dispose() {
-        if (pName != 0) {
-            cStub.releaseName(pName);
-            pName = 0;
+        /* XXX In newer OpenJDK releases we use Cleaner instead */
+        synchronized (lock) {
+            if (pName != 0) {
+                cStub.releaseName(pName);
+                pName = 0;
+            }
         }
+        Reference.reachabilityFence(this);
     }
 
     @SuppressWarnings("deprecation")
