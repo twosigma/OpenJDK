@@ -26,6 +26,7 @@
 package sun.security.jgss.wrapper;
 
 import org.ietf.jgss.*;
+import java.lang.ref.Reference;
 import java.security.Provider;
 import sun.security.jgss.GSSHeader;
 import sun.security.jgss.GSSUtil;
@@ -58,6 +59,8 @@ class NativeGSSContext implements GSSContextSpi {
     private static final int GSS_C_TRANS_FLAG = 256;
 
     private static final int NUM_OF_INQUIRE_VALUES = 6;
+
+    private final Object lock;
 
     // Warning: The following 9 fields are used by NativeUtil.c
     private long pContext = 0; // Pointer to the gss_ctx_id_t structure
@@ -189,6 +192,7 @@ class NativeGSSContext implements GSSContextSpi {
     // Constructor for context initiator
     NativeGSSContext(GSSNameElement peer, GSSCredElement myCred,
                      int time, GSSLibStub stub) throws GSSException {
+        lock = new Object();
         if (peer == null) {
             throw new GSSException(GSSException.FAILURE, 1, "null peer");
         }
@@ -213,6 +217,7 @@ class NativeGSSContext implements GSSContextSpi {
     // Constructor for context acceptor
     NativeGSSContext(GSSCredElement myCred, GSSLibStub stub)
         throws GSSException {
+        lock = new Object();
         cStub = stub;
         cred = myCred;
         disposeCred = null;
@@ -233,6 +238,7 @@ class NativeGSSContext implements GSSContextSpi {
     // Constructor for imported context
     // Warning: called by NativeUtil.c
     NativeGSSContext(long pCtxt, GSSLibStub stub) throws GSSException {
+        lock = new Object();
         assert(pContext != 0);
         pContext = pCtxt;
         cStub = stub;
@@ -378,10 +384,14 @@ class NativeGSSContext implements GSSContextSpi {
         srcName = null;
         targetName = null;
         delegatedCred = null;
-        if (pContext != 0) {
-            pContext = cStub.deleteContext(pContext);
-            pContext = 0;
+        /* XXX In newer OpenJDK releases we use Cleaner instead */
+        synchronized (lock) {
+            if (pContext != 0) {
+                pContext = cStub.deleteContext(pContext);
+                pContext = 0;
+            }
         }
+        Reference.reachabilityFence(this);
     }
 
     public int getWrapSizeLimit(int qop, boolean confReq,

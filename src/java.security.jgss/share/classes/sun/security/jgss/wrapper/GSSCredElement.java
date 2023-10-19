@@ -25,6 +25,7 @@
 package sun.security.jgss.wrapper;
 
 import org.ietf.jgss.*;
+import java.lang.ref.Reference;
 import java.security.Provider;
 import java.util.Map;
 import java.util.List;
@@ -41,6 +42,7 @@ import sun.security.jgss.spi.GSSNameSpi;
  */
 public class GSSCredElement implements GSSCredentialSpi {
 
+    private final Object lock;
     private int usage;
     long pCred; // Pointer to the gss_cred_id_t structure
     private GSSNameElement name = null;
@@ -73,6 +75,7 @@ public class GSSCredElement implements GSSCredentialSpi {
     // Warning: called by NativeUtil.c
     GSSCredElement(long pCredentials, GSSNameElement srcName, Oid mech)
         throws GSSException {
+        lock = new Object();
         pCred = pCredentials;
         cStub = GSSLibStub.getInstance(mech);
         usage = GSSCredential.INITIATE_ONLY;
@@ -82,6 +85,7 @@ public class GSSCredElement implements GSSCredentialSpi {
     private GSSCredElement(GSSNameElement name, String password,
                            Map<String,String> store, int lifetime, int usage,
                            GSSLibStub stub) throws GSSException {
+        lock = new Object();
         cStub = stub;
         this.usage = usage;
 
@@ -127,10 +131,14 @@ public class GSSCredElement implements GSSCredentialSpi {
     }
 
     public void dispose() throws GSSException {
-        name = null;
-        if (pCred != 0) {
-            pCred = cStub.releaseCred(pCred);
+        /* XXX In newer OpenJDK releases we use Cleaner instead */
+        synchronized (lock) {
+            name = null;
+            if (pCred != 0) {
+                pCred = cStub.releaseCred(pCred);
+            }
         }
+        Reference.reachabilityFence(this);
     }
 
     public GSSNameElement getName() throws GSSException {
