@@ -67,8 +67,8 @@ jobs:
     name: build
     runs-on: ubuntu-20.04
     container:
-      image: debian:bullseye
-      #image: ubuntu:20.04
+      #image: debian:bullseye
+      image: ubuntu:18.04
 
     strategy:
       fail-fast: false
