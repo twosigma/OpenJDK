@@ -55,7 +55,7 @@ jobs:
       fail-fast: false
       matrix:
         test-name:
-          #- 'jdk/tier1 part 1'
+          - 'jdk/tier1 part 1'
           #- 'jdk/tier1 part 2'
           #- 'jdk/tier1 part 3'
           #- 'langtools/tier1'
