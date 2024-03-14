@@ -190,15 +190,15 @@ jobs:
         uses: softprops/action-gh-release@v1
         id: tsrelease-linux-x64
         with:
-          body: Build of OpenJDK 21.0.2 with Two Sigma's JGSS enhancements
+          body: Build of OpenJDK 22+36 with Two Sigma's JGSS enhancements
           draft: false
           prerelease: false
-          tag_name: ts-jgss-jdk21.0.2-linux-x64
+          tag_name: ts-jgss-jdk22+36-linux-x64
           files: |
             releases-bundles.tar
-          target_commitish: ts-jgss-jdk-21.0.2-ga
+          target_commitish: ts-jgss-jdk-22+36
           generate_release_notes: false
-          name: ts-jgss-jdk21.0.2-linux-x64
+          name: ts-jgss-jdk22+36-linux-x64
 
       - name: 'Upload bundles'
         uses: ./.github/actions/upload-bundles
