@@ -120,7 +120,8 @@ import static sun.security.util.ResourcesMgr.getAuthResourceString;
  * <dd>If set to true and {@code name} is not set, then only the default
  * credential will be used.</dd>
  * <dt>{@code tryDefaultCreds}:</dt>
- * <dd>Obsolete.</dd>
+ * <dd>If set to true and {@code name} is not set, then try the default
+ * credential.</dd>
  * <dt>{@code onlyUseDefaultCreds}:</dt>
  * <dd>If set to true then the {@code name} will be ignored and only default
  * credentials will be used.</dd>
@@ -219,7 +220,6 @@ public class GssLoginModule implements LoginModule {
     // Configuration option
     private boolean debug;
     private boolean doNotPrompt;
-    private String defName;
     private String name;
     private String nametype; // username, hostbased, unspecified
     private Oid nametypeOid;
@@ -262,13 +262,7 @@ public class GssLoginModule implements LoginModule {
         return value != null ? value : (String)options.get(key);
     }
     private boolean getBool(String key) {
-        String value =
-            System.getProperty("sun.security.gss.login.force." + key);
-        if (value == null)
-            value = (String)options.get(key);
-        if (value == null)
-            value = System.getProperty("sun.security.gss.login." + key);
-        return value != null ? Boolean.parseBoolean(value) : false;
+        return getBoolWithDefault(key, false);
     }
     private boolean getBoolWithDefault(String key, boolean defval) {
         String value =
@@ -370,11 +364,11 @@ public class GssLoginModule implements LoginModule {
 
         debug = getBool("debug");
         doNotPrompt = getBool("doNotPrompt");
-        defName = getString("name");
+        name = getString("name");
         nametype = getString("nametype");
 
-        if (defName == null)
-            defName = System.getProperty("sun.security.gss.name");
+        if (name == null)
+            name = System.getProperty("sun.security.gss.name");
         if (nametype == null)
             nametype = System.getProperty("sun.security.gss.nametype");
         if (nametype == null || nametype.equals("username")) {
@@ -412,14 +406,14 @@ public class GssLoginModule implements LoginModule {
         clearPass = getBool("clearPass");
         initiate = getBool("initiate");
         accept = getBool("accept");
-        tryDefaultCreds = getBool("tryDefaultCreds");
+        tryDefaultCreds = getBoolWithDefault("tryDefaultCreds", true);
         useDefaultCreds = getBoolWithDefault("useDefaultCreds", doNotPrompt);
         onlyUseDefaultCreds = getBoolWithDefault("onlyUseDefaultCreds", doNotPrompt);
         if (!initiate && !accept)
             initiate = true;
         trace("Debug is  " + debug
                 + " doNotPrompt " + doNotPrompt
-                + " defName is " + defName
+                + " name is " + name
                 + " nametype is " + nametype
                 + " tryFirstPass is " + tryFirstPass
                 + " useFirstPass is " + useFirstPass
@@ -563,15 +557,17 @@ public class GssLoginModule implements LoginModule {
         }
 
         if (name == null) {
-            try {
-                trace("trying default credentials because name is null");
-                getcreds();
-                return;
-            } catch (GSSException e) {
-                if (useDefaultCreds) {
-                    trace("not prompting for username because useDefaultCreds"
-                            + "is set");
-                    throw new LoginException(e.getMessage());
+            if (tryDefaultCreds || useDefaultCreds) {
+                try {
+                    trace("trying default credentials because name is null");
+                    getcreds();
+                    return;
+                } catch (GSSException e) {
+                    if (useDefaultCreds) {
+                        trace("not prompting for username because useDefaultCreds"
+                                + "is set");
+                        throw new LoginException(e.getMessage());
+                    }
                 }
             }
 
@@ -609,8 +605,6 @@ public class GssLoginModule implements LoginModule {
         if (getPasswdFromSharedState) {
             // use the name saved by a module earlier in the stack
             name = (String)sharedState.get(NAME);
-            if (name == null || name.length() == 0)
-                name = defName;
             trace("username from shared state is " + name);
             if (name != null && name.length() > 0)
                 return;
