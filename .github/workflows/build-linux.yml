@@ -71,7 +71,10 @@ on:
 jobs:
   build-linux:
     name: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    env:
+      ACTIONS_RUNNER_DEBUG: true
+      ACTIONS_STEP_DEBUG: true
 
     strategy:
       fail-fast: false
@@ -79,8 +82,44 @@ jobs:
      #  debug-level: ${{ fromJSON(inputs.debug-levels) }}
 
     steps:
+      - name: 'Install some dependencies'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git wget curl sudo unzip zip autoconf libfreetype6-dev libcups2-dev libx11-dev libxext-dev libxrender-dev libxrandr-dev libxtst-dev libxt-dev libasound2-dev libffi-dev file binutils libfontconfig-dev debootstrap debian-archive-keyring
+          # If we really need gcc-10, we can get it from this PPA:
+          sudo apt-get install -y software-properties-common schroot fakeroot fakechroot
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+
       - name: 'Checkout the JDK source'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: 'Cache sysroot'
+        # This comes after checking out the JDK source because
+        # actions/checkout@v4 cleans $PWD!
+        id: cache-sysroot
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/sysroot-focal
+          key: sysroot-focal-${{ runner.os }}-${{ runner.arch }}-v1
+
+      - name: 'Setup cross-compilation sysroot'
+        if: steps.cache-sysroot.oututs.cache-hit != 'true'
+        run: |
+          set -vx
+          SYSROOT_PATH="${{ github.workspace }}/sysroot-focal"
+          echo "SYSROOT_PATH=$SYSROOT_PATH" >> $GITHUB_ENV
+          if [ ! -d sysroot-focal ]; then
+            sudo debootstrap --arch=$(dpkg --print-architecture) focal sysroot-focal http://archive.ubuntu.com/ubuntu
+          fi
+          sudo chroot sysroot-focal apt-get update
+          sudo chroot sysroot-focal apt-get install -y build-essential git wget curl sudo unzip zip autoconf libfreetype6-dev libcups2-dev libx11-dev libxext-dev libxrender-dev libxrandr-dev libxtst-dev libxt-dev libasound2-dev libffi-dev file binutils libfontconfig-dev
+          # If we really need gcc-10, we can get it from this PPA:
+          sudo chroot sysroot-focal apt-get install -y software-properties-common
+          sudo chroot sysroot-focal sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          # So the OpenJDK configuration and build can use the sysroot
+          sudo chown -R $USER:$USER sysroot-focal
+          echo $PWD
+          ls -F
 
       - name: 'Get the BootJDK'
         id: bootjdk
@@ -118,6 +157,9 @@ jobs:
 
       - name: 'Configure'
         run: >
+          set -vx &&
+          pwd &&
+          ls -F &&
           bash configure
           --with-conf-name=${{ inputs.platform }}
           ${{ matrix.debug-level == 'debug' && '--with-debug-level=fastdebug' || '' }}
@@ -129,9 +171,14 @@ jobs:
           --with-gtest=${{ steps.gtest.outputs.path }}
           --with-zlib=system
           --with-jmod-compress=zip-1
+          --with-sysroot=${{ env.SYSROOT_PATH }}
+          --with-extra-cflags=--sysroot=${{ env.SYSROOT_PATH }}
+          --with-extra-cxxflags=--sysroot=${{ env.SYSROOT_PATH }}
+          --with-extra-ldflags=--sysroot=${{ env.SYSROOT_PATH }}
           ${{ inputs.extra-conf-options }} ${{ inputs.configure-arguments }} || (
           echo "Dumping config.log:" &&
           cat config.log &&
+          echo PWD=$PWD &&
           exit 1)
 
       - name: 'Build'

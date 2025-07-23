@@ -58,7 +58,7 @@ jobs:
 
   prepare:
     name: 'Prepare the run'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
       # List of platforms to exclude by default
       EXCLUDED_PLATFORMS: 'alpine-linux-x64'
@@ -360,7 +360,7 @@ jobs:
     with:
       platform: linux-x64
       bootjdk-platform: linux-x64
-      runs-on: ubuntu-22.04
+      runs-on: ubuntu-latest
       debug-suffix: -debug
 
   test-linux-x64-static:
@@ -396,4 +396,5 @@ jobs:
       platform: windows-x64
       bootjdk-platform: windows-x64
       runs-on: windows-2025
+      #runs-on: windows-2022
       debug-suffix: -debug
