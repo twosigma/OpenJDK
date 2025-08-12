@@ -32,9 +32,10 @@ runs:
     - name: 'Install MSYS2'
       uses: msys2/setup-msys2@v2.22.0
       with:
-        install: 'autoconf tar unzip zip make'
+        install: 'base-devel git autoconf tar unzip zip make'
         path-type: minimal
         location: ${{ runner.tool_cache }}/msys2
+        update: true
 
       # We can't run bash until this is completed, so stick with pwsh
     - name: 'Set MSYS2 path'
