@@ -32,6 +32,12 @@ on:
     branches-ignore:
       - master
       - pr/*
+    # Pushing a tag like ts-jgss-jdk21.0.8-2 builds and makes releases named
+    # after it (see the Release steps in build-linux.yml and build-windows.yml)
+    tags:
+      - 'ts-jgss-*'
+      # Not the per-platform tags the Release steps create
+      - '!ts-jgss-*-x64'
   workflow_dispatch:
     inputs:
       platforms:

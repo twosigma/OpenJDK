@@ -209,21 +209,22 @@ jobs:
       - name: 'Release'
         uses: softprops/action-gh-release@v3
         id: tsrelease-linux-x64
-        # The docs job also uses this workflow with platform linux-x64; don't
-        # let it clobber the linux-x64 release with an empty tarball.
-        if: steps.bundles.outputs.release-bundles-found == 'true'
+        # Only make releases for tag pushes (see main.yml).  The docs job also
+        # uses this workflow with platform linux-x64; don't let it clobber the
+        # linux-x64 release with an empty tarball.
+        if: github.ref_type == 'tag' && steps.bundles.outputs.release-bundles-found == 'true'
         with:
-          body: Build of OpenJDK 21.0.8 with Two Sigma's JGSS enhancements
+          body: Build of ${{ github.ref_name }} with Two Sigma's JGSS enhancements
           platform: ${{ inputs.platform }}
           debug-suffix: '${{ matrix.suffix }}'
           draft: false
           prerelease: false
-          tag_name: ts-jgss-jdk21.0.8-2-linux-x64
+          tag_name: ${{ github.ref_name }}-${{ inputs.platform }}
           files: |
             releases-bundles.tar
-          target_commitish: ts-jgss-jdk-21.0.8-ga
+          target_commitish: ${{ github.sha }}
           generate_release_notes: false
-          name: ts-jgss-jdk21.0.8-2-linux-x64
+          name: ${{ github.ref_name }}-${{ inputs.platform }}
 
       - name: 'Upload bundles'
         uses: ./.github/actions/upload-bundles
