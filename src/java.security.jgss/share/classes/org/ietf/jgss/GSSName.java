@@ -296,7 +296,7 @@ public interface GSSName extends Principal {
     /**
      * Returns a textual representation of the <code>GSSName</code> object
      * element corresponding to the given <code>mech</code>.  This will be a
-     * mechanism-specific representation of <code>this</code.
+     * mechanism-specific representation of <code>this</code>.
      *
      * @return a String representing this name in printable form.
      */
