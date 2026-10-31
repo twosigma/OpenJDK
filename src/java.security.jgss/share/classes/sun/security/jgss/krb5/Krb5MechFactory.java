@@ -109,16 +109,8 @@ public final class Krb5MechFactory implements MechanismFactory {
     }
 
     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
-           String password, int initLifetime, int acceptLifetime,
+           int initLifetime, int acceptLifetime,
            int usage) throws GSSException {
-
-        if (password != null) {
-            // XXX Implement!  Shouldn't be too hard...
-            throw new GSSException(GSSException.UNAVAILABLE, -1,
-                    "The Kerberos mechanism Java implementation does not " +
-                    "currently support acquiring GSS credentials handle " +
-                    "elements with a password");
-        }
 
         if (name != null && !(name instanceof Krb5NameElement)) {
             name = Krb5NameElement.getInstance(name.toString(),
@@ -151,6 +143,21 @@ public final class Krb5MechFactory implements MechanismFactory {
     }
 
     public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
+           String password, int initLifetime, int acceptLifetime,
+           int usage) throws GSSException {
+
+        if (password != null) {
+            // XXX Implement!  Shouldn't be too hard...
+            throw new GSSException(GSSException.UNAVAILABLE, -1,
+                    "The Kerberos mechanism Java implementation does not " +
+                    "currently support acquiring GSS credentials handle " +
+                    "elements with a password");
+        }
+
+        return getCredentialElement(name, initLifetime, acceptLifetime, usage);
+    }
+
+    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
            Map<String,String> store, int initLifetime, int acceptLifetime,
            int usage) throws GSSException {
 
@@ -162,39 +169,7 @@ public final class Krb5MechFactory implements MechanismFactory {
                     "elements using a \"credential store\"");
         }
 
-        if (name != null && !(name instanceof Krb5NameElement)) {
-            name = Krb5NameElement.getInstance(name.toString(),
-                                       name.getStringNameType());
-        }
-
-        Krb5CredElement credElement = getCredFromSubject
-            (name, (usage != GSSCredential.ACCEPT_ONLY));
-
-        if (credElement == null) {
-            if (usage == GSSCredential.INITIATE_ONLY ||
-                usage == GSSCredential.INITIATE_AND_ACCEPT) {
-                credElement = Krb5InitCredential.getInstance
-                    (caller, (Krb5NameElement) name, initLifetime);
-                checkInitCredPermission
-                    ((Krb5NameElement) credElement.getName());
-            } else if (usage == GSSCredential.ACCEPT_ONLY) {
-                credElement =
-                    Krb5AcceptCredential.getInstance(caller,
-                                                     (Krb5NameElement) name);
-                checkAcceptCredPermission
-                    ((Krb5NameElement) credElement.getName(), name);
-            } else
-                throw new GSSException(GSSException.FAILURE, -1,
-                                       "Unknown usage mode requested");
-        }
-        return credElement;
-    }
-
-    public GSSCredentialSpi getCredentialElement(GSSNameSpi name,
-            int initLifetime, int acceptLifetime, int usage)
-        throws GSSException {
-        return getCredentialElement(name, (Map<String,String>)null,
-            initLifetime, acceptLifetime, usage);
+        return getCredentialElement(name, initLifetime, acceptLifetime, usage);
     }
 
     public void storeCredInto(GSSCredentialSpi cred, int usage,
