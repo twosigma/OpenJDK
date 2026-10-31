@@ -153,7 +153,7 @@ import static sun.security.util.ResourcesMgr.getAuthResourceString;
  * credentials. Either or both of {@code initiate} and {@code accept}
  * may be set to true. If both are false then {@code initiate} will be
  * treated as true.</dd>
- * </dl></blockquote></p>
+ * </dl></blockquote>
  *
  * <p> This {@code LoginModule} also recognizes the following additional
  * {@code Configuration}
@@ -199,7 +199,7 @@ import static sun.security.util.ResourcesMgr.getAuthResourceString;
  *                   username and password stored in the module's shared
  *                   state  after both phases of authentication
  *                   (login and commit) have completed.</dd>
- * </dl></blockquote></p>
+ * </dl></blockquote>
  * <p>If the principal system property or key is already provided, the value of
  * "javax.security.auth.login.name" in the shared state is ignored.</p>
  *
@@ -300,21 +300,17 @@ public class GssLoginModule implements LoginModule {
     /**
      * Initialize this <code>LoginModule</code>.
      *
-     * <p>
-     * @param subject the <code>Subject</code> to be authenticated.</p>
+     * @param subject the <code>Subject</code> to be authenticated.
      *
-     * <p>
      * @param callbackHandler a <code>CallbackHandler</code> for
      *                  communication with the end user (prompting for
-     *                  usernames and passwords, for example).</p>
+     *                  usernames and passwords, for example).
      *
-     * <p>
-     * @param sharedState shared <code>LoginModule</code> state.</p>
+     * @param sharedState shared <code>LoginModule</code> state.
      *
-     * <p>
      * @param options options specified in the login
      *                  <code>Configuration</code> for this particular
-     *                  <code>LoginModule</code>.</p>
+     *                  <code>LoginModule</code>.
      */
     // Unchecked warning from (Map<String, Object>)sharedState is safe
     // since javax.security.auth.login.LoginContext passes a raw HashMap.
@@ -441,17 +437,11 @@ public class GssLoginModule implements LoginModule {
     /**
      * Authenticate the user
      *
-     * <p>
-     *
      * @return true in all cases since this <code>LoginModule</code>
-     *          should not be ignored.</p>
+     *          should not be ignored.
      *
-     * <p>
-     * @exception FailedLoginException if the authentication fails.</p>
-     *
-     * <p>
      * @exception LoginException if this <code>LoginModule</code>
-     *          is unable to perform the authentication.</p>
+     *          is unable to perform the authentication.
      */
     public boolean login() throws LoginException {
         succeeded = false;
@@ -704,10 +694,10 @@ public class GssLoginModule implements LoginModule {
     }
 
     /**
-     * <p> This method is called if the LoginContext's
+     * This method is called if the LoginContext's
      * overall authentication succeeded
      * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL
-     * LoginModules succeeded).</p>
+     * LoginModules succeeded).
      *
      * <p> If this LoginModule's own authentication attempt
      * succeeded (checked by retrieving the private state saved by the
@@ -717,15 +707,12 @@ public class GssLoginModule implements LoginModule {
      * <code>LoginModule</code>. It adds GSS Credentials to the
      * the Subject's private credentials set. If this LoginModule's own
      * authentication attempted failed, then this method removes
-     * any state that was originally saved.</p>
+     * any state that was originally saved.
      *
-     * <p>
+     * @exception LoginException if the commit fails.
      *
-     * @exception LoginException if the commit fails.</p>
-     *
-     * <p>
      * @return true if this LoginModule's own login and commit
-     *          attempts succeeded, or false otherwise.</p>
+     *          attempts succeeded, or false otherwise.
      */
 
     public boolean commit() throws LoginException {
@@ -781,24 +768,21 @@ public class GssLoginModule implements LoginModule {
     }
 
     /**
-     * <p> This method is called if the LoginContext's
+     * This method is called if the LoginContext's
      * overall authentication failed.
      * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL
-     * LoginModules did not succeed).</p>
+     * LoginModules did not succeed).
      *
      * <p> If this LoginModule's own authentication attempt
      * succeeded (checked by retrieving the private state saved by the
      * <code>login</code> and <code>commit</code> methods),
      * then this method cleans up any state that was originally
-     * saved.</p>
+     * saved.
      *
-     * <p>
+     * @exception LoginException if the abort fails.
      *
-     * @exception LoginException if the abort fails.</p>
-     *
-     * <p>
      * @return false if this LoginModule's own login and/or commit attempts
-     *          failed, and true otherwise.</p>
+     *          failed, and true otherwise.
      */
 
     public boolean abort() throws LoginException {
@@ -816,18 +800,15 @@ public class GssLoginModule implements LoginModule {
     }
 
     /**
-     * <p>Logout the user.</p>
+     * Logout the user.
      *
      * <p>This method removes the <code>GSSName</code> and
-     * <code>GSSCredential</code> added by the <code>commit</code> method.</p>
+     * <code>GSSCredential</code> added by the <code>commit</code> method.
      *
-     * <p>
+     * @exception LoginException if the logout fails.
      *
-     * @exception LoginException if the logout fails.</p>
-     *
-     * <p>
      * @return true in all cases since this <code>LoginModule</code>
-     *          should not be ignored.</p>
+     *          should not be ignored.
      */
     public boolean logout() throws LoginException {
         /*

@@ -444,7 +444,7 @@ public abstract class GSSManager {
      * Non-default values for lifetime cannot always be honored by the
      * underlying mechanisms, thus applications should be prepared to call
      * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
-     * on the returned credential.<p>
+     * on the returned credential.
      *
      * @param name the name of the principal for whom this credential is to be
      * acquired.  Use <code>null</code> to specify the default principal.
@@ -497,7 +497,7 @@ public abstract class GSSManager {
      * Non-default values for lifetime cannot always be honored by the
      * underlying mechanisms, thus applications should be prepared to call
      * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
-     * on the returned credential.<p>
+     * on the returned credential.
      *
      * @param name the name of the principal for whom this credential is to be
      * acquired.  Use <code>null</code> to specify the default principal.
@@ -616,7 +616,7 @@ public abstract class GSSManager {
      * Non-default values for lifetime cannot always be honored by the
      * underlying mechanisms, thus applications should be prepared to call
      * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
-     * on the returned credential.<p>
+     * on the returned credential.
      *
      * @param name the name of the principal for whom this credential is to
      * be acquired.  Use <code>null</code> to specify the default
@@ -676,7 +676,7 @@ public abstract class GSSManager {
      * Non-default values for lifetime cannot always be honored by the
      * underlying mechanisms, thus applications should be prepared to call
      * {@link GSSCredential#getRemainingLifetime() getRemainingLifetime}
-     * on the returned credential.<p>
+     * on the returned credential.
      *
      * @param name the name of the principal for whom this credential is to
      * be acquired.  Use <code>null</code> to specify the default
