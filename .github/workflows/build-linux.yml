@@ -31,6 +31,14 @@ on:
       platform:
         required: true
         type: string
+      runs-on:
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+      bootjdk-platform:
+        required: false
+        type: string
+        default: 'linux-x64'
       extra-conf-options:
         required: false
         type: string
@@ -65,7 +73,7 @@ on:
 jobs:
   build-linux:
     name: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on }}
     env:
       ACTIONS_RUNNER_DEBUG: true
       ACTIONS_STEP_DEBUG: true
@@ -97,25 +105,36 @@ jobs:
         id: cache-sysroot
         uses: actions/cache@v3
         with:
-          path: ${{ github.workspace }}/sysroot-focal
-          key: sysroot-focal-${{ runner.os }}-${{ runner.arch }}-v1
+          path: ${{ github.workspace }}/sysroot-current
+          key: sysroot-current-${{ runner.os }}-${{ runner.arch }}-v1
 
       - name: 'Setup cross-compilation sysroot'
         if: steps.cache-sysroot.oututs.cache-hit != 'true'
         run: |
           set -vx
-          SYSROOT_PATH="${{ github.workspace }}/sysroot-focal"
+          SYSROOT_PATH="${{ github.workspace }}/sysroot-current"
           echo "SYSROOT_PATH=$SYSROOT_PATH" >> $GITHUB_ENV
-          if [ ! -d sysroot-focal ]; then
-            sudo debootstrap --arch=$(dpkg --print-architecture) focal sysroot-focal http://archive.ubuntu.com/ubuntu
+          if [ ! -d sysroot-current ]; then
+            ARCH=$(dpkg --print-architecture)
+            # archive.ubuntu.com only carries amd64/i386; other architectures live on ports.ubuntu.com
+            if [ "$ARCH" = "amd64" ]; then
+              MIRROR=http://archive.ubuntu.com/ubuntu
+            else
+              MIRROR=http://ports.ubuntu.com/ubuntu-ports
+            fi
+            sudo debootstrap --arch=$ARCH jammy sysroot-current $MIRROR
           fi
-          sudo chroot sysroot-focal apt-get update
-          sudo chroot sysroot-focal apt-get install -y build-essential git wget curl sudo unzip zip autoconf libfreetype6-dev libcups2-dev libx11-dev libxext-dev libxrender-dev libxrandr-dev libxtst-dev libxt-dev libasound2-dev libffi-dev file binutils libfontconfig-dev
+          sudo chroot sysroot-current apt-get update
+          sudo chroot sysroot-current apt-get install -y build-essential git wget curl sudo unzip zip autoconf libfreetype6-dev libcups2-dev libx11-dev libxext-dev libxrender-dev libxrandr-dev libxtst-dev libxt-dev libasound2-dev libffi-dev file binutils libfontconfig-dev
           # If we really need gcc-10, we can get it from this PPA:
-          sudo chroot sysroot-focal apt-get install -y software-properties-common
-          sudo chroot sysroot-focal sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo chroot sysroot-current apt-get install -y software-properties-common
+          sudo chroot sysroot-current sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          # Make absolute symlinks in the sysroot relative, so the host linker doesn't follow them
+          # out to the host's libpthread/libdl stubs (same idea as 'symlinks -cr' in build-cross-compile.yml)
+          #sudo chroot sysroot-current /bin/bash -c 'find / -xdev -type l -lname "/*" -print0 | while IFS= read -r -d "" l; do ln -sfn "$(realpath -m --relative-to="$(dirname "$l")" "$(readlink "$l")")" "$l"; done'
+          ls -l sysroot-current/usr/lib/*-linux-gnu/libpthread.so sysroot-current/usr/lib/*-linux-gnu/libdl.so || true
           # So the OpenJDK configuration and build can use the sysroot
-          sudo chown -R $USER:$USER sysroot-focal
+          sudo chown -R $USER:$USER sysroot-current
           echo $PWD
           ls -F
 
@@ -123,7 +142,7 @@ jobs:
         id: bootjdk
         uses: ./.github/actions/get-bootjdk
         with:
-          platform: linux-x64
+          platform: ${{ inputs.bootjdk-platform }}
 
       - name: 'Get JTReg'
         id: jtreg
@@ -227,12 +246,12 @@ jobs:
           body: Build of OpenJDK 21.0.8 with Two Sigma's JGSS enhancements
           draft: false
           prerelease: false
-          tag_name: ts-jgss-jdk21.0.8-linux-x64
+          tag_name: ts-jgss-jdk21.0.8-${{ inputs.platform }}
           files: |
             releases-bundles.tar
           target_commitish: ts-jgss-jdk-21.0.8-ga
           generate_release_notes: false
-          name: ts-jgss-jdk21.0.8-linux-x64
+          name: ts-jgss-jdk21.0.8-${{ inputs.platform }}
 
       - name: 'Upload bundles'
         uses: ./.github/actions/upload-bundles
