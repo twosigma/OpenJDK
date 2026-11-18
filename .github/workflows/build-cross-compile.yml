@@ -44,7 +44,7 @@ on:
 jobs:
   build-cross-compile:
     name: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
@@ -90,7 +90,7 @@ jobs:
 
     steps:
       - name: 'Checkout the JDK source'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: 'Get the BootJDK'
         id: bootjdk
@@ -118,7 +118,7 @@ jobs:
 
       - name: 'Check cache for sysroot'
         id: get-cached-sysroot
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: sysroot
           key: sysroot-${{ matrix.debian-arch }}-${{ hashFiles('./.github/workflows/build-cross-compile.yml') }}
@@ -166,11 +166,11 @@ jobs:
         run: >
           bash configure
           --with-conf-name=linux-${{ matrix.target-cpu }}
-          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
+          --with-version-pre=ts-jgss
+          --with-version-opt=
           --with-boot-jdk=${{ steps.bootjdk.outputs.path }}
           --with-gtest=${{ steps.gtest.outputs.path }}
           --with-zlib=system
-          --enable-debug
           --disable-precompiled-headers
           --openjdk-target=${{ matrix.gnu-arch }}-linux-gnu${{ matrix.gnu-abi}}
           --with-sysroot=sysroot

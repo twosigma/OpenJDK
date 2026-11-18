@@ -23,13 +23,21 @@
 # questions.
 #
 
-name: 'OpenJDK GHA Sanity Checks'
+name: 'OpenJDK GHA Sanity Checks (with Two Sigma JGSS patches and release making)'
+
+permissions: write-all
 
 on:
   push:
     branches-ignore:
       - master
       - pr/*
+    # Pushing a tag like ts-jgss-jdk17.0.21.1-1-linux-x64 builds that platform
+    # only and makes a release on that tag (see the Release steps in
+    # build-linux.yml and build-windows.yml)
+    tags:
+      - 'ts-jgss-*-linux-x64'
+      - 'ts-jgss-*-windows-x64'
   workflow_dispatch:
     inputs:
       platforms:
@@ -55,7 +63,7 @@ jobs:
 
   prepare:
     name: 'Prepare the run'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     outputs:
       linux-x64: ${{ steps.include.outputs.linux-x64 }}
       linux-x86-hs: ${{ steps.include.outputs.linux-x86-hs }}
@@ -68,7 +76,7 @@ jobs:
 
     steps:
       - name: 'Checkout the scripts'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           sparse-checkout: |
             .github
@@ -120,14 +128,23 @@ jobs:
             echo 'false'
           }
 
-          echo "linux-x64=$(check_platform linux-x64 linux x64)" >> $GITHUB_OUTPUT
-          echo "linux-x86-hs=$(check_platform linux-x86-hs linux x86)" >> $GITHUB_OUTPUT
-          echo "linux-x64-variants=$(check_platform linux-x64-variants variants)" >> $GITHUB_OUTPUT
-          echo "linux-cross-compile=$(check_platform linux-cross-compile cross-compile)" >> $GITHUB_OUTPUT
-          echo "macos-x64=$(check_platform macos-x64 macos x64)" >> $GITHUB_OUTPUT
-          echo "macos-aarch64=$(check_platform macos-aarch64 macos aarch64)" >> $GITHUB_OUTPUT
-          echo "windows-x64=$(check_platform windows-x64 windows x64)" >> $GITHUB_OUTPUT
-          echo "windows-aarch64=$(check_platform windows-aarch64 windows aarch64)" >> $GITHUB_OUTPUT
+          # A per-platform release tag builds only that platform
+          tag_platform() {
+            if [[ '${{ github.ref_type }}' != 'tag' || '${{ github.ref_name }}' == *-$1 ]]; then
+              echo 'true'
+            else
+              echo 'false'
+            fi
+          }
+
+          echo "linux-x64=$(tag_platform linux-x64)" >> $GITHUB_OUTPUT
+          echo "linux-x86-hs=false" >> $GITHUB_OUTPUT
+          echo "linux-x64-variants=false" >> $GITHUB_OUTPUT
+          echo "linux-cross-compile=false" >> $GITHUB_OUTPUT
+          echo "macos-x64=false" >> $GITHUB_OUTPUT
+          echo "macos-aarch64=false" >> $GITHUB_OUTPUT
+          echo "windows-x64=$(tag_platform windows-x64)" >> $GITHUB_OUTPUT
+          echo "windows-aarch64=false" >> $GITHUB_OUTPUT
 
   ###
   ### Build jobs
@@ -293,7 +310,7 @@ jobs:
     with:
       platform: linux-x64
       bootjdk-platform: linux-x64
-      runs-on: ubuntu-22.04
+      runs-on: ubuntu-latest
 
   test-macos-aarch64:
     name: macos-aarch64
