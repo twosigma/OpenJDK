@@ -85,41 +85,44 @@ jobs:
           - test-name: 'langtools/tier1'
             test-suite: 'test/langtools/:tier1'
 
-          - test-name: 'hs/tier1 common'
-            test-suite: 'test/hotspot/jtreg/:tier1_common'
-            debug-suffix: -debug
+          # The debug entries must stay commented out here too: an include
+          # entry that matches no matrix combination is added as a job of its
+          # own, and we build only release bundles, so -debug jobs would fail.
+         #- test-name: 'hs/tier1 common'
+         #  test-suite: 'test/hotspot/jtreg/:tier1_common'
+         #  debug-suffix: -debug
 
-          - test-name: 'hs/tier1 compiler part 1'
-            test-suite: 'test/hotspot/jtreg/:tier1_compiler_1'
-            debug-suffix: -debug
+         #- test-name: 'hs/tier1 compiler part 1'
+         #  test-suite: 'test/hotspot/jtreg/:tier1_compiler_1'
+         #  debug-suffix: -debug
 
-          - test-name: 'hs/tier1 compiler part 2'
-            test-suite: 'test/hotspot/jtreg/:tier1_compiler_2'
-            debug-suffix: -debug
+         #- test-name: 'hs/tier1 compiler part 2'
+         #  test-suite: 'test/hotspot/jtreg/:tier1_compiler_2'
+         #  debug-suffix: -debug
 
-          - test-name: 'hs/tier1 compiler part 3'
-            test-suite: 'test/hotspot/jtreg/:tier1_compiler_3'
-            debug-suffix: -debug
+         #- test-name: 'hs/tier1 compiler part 3'
+         #  test-suite: 'test/hotspot/jtreg/:tier1_compiler_3'
+         #  debug-suffix: -debug
 
-          - test-name: 'hs/tier1 compiler not-xcomp'
-            test-suite: 'test/hotspot/jtreg/:tier1_compiler_not_xcomp'
-            debug-suffix: -debug
+         #- test-name: 'hs/tier1 compiler not-xcomp'
+         #  test-suite: 'test/hotspot/jtreg/:tier1_compiler_not_xcomp'
+         #  debug-suffix: -debug
 
-          - test-name: 'hs/tier1 gc'
-            test-suite: 'test/hotspot/jtreg/:tier1_gc'
-            debug-suffix: -debug
+         #- test-name: 'hs/tier1 gc'
+         #  test-suite: 'test/hotspot/jtreg/:tier1_gc'
+         #  debug-suffix: -debug
 
-          - test-name: 'hs/tier1 runtime'
-            test-suite: 'test/hotspot/jtreg/:tier1_runtime'
-            debug-suffix: -debug
+         #- test-name: 'hs/tier1 runtime'
+         #  test-suite: 'test/hotspot/jtreg/:tier1_runtime'
+         #  debug-suffix: -debug
 
-          - test-name: 'hs/tier1 serviceability'
-            test-suite: 'test/hotspot/jtreg/:tier1_serviceability'
-            debug-suffix: -debug
+         #- test-name: 'hs/tier1 serviceability'
+         #  test-suite: 'test/hotspot/jtreg/:tier1_serviceability'
+         #  debug-suffix: -debug
 
-          - test-name: 'lib-test/tier1'
-            test-suite: 'test/lib-test/:tier1'
-            debug-suffix: -debug
+         #- test-name: 'lib-test/tier1'
+         #  test-suite: 'test/lib-test/:tier1'
+         #  debug-suffix: -debug
 
     steps:
       - name: 'Checkout the JDK source'
