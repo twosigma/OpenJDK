@@ -1,0 +1,94 @@
+#
+# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# This code is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 2 only, as
+# published by the Free Software Foundation.
+#
+
+name: 'Build Devkit'
+
+on:
+  workflow_dispatch:
+    inputs:
+      base-os:
+        description: 'Base OS for sysroot (Fedora or OL)'
+        required: true
+        default: 'Fedora'
+        type: choice
+        options:
+          - Fedora
+          - OL
+      base-os-version:
+        description: 'Base OS version (e.g., 27 for Fedora)'
+        required: false
+        default: '27'
+      target:
+        description: 'Target triplet'
+        required: true
+        default: 'x86_64-linux-gnu'
+        type: choice
+        options:
+          - x86_64-linux-gnu
+          - aarch64-linux-gnu
+
+jobs:
+  build-devkit:
+    name: 'Build devkit (${{ inputs.target }}, ${{ inputs.base-os }} ${{ inputs.base-os-version }})'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Checkout the JDK source'
+        uses: actions/checkout@v4
+
+      - name: 'Install dependencies'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential rpm2cpio cpio wget texinfo
+
+      - name: 'Build devkit'
+        run: |
+          cd make/devkit
+          # Build the devkit - this compiles GCC from source, takes ~1-2 hours
+          make \
+            TARGETS="${{ inputs.target }}" \
+            BASE_OS=${{ inputs.base-os }} \
+            BASE_OS_VERSION=${{ inputs.base-os-version }}
+        timeout-minutes: 180
+
+      - name: 'Package devkit'
+        id: package
+        run: |
+          cd build/devkit/result
+          DEVKIT_NAME="devkit-x86_64-linux-gnu-to-${{ inputs.target }}-${{ inputs.base-os }}${{ inputs.base-os-version }}"
+          tar -czf "${DEVKIT_NAME}.tar.gz" "x86_64-linux-gnu-to-${{ inputs.target }}"
+          echo "devkit-name=${DEVKIT_NAME}" >> $GITHUB_OUTPUT
+          echo "devkit-file=${DEVKIT_NAME}.tar.gz" >> $GITHUB_OUTPUT
+          ls -lh "${DEVKIT_NAME}.tar.gz"
+
+      - name: 'Upload devkit artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.devkit-name }}
+          path: build/devkit/result/${{ steps.package.outputs.devkit-file }}
+          retention-days: 90
+
+      - name: 'Create release'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: devkit-${{ inputs.target }}-${{ inputs.base-os }}${{ inputs.base-os-version }}
+          name: 'Devkit: ${{ inputs.target }} (${{ inputs.base-os }} ${{ inputs.base-os-version }})'
+          body: |
+            Devkit for building OpenJDK targeting ${{ inputs.target }}.
+
+            Based on ${{ inputs.base-os }} ${{ inputs.base-os-version }} sysroot.
+
+            Usage:
+            ```
+            tar -xzf ${{ steps.package.outputs.devkit-file }}
+            bash configure --with-devkit=$PWD/x86_64-linux-gnu-to-${{ inputs.target }} ...
+            ```
+          files: build/devkit/result/${{ steps.package.outputs.devkit-file }}
+          draft: false
+          prerelease: false
